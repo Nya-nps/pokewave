@@ -1,0 +1,828 @@
+/* ═══════════════════════════════════════════════════════
+   POKEWAVE — DESIGN SYSTEM MODERNE
+   Chargé après style.css — surcharge et enrichit le visuel
+   ═══════════════════════════════════════════════════════ */
+
+/* ── VARIABLES DESIGN ── */
+:root {
+  /* Palette enrichie */
+  --c-bg:       #06061a;
+  --c-surface:  rgba(255,255,255,.05);
+  --c-glass:    rgba(14,10,40,.75);
+  --c-glass2:   rgba(20,14,55,.7);
+  --c-border:   rgba(255,255,255,.1);
+  --c-gold:     #ffd60a;
+  --c-purple:   #c77dff;
+  --c-blue:     #4cc9f0;
+  --c-green:    #06d6a0;
+  --c-red:      #e63946;
+  --c-orange:   #ff9a3c;
+  --c-pink:     #ff88cc;
+
+  /* Shadows */
+  --shadow-panel: 0 24px 80px rgba(0,0,0,.8), 0 4px 24px rgba(0,0,0,.5);
+  --shadow-card:  0 4px 20px rgba(0,0,0,.5);
+  --shadow-btn:   0 4px 16px rgba(0,0,0,.4);
+
+  /* Timing */
+  --ease-out: cubic-bezier(0.16,1,0.3,1);
+  --ease-spring: cubic-bezier(0.34,1.56,0.64,1);
+}
+
+/* ── FOND GLOBAL ── */
+body { background: var(--c-bg) !important; }
+
+#bg {
+  background:
+    radial-gradient(ellipse 80% 60% at 15% 30%, rgba(123,47,247,.22) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 85% 15%, rgba(76,201,240,.14) 0%, transparent 55%),
+    radial-gradient(ellipse 70% 50% at 65% 90%, rgba(255,100,50,.1)  0%, transparent 50%),
+    radial-gradient(ellipse 50% 40% at 5%  80%, rgba(230,57,70,.08)  0%, transparent 45%),
+    linear-gradient(160deg, #04041a 0%, #07071e 50%, #0a0520 100%) !important;
+}
+
+#bg-overlay {
+  background: linear-gradient(180deg,
+    rgba(6,6,26,.55) 0%,
+    rgba(6,6,26,.15) 30%,
+    rgba(6,6,26,.15) 70%,
+    rgba(6,6,26,.6)  100%) !important;
+}
+
+/* Étoiles animées générées en CSS */
+@keyframes twinkle  { 0%,100%{opacity:.15} 50%{opacity:.9} }
+@keyframes float-up { 0%{transform:translateY(0) scale(1);opacity:.8} 100%{transform:translateY(-80px) scale(.5);opacity:0} }
+@keyframes drift    { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+@keyframes pulse-glow { 0%,100%{opacity:.6} 50%{opacity:1} }
+@keyframes shimmer  { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+@keyframes slide-in-right { from{transform:translateX(100%);opacity:0} to{transform:translateX(0);opacity:1} }
+@keyframes pop-in   { from{transform:scale(.85);opacity:0} to{transform:scale(1);opacity:1} }
+@keyframes glow-pulse { 0%,100%{box-shadow:0 0 12px currentColor} 50%{box-shadow:0 0 28px currentColor, 0 0 50px currentColor} }
+
+/* ── BOUTONS — design moderne ── */
+.btn {
+  font-family: 'Press Start 2P', monospace !important;
+  font-size: .62rem !important;
+  padding: .65rem 1.5rem !important;
+  border: none !important;
+  border-radius: 10px !important;
+  cursor: pointer !important;
+  position: relative !important;
+  overflow: hidden !important;
+  transition: transform .15s var(--ease-spring), box-shadow .15s ease, filter .15s ease !important;
+  letter-spacing: .04em !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,.6) !important;
+  /* Reflet interne */
+  background-image: linear-gradient(180deg, rgba(255,255,255,.18) 0%, transparent 50%), linear-gradient(180deg,#3a86ff,#1a5fc8) !important;
+  box-shadow: 0 3px 0 #0a2d6e, 0 6px 20px rgba(58,134,255,.35), inset 0 1px 0 rgba(255,255,255,.2) !important;
+}
+.btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,.15) 0%, transparent 50%);
+  opacity: 0;
+  transition: opacity .15s;
+  pointer-events: none;
+}
+.btn:hover { transform: translateY(-3px) !important; filter: brightness(1.15) !important; box-shadow: 0 6px 0 #0a2d6e, 0 10px 28px rgba(58,134,255,.5), inset 0 1px 0 rgba(255,255,255,.25) !important; }
+.btn:hover::after { opacity: 1; }
+.btn:active { transform: translateY(2px) !important; box-shadow: 0 1px 0 #0a2d6e, 0 2px 8px rgba(58,134,255,.3) !important; }
+.btn:disabled { opacity: .4 !important; transform: none !important; cursor: not-allowed !important; }
+
+.btn.red    { background-image: linear-gradient(180deg, rgba(255,255,255,.18) 0%, transparent 50%), linear-gradient(180deg,#ff4d5a,#c01828) !important; box-shadow: 0 3px 0 #6e0812, 0 6px 20px rgba(230,57,70,.35), inset 0 1px 0 rgba(255,255,255,.2) !important; }
+.btn.red:hover    { box-shadow: 0 6px 0 #6e0812, 0 10px 28px rgba(230,57,70,.5) !important; }
+.btn.green  { background-image: linear-gradient(180deg, rgba(255,255,255,.18) 0%, transparent 50%), linear-gradient(180deg,#34e06a,#1a9040) !important; box-shadow: 0 3px 0 #0a4d20, 0 6px 20px rgba(45,198,83,.35), inset 0 1px 0 rgba(255,255,255,.2) !important; }
+.btn.green:hover  { box-shadow: 0 6px 0 #0a4d20, 0 10px 28px rgba(45,198,83,.5) !important; }
+.btn.yellow { background-image: linear-gradient(180deg, rgba(255,255,255,.2) 0%, transparent 50%), linear-gradient(180deg,#ffe535,#d4a000) !important; color: #1a1200 !important; text-shadow: none !important; box-shadow: 0 3px 0 #7a5c00, 0 6px 20px rgba(255,214,10,.35), inset 0 1px 0 rgba(255,255,255,.3) !important; }
+.btn.yellow:hover { box-shadow: 0 6px 0 #7a5c00, 0 10px 28px rgba(255,214,10,.5) !important; }
+.btn.purple { background-image: linear-gradient(180deg, rgba(255,255,255,.18) 0%, transparent 50%), linear-gradient(180deg,#d48fff,#7b2be2) !important; box-shadow: 0 3px 0 #3e0080, 0 6px 20px rgba(123,47,247,.35), inset 0 1px 0 rgba(255,255,255,.2) !important; }
+.btn.purple:hover { box-shadow: 0 6px 0 #3e0080, 0 10px 28px rgba(123,47,247,.5) !important; }
+
+/* ── HUD ── */
+#hud-top {
+  background: linear-gradient(to bottom, rgba(6,6,26,.96) 0%, rgba(6,6,26,.0) 100%) !important;
+  padding: .8rem 1.2rem !important;
+}
+#hud-bottom {
+  background: linear-gradient(to top, rgba(6,6,26,.96) 0%, rgba(6,6,26,.0) 100%) !important;
+  padding: .8rem 1.2rem 1rem !important;
+}
+
+/* HUD card glassmorphism */
+.hud-card {
+  background: rgba(14,10,40,.72) !important;
+  border: 1px solid rgba(255,255,255,.12) !important;
+  border-radius: 14px !important;
+  padding: .6rem 1rem !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.08) !important;
+}
+
+/* Barres HP/MP/XP */
+.bar-wrap {
+  height: 16px !important;
+  border-radius: 999px !important;
+  background: rgba(0,0,0,.5) !important;
+  border: 1px solid rgba(255,255,255,.15) !important;
+  box-shadow: inset 0 2px 6px rgba(0,0,0,.7) !important;
+  overflow: hidden !important;
+}
+.bar-fill {
+  border-radius: 999px !important;
+  transition: width .4s var(--ease-out) !important;
+  position: relative !important;
+}
+.bar-fill.hp {
+  background: linear-gradient(90deg, #ff2244, #ff6b9d, #ff2244) !important;
+  background-size: 200% !important;
+  animation: shimmer 3s linear infinite !important;
+  box-shadow: 0 0 12px rgba(255,50,80,.6) !important;
+}
+.bar-fill.mp {
+  background: linear-gradient(90deg, #4cc9f0, #c77dff, #4cc9f0) !important;
+  background-size: 200% !important;
+  animation: shimmer 3s linear infinite reverse !important;
+  box-shadow: 0 0 12px rgba(76,201,240,.5) !important;
+}
+.bar-fill.xp {
+  background: linear-gradient(90deg, #ffd60a, #ff9a3c, #ffd60a) !important;
+  background-size: 200% !important;
+  animation: shimmer 2.5s linear infinite !important;
+  box-shadow: 0 0 12px rgba(255,214,10,.5) !important;
+}
+
+#player-name-hud {
+  background: rgba(14,10,40,.82) !important;
+  border: 1px solid rgba(255,214,10,.45) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 0 20px rgba(255,214,10,.18), inset 0 1px 0 rgba(255,255,255,.08) !important;
+  backdrop-filter: blur(16px) !important;
+}
+
+#gold-display {
+  background: rgba(30,22,5,.75) !important;
+  border: 1px solid rgba(255,214,10,.4) !important;
+  border-radius: 999px !important;
+  box-shadow: 0 0 14px rgba(255,214,10,.2) !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+#message-box {
+  background: rgba(10,8,30,.82) !important;
+  border: 1px solid rgba(76,201,240,.2) !important;
+  border-radius: 12px !important;
+  backdrop-filter: blur(20px) !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.05) !important;
+  font-size: .9rem !important;
+}
+
+/* Kill bar */
+#kill-counter-hud {
+  background: rgba(14,10,40,.8) !important;
+  border: 1px solid rgba(255,214,10,.3) !important;
+  border-radius: 10px !important;
+  backdrop-filter: blur(14px) !important;
+}
+
+/* ── MENU PANEL (setup/titre) — glassmorphism ── */
+.menu-panel {
+  background: rgba(14,10,42,.82) !important;
+  border: 1px solid rgba(199,125,255,.25) !important;
+  border-radius: 20px !important;
+  padding: 2rem 2.2rem !important;
+  width: min(500px,96vw) !important;
+  backdrop-filter: blur(28px) !important;
+  -webkit-backdrop-filter: blur(28px) !important;
+  box-shadow: var(--shadow-panel), inset 0 1px 0 rgba(255,255,255,.08) !important;
+  animation: pop-in .35s var(--ease-out) !important;
+}
+.menu-title {
+  font-size: .75rem !important;
+  color: var(--c-gold) !important;
+  text-shadow: 0 0 20px rgba(255,214,10,.5), 2px 2px 0 rgba(200,0,0,.5) !important;
+  border-bottom: 1px solid rgba(255,214,10,.2) !important;
+  padding-bottom: .9rem !important;
+}
+.game-input {
+  background: rgba(255,255,255,.06) !important;
+  border: 1px solid rgba(76,201,240,.35) !important;
+  border-radius: 10px !important;
+  padding: .75rem 1.1rem !important;
+  font-size: 1rem !important;
+  transition: border-color .2s, box-shadow .2s !important;
+}
+.game-input:focus {
+  border-color: rgba(255,214,10,.7) !important;
+  box-shadow: 0 0 16px rgba(255,214,10,.2) !important;
+  outline: none !important;
+}
+.class-btn {
+  background: rgba(255,255,255,.04) !important;
+  border: 1px solid rgba(255,255,255,.12) !important;
+  border-radius: 14px !important;
+  transition: all .2s var(--ease-spring) !important;
+}
+.class-btn:hover {
+  background: rgba(255,214,10,.08) !important;
+  border-color: rgba(255,214,10,.5) !important;
+  transform: translateY(-3px) scale(1.02) !important;
+  box-shadow: 0 8px 24px rgba(255,214,10,.15) !important;
+}
+.class-btn.selected {
+  background: linear-gradient(135deg, rgba(255,214,10,.12), rgba(255,100,30,.08)) !important;
+  border-color: rgba(255,214,10,.6) !important;
+  box-shadow: 0 0 24px rgba(255,214,10,.2), inset 0 1px 0 rgba(255,255,255,.1) !important;
+}
+
+/* ── BATTLE SCREEN ── */
+#screen-battle {
+  background: radial-gradient(ellipse at 50% 50%, rgba(30,15,60,.6) 0%, rgba(6,6,26,.85) 100%) !important;
+}
+
+.combatant {
+  background: rgba(14,10,42,.8) !important;
+  border: 1px solid rgba(255,255,255,.12) !important;
+  border-radius: 20px !important;
+  padding: 1.1rem 1.6rem !important;
+  backdrop-filter: blur(20px) !important;
+  box-shadow: var(--shadow-card), inset 0 1px 0 rgba(255,255,255,.08) !important;
+  transition: box-shadow .3s !important;
+}
+.combatant:first-child { border-color: rgba(76,201,240,.25) !important; box-shadow: var(--shadow-card), 0 0 30px rgba(76,201,240,.1) !important; }
+.combatant:last-child  { border-color: rgba(230,57,70,.25)  !important; box-shadow: var(--shadow-card), 0 0 30px rgba(230,57,70,.1)  !important; }
+
+.hp-battle {
+  height: 14px !important;
+  background: rgba(0,0,0,.55) !important;
+  border: 1px solid rgba(255,255,255,.15) !important;
+  border-radius: 999px !important;
+  overflow: hidden !important;
+  width: 200px !important;
+}
+.hp-battle-fill {
+  background: linear-gradient(90deg, #00e676, #00bfa5) !important;
+  box-shadow: 0 0 10px rgba(0,230,118,.6) !important;
+  transition: width .5s var(--ease-out), background .5s !important;
+}
+
+#battle-log {
+  background: rgba(10,8,32,.88) !important;
+  border: 1px solid rgba(255,255,255,.1) !important;
+  border-radius: 14px !important;
+  backdrop-filter: blur(16px) !important;
+  box-shadow: 0 4px 24px rgba(0,0,0,.5) !important;
+  font-size: .92rem !important;
+  padding: .9rem 1.5rem !important;
+}
+#battle-actions .btn { font-size: .55rem !important; padding: .6rem 1.1rem !important; }
+
+/* ── SHOP ── */
+#screen-shop { background: radial-gradient(ellipse at 50% 0%, rgba(80,60,0,.25) 0%, rgba(6,6,26,.97) 70%) !important; }
+.shop-panel {
+  background: rgba(18,14,8,.85) !important;
+  border: 1px solid rgba(255,214,10,.3) !important;
+  border-radius: 20px !important;
+  padding: 1.8rem !important;
+  width: min(520px,96vw) !important;
+  backdrop-filter: blur(24px) !important;
+  box-shadow: var(--shadow-panel), 0 0 50px rgba(255,214,10,.08) !important;
+  animation: pop-in .3s var(--ease-out) !important;
+}
+.shop-title { font-size: .75rem !important; text-shadow: 0 0 20px rgba(255,214,10,.4) !important; }
+.shop-item {
+  background: rgba(255,255,255,.04) !important;
+  border: 1px solid rgba(255,255,255,.08) !important;
+  border-radius: 12px !important;
+  padding: .75rem 1rem !important;
+  transition: all .2s var(--ease-spring) !important;
+}
+.shop-item:hover {
+  background: rgba(255,214,10,.07) !important;
+  border-color: rgba(255,214,10,.4) !important;
+  transform: translateX(4px) !important;
+  box-shadow: 0 0 16px rgba(255,214,10,.12) !important;
+}
+.shop-item-btn {
+  background: linear-gradient(180deg,#ffe535,#d4a000) !important;
+  border: none !important;
+  border-radius: 8px !important;
+  box-shadow: 0 3px 0 #7a5c00, 0 0 14px rgba(255,214,10,.3) !important;
+  font-family: 'Press Start 2P', monospace !important;
+  font-size: .44rem !important;
+  padding: .45rem .9rem !important;
+  color: #1a1200 !important;
+  cursor: pointer !important;
+  transition: transform .15s var(--ease-spring), box-shadow .15s !important;
+}
+.shop-item-btn:hover { transform: translateY(-2px) !important; box-shadow: 0 5px 0 #7a5c00, 0 0 20px rgba(255,214,10,.4) !important; }
+
+/* ── INVENTORY ── */
+#screen-inventory { background: radial-gradient(ellipse at 50% 0%, rgba(20,40,80,.2) 0%, rgba(6,6,26,.97) 70%) !important; }
+.inv-container { width: min(860px,97vw) !important; animation: pop-in .3s var(--ease-out) !important; }
+.inv-tab {
+  background: rgba(255,255,255,.04) !important;
+  border: 1px solid rgba(255,255,255,.1) !important;
+  border-radius: 10px 10px 0 0 !important;
+  transition: all .2s !important;
+  font-size: .5rem !important;
+  padding: .55rem 1.1rem !important;
+}
+.inv-tab.active {
+  background: rgba(76,201,240,.12) !important;
+  border-color: rgba(76,201,240,.5) !important;
+  color: var(--c-blue) !important;
+  box-shadow: 0 0 16px rgba(76,201,240,.15) !important;
+}
+.inv-content {
+  background: rgba(12,10,32,.88) !important;
+  border: 1px solid rgba(255,255,255,.08) !important;
+  border-radius: 0 14px 14px 14px !important;
+  backdrop-filter: blur(20px) !important;
+  padding: 1.4rem !important;
+}
+.item-card {
+  background: rgba(255,255,255,.04) !important;
+  border: 1px solid rgba(255,255,255,.1) !important;
+  border-radius: 12px !important;
+  transition: all .2s var(--ease-spring) !important;
+}
+.item-card:hover {
+  background: rgba(255,214,10,.08) !important;
+  border-color: rgba(255,214,10,.5) !important;
+  transform: translateY(-3px) scale(1.03) !important;
+  box-shadow: 0 8px 20px rgba(255,214,10,.15) !important;
+}
+
+/* ── TEAM ── */
+#screen-team { background: rgba(6,6,26,1) !important; }
+#team-left-panel {
+  background: rgba(10,8,28,.99) !important;
+  border-right: 1px solid rgba(255,214,10,.2) !important;
+}
+.team-row-card {
+  background: rgba(255,255,255,.04) !important;
+  border: 1px solid rgba(255,255,255,.1) !important;
+  border-radius: 14px !important;
+  transition: all .2s var(--ease-spring) !important;
+}
+.team-row-card:hover {
+  background: rgba(255,214,10,.07) !important;
+  border-color: rgba(255,214,10,.4) !important;
+  transform: translateX(4px) !important;
+  box-shadow: 0 4px 18px rgba(255,214,10,.12) !important;
+}
+.team-row-card.active-poke-row {
+  background: rgba(6,214,160,.07) !important;
+  border-color: rgba(6,214,160,.45) !important;
+  box-shadow: 0 0 20px rgba(6,214,160,.15) !important;
+}
+.box-poke-card {
+  background: rgba(255,255,255,.04) !important;
+  border: 1px solid rgba(255,255,255,.1) !important;
+  border-radius: 14px !important;
+  transition: all .2s var(--ease-spring) !important;
+}
+.box-poke-card:hover {
+  border-color: rgba(76,201,240,.5) !important;
+  background: rgba(76,201,240,.07) !important;
+  transform: translateY(-3px) scale(1.03) !important;
+  box-shadow: 0 8px 20px rgba(76,201,240,.15) !important;
+}
+.box-poke-card.selected-box {
+  border-color: rgba(255,214,10,.6) !important;
+  background: rgba(255,214,10,.08) !important;
+  box-shadow: 0 0 20px rgba(255,214,10,.2) !important;
+}
+.pokemon-card {
+  background: rgba(14,10,38,.85) !important;
+  border: 1px solid rgba(255,255,255,.1) !important;
+  border-radius: 16px !important;
+  transition: all .2s var(--ease-spring) !important;
+}
+.pokemon-card:hover {
+  border-color: rgba(255,214,10,.5) !important;
+  transform: translateY(-4px) !important;
+  box-shadow: 0 12px 30px rgba(255,214,10,.15) !important;
+}
+.pokemon-card.shiny-card {
+  border-color: rgba(255,215,0,.55) !important;
+  background: linear-gradient(135deg, rgba(40,32,5,.85), rgba(22,18,3,.8)) !important;
+  box-shadow: 0 0 24px rgba(255,215,0,.3) !important;
+}
+
+/* ── SIDE MENU ── */
+#side-menu-panel {
+  background: rgba(10,7,32,.92) !important;
+  border-left: 1px solid rgba(199,125,255,.25) !important;
+  backdrop-filter: blur(30px) !important;
+  -webkit-backdrop-filter: blur(30px) !important;
+  box-shadow: -16px 0 60px rgba(0,0,0,.85), -4px 0 40px rgba(123,47,247,.2) !important;
+  animation: slide-in-right .3s var(--ease-out) !important;
+}
+
+/* ── SCREENS THÉMATIQUES ── */
+#screen-talents {
+  background: radial-gradient(ellipse 70% 50% at 50% 0%, rgba(100,30,220,.18) 0%, rgba(6,6,26,.98) 65%) !important;
+}
+#screen-talents > div:first-child {
+  background: linear-gradient(135deg, rgba(80,20,180,.22), rgba(40,10,100,.15)) !important;
+  border-bottom: 1px solid rgba(199,125,255,.3) !important;
+}
+#screen-quests {
+  background: radial-gradient(ellipse 70% 50% at 50% 0%, rgba(6,140,100,.15) 0%, rgba(6,6,26,.98) 65%) !important;
+}
+#screen-quests > div:first-child {
+  background: linear-gradient(135deg, rgba(5,100,70,.2), rgba(3,60,45,.12)) !important;
+  border-bottom: 1px solid rgba(6,214,160,.3) !important;
+}
+#screen-achievements {
+  background: radial-gradient(ellipse 70% 50% at 50% 0%, rgba(150,100,0,.15) 0%, rgba(6,6,26,.98) 65%) !important;
+}
+#screen-achievements > div:first-child {
+  background: linear-gradient(135deg, rgba(100,70,0,.2), rgba(60,40,0,.12)) !important;
+  border-bottom: 1px solid rgba(255,214,10,.3) !important;
+}
+#screen-forge {
+  background: radial-gradient(ellipse 70% 50% at 50% 0%, rgba(150,60,10,.16) 0%, rgba(6,6,26,.98) 65%) !important;
+}
+#screen-forge > div:first-child {
+  background: linear-gradient(135deg, rgba(100,40,5,.22), rgba(60,25,3,.14)) !important;
+  border-bottom: 1px solid rgba(255,154,60,.3) !important;
+}
+#screen-prestige {
+  background:
+    radial-gradient(ellipse 50% 40% at 25% 30%, rgba(255,214,10,.1) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 40% at 75% 70%, rgba(255,100,20,.08) 0%, transparent 50%),
+    rgba(6,6,26,.98) !important;
+}
+#screen-prestige > div:first-child {
+  background: linear-gradient(135deg, rgba(120,90,0,.22), rgba(80,50,0,.14)) !important;
+  border-bottom: 1px solid rgba(255,214,10,.35) !important;
+}
+#screen-breeding {
+  background: radial-gradient(ellipse 70% 50% at 50% 0%, rgba(180,60,130,.14) 0%, rgba(6,6,26,.98) 65%) !important;
+}
+#screen-breeding > div:first-child {
+  background: linear-gradient(135deg, rgba(110,25,70,.22), rgba(70,15,50,.14)) !important;
+  border-bottom: 1px solid rgba(255,136,204,.3) !important;
+}
+#screen-pokedex {
+  background: radial-gradient(ellipse 70% 50% at 50% 0%, rgba(180,30,50,.14) 0%, rgba(6,6,26,.98) 65%) !important;
+}
+#screen-skills {
+  background: radial-gradient(ellipse 70% 50% at 50% 0%, rgba(30,100,180,.14) 0%, rgba(6,6,26,.98) 65%) !important;
+}
+
+/* ── HEADERS INTERNES UNIFORMES ── */
+#screen-talents  > div:first-child,
+#screen-quests   > div:first-child,
+#screen-achievements > div:first-child,
+#screen-forge    > div:first-child,
+#screen-skills   > div:first-child,
+#screen-prestige > div:first-child,
+#screen-breeding > div:first-child,
+#screen-pokedex  > div:first-child > div:first-child {
+  padding: 1.1rem 2rem !important;
+  min-height: 70px !important;
+  backdrop-filter: blur(10px) !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+/* ── NOTIFICATIONS ── */
+#notif {
+  background: linear-gradient(135deg, #ffe535, #ff9a3c) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 8px 0 rgba(100,60,0,.6), 0 0 40px rgba(255,214,10,.35) !important;
+  font-size: .55rem !important;
+  padding: .7rem 2rem !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+/* ── POKEMON DETAIL ── */
+.pd-move-card {
+  background: rgba(255,255,255,.04) !important;
+  border: 1px solid rgba(255,255,255,.1) !important;
+  border-radius: 12px !important;
+  transition: all .2s var(--ease-spring) !important;
+}
+.pd-move-card:hover {
+  background: rgba(255,214,10,.07) !important;
+  border-color: rgba(255,214,10,.4) !important;
+  transform: translateX(4px) !important;
+}
+.pd-move-card.selected {
+  background: rgba(76,201,240,.1) !important;
+  border-color: rgba(76,201,240,.5) !important;
+  box-shadow: 0 0 16px rgba(76,201,240,.2) !important;
+}
+
+/* ── MAP ── */
+#map-sidebar {
+  background: rgba(10,8,28,.97) !important;
+  border-right: 1px solid rgba(255,214,10,.2) !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+/* ── MODAUX ── */
+#pre-battle-menu > div,
+#tour-reward-modal > div {
+  background: rgba(12,10,36,.95) !important;
+  border: 1px solid rgba(255,214,10,.35) !important;
+  border-radius: 20px !important;
+  backdrop-filter: blur(30px) !important;
+  box-shadow: var(--shadow-panel), 0 0 60px rgba(255,214,10,.1) !important;
+  animation: pop-in .3s var(--ease-out) !important;
+}
+
+/* ── SWITCH POKEMON ── */
+.switch-poke-card {
+  background: rgba(14,10,40,.9) !important;
+  border: 1px solid rgba(255,255,255,.1) !important;
+  border-radius: 14px !important;
+  transition: all .2s var(--ease-spring) !important;
+  backdrop-filter: blur(16px) !important;
+}
+.switch-poke-card:hover {
+  border-color: rgba(255,214,10,.5) !important;
+  transform: translateY(-3px) scale(1.04) !important;
+  box-shadow: 0 8px 24px rgba(255,214,10,.15) !important;
+}
+
+/* ── STAT BARS ── */
+.stat-bar-track {
+  height: 11px !important;
+  background: rgba(0,0,0,.5) !important;
+  border: 1px solid rgba(255,255,255,.1) !important;
+  border-radius: 999px !important;
+}
+.stat-bar-fill { border-radius: 999px !important; }
+
+/* ── TEAM TABS ── */
+.team-tab {
+  transition: all .2s !important;
+  font-size: .46rem !important;
+}
+.team-tab.active-tab {
+  color: var(--c-gold) !important;
+  border-bottom: 2px solid var(--c-gold) !important;
+}
+
+/* ── ZONE LABEL ── */
+#zone-label {
+  background: rgba(12,10,38,.92) !important;
+  border: 1px solid rgba(255,214,10,.5) !important;
+  border-radius: 12px !important;
+  backdrop-filter: blur(16px) !important;
+  box-shadow: 0 0 30px rgba(255,214,10,.2) !important;
+}
+
+/* ── SCROLLBARS ── */
+::-webkit-scrollbar { width: 5px !important; }
+::-webkit-scrollbar-track { background: rgba(255,255,255,.03) !important; border-radius: 999px !important; }
+::-webkit-scrollbar-thumb { background: linear-gradient(180deg, rgba(199,125,255,.5), rgba(123,47,247,.35)) !important; border-radius: 999px !important; }
+::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg, rgba(199,125,255,.8), rgba(123,47,247,.6)) !important; }
+
+/* ── TYPE BADGES modernisés ── */
+.poke-type-badge, .atk-elem-badge {
+  border-radius: 6px !important;
+  font-size: .42rem !important;
+  padding: .22rem .6rem !important;
+  letter-spacing: .05em !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+/* ── SCREEN TRANSITIONS ── */
+.screen { transition: opacity .4s var(--ease-out) !important; }
+
+/* ══════════════════════════════════════════
+   CORRECTIONS & AMÉLIORATIONS V2
+   ══════════════════════════════════════════ */
+
+/* ── GRIDS — empêche les cartes de s'étirer verticalement ── */
+#forge-content,
+#achievements-content,
+#prestige-shop-content {
+  align-content: start !important;
+}
+
+/* ── FORGE ── */
+#screen-forge {
+  background:
+    radial-gradient(ellipse 60% 40% at 20% 20%, rgba(255,100,20,.12) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 40% at 80% 80%, rgba(255,60,0,.08)  0%, transparent 50%),
+    rgba(6,6,26,.98) !important;
+}
+/* Chaque carte de forge */
+#forge-content > div {
+  border-radius: 16px !important;
+  padding: 1rem 1.2rem !important;
+  transition: transform .2s var(--ease-spring), box-shadow .2s, border-color .2s !important;
+  background: rgba(25,14,6,.82) !important;
+  backdrop-filter: blur(12px) !important;
+}
+#forge-content > div:hover {
+  transform: translateY(-3px) !important;
+  box-shadow: 0 8px 24px rgba(255,100,20,.2) !important;
+  border-color: rgba(255,154,60,.7) !important;
+}
+
+/* ── QUÊTES ── */
+#screen-quests {
+  background:
+    radial-gradient(ellipse 70% 40% at 50% 0%, rgba(6,214,160,.12) 0%, transparent 60%),
+    rgba(6,6,26,.98) !important;
+}
+#quests-content > div {
+  border-radius: 14px !important;
+  transition: transform .2s var(--ease-spring), box-shadow .2s !important;
+  backdrop-filter: blur(10px) !important;
+}
+#quests-content > div:hover {
+  transform: translateX(5px) !important;
+  box-shadow: 0 4px 20px rgba(6,214,160,.15) !important;
+}
+
+/* ── SUCCÈS ── */
+#achievements-content > div {
+  border-radius: 14px !important;
+  transition: transform .2s var(--ease-spring), box-shadow .2s, border-color .2s !important;
+  backdrop-filter: blur(10px) !important;
+}
+#achievements-content > div:hover {
+  transform: translateY(-2px) scale(1.02) !important;
+  box-shadow: 0 6px 20px rgba(255,214,10,.15) !important;
+}
+
+/* ── PRESTIGE ── */
+#prestige-info {
+  background: linear-gradient(135deg, rgba(255,214,10,.07), rgba(255,120,0,.05)) !important;
+  border: 1px solid rgba(255,214,10,.25) !important;
+  border-radius: 16px !important;
+  backdrop-filter: blur(12px) !important;
+}
+#prestige-shop-content > div {
+  border-radius: 14px !important;
+  background: rgba(20,14,5,.82) !important;
+  transition: transform .2s var(--ease-spring), box-shadow .2s !important;
+  backdrop-filter: blur(10px) !important;
+}
+#prestige-shop-content > div:hover {
+  transform: translateY(-3px) !important;
+  box-shadow: 0 8px 24px rgba(255,214,10,.18) !important;
+}
+
+/* ── ÉLEVAGE (BREEDING) ── */
+#screen-breeding {
+  background:
+    radial-gradient(ellipse 70% 50% at 30% 20%, rgba(255,136,204,.1) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 40% at 70% 80%, rgba(199,125,255,.08) 0%, transparent 50%),
+    rgba(6,6,26,.98) !important;
+}
+#breeding-slots-display > div {
+  border-radius: 18px !important;
+  backdrop-filter: blur(14px) !important;
+  transition: transform .2s var(--ease-spring), box-shadow .2s !important;
+}
+#breeding-slots-display > div:hover {
+  transform: scale(1.04) !important;
+  box-shadow: 0 8px 28px rgba(255,136,204,.2) !important;
+}
+#breeding-roster > div {
+  border-radius: 14px !important;
+  transition: transform .2s var(--ease-spring), box-shadow .2s !important;
+  backdrop-filter: blur(10px) !important;
+}
+#breeding-roster > div:hover {
+  transform: translateY(-3px) scale(1.04) !important;
+  box-shadow: 0 8px 20px rgba(255,136,204,.2) !important;
+}
+
+/* ── ARBRE DE COMPÉTENCES ── */
+#screen-skills {
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 0%, rgba(58,134,255,.12) 0%, transparent 60%),
+    rgba(6,6,26,.98) !important;
+}
+#skill-tree-content > div {
+  border-radius: 14px !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+/* ── SIDE MENU TILES ── */
+.smtile {
+  background: rgba(255,255,255,.05) !important;
+  border: 1px solid rgba(255,255,255,.1) !important;
+  border-radius: 16px !important;
+  transition: all .2s var(--ease-spring) !important;
+}
+.smtile:hover {
+  background: rgba(255,255,255,.1) !important;
+  border-color: rgba(255,255,255,.25) !important;
+  transform: scale(1.06) translateY(-2px) !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,.4), 0 0 20px rgba(199,125,255,.15) !important;
+}
+.smtile:active {
+  transform: scale(.96) !important;
+}
+
+/* ── POKEDEX ── */
+#screen-pokedex {
+  background:
+    radial-gradient(ellipse 60% 40% at 20% 20%, rgba(230,57,70,.1) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 40% at 80% 80%, rgba(255,100,50,.07) 0%, transparent 50%),
+    rgba(6,6,26,.98) !important;
+}
+
+/* ── TOUR MODE ── */
+#screen-tour {
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 0%, rgba(255,214,10,.1) 0%, transparent 60%),
+    rgba(6,6,26,.98) !important;
+}
+
+/* ── TALENTS — améliore les cartes de la liste ── */
+#talent-poke-list > div {
+  border-radius: 12px !important;
+  transition: all .2s var(--ease-spring) !important;
+  backdrop-filter: blur(8px) !important;
+}
+#talent-poke-list > div:hover {
+  transform: translateX(4px) !important;
+  box-shadow: 0 4px 16px rgba(199,125,255,.15) !important;
+}
+
+/* Cartes info talents (index droit) */
+#talent-odds-list > div {
+  border-radius: 10px !important;
+  transition: all .18s !important;
+}
+#talent-odds-list > div:hover {
+  transform: translateX(-3px) !important;
+}
+
+/* ── MAP ZONES ── */
+.map-zone-btn {
+  transition: transform .2s var(--ease-spring), filter .2s !important;
+}
+.map-zone-btn:hover {
+  transform: scale(1.08) !important;
+  filter: brightness(1.2) drop-shadow(0 0 8px currentColor) !important;
+}
+
+/* ── HEADER RETOUR BOUTON — uniformisation ── */
+#screen-forge    button[onclick*="showScreen('game')"],
+#screen-quests   button[onclick*="showScreen('game')"],
+#screen-achievements button[onclick*="showScreen('game')"],
+#screen-prestige button[onclick*="showScreen('game')"],
+#screen-breeding button[onclick*="showScreen('game')"],
+#screen-skills   button[onclick*="showScreen('game')"],
+#screen-talents  button[onclick*="showScreen('game')"] {
+  background: linear-gradient(180deg, rgba(80,80,80,.8), rgba(40,40,40,.9)) !important;
+  border: 1px solid rgba(255,255,255,.12) !important;
+  box-shadow: 0 2px 0 rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.1) !important;
+}
+
+/* ── BATTLE ACTIONS — espacement amélioré ── */
+#battle-actions {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: .5rem !important;
+  justify-content: center !important;
+}
+
+/* ── MODALE SWITCH POKEMON ── */
+#switch-modal > div,
+#catch-modal > div {
+  background: rgba(12,10,36,.96) !important;
+  border: 1px solid rgba(255,255,255,.15) !important;
+  border-radius: 20px !important;
+  backdrop-filter: blur(30px) !important;
+  box-shadow: var(--shadow-panel) !important;
+  animation: pop-in .3s var(--ease-out) !important;
+}
+
+/* ── ÉVOLUTION SCREEN ── */
+#screen-evo {
+  background:
+    radial-gradient(ellipse at 50% 50%, rgba(255,214,10,.2) 0%, rgba(255,100,0,.12) 40%, rgba(6,6,26,.95) 70%) !important;
+}
+
+/* ── LOADING / TITRE ── */
+#screen-title {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 30%, rgba(123,47,247,.25) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 80%, rgba(76,201,240,.12) 0%, transparent 50%),
+    rgba(4,4,18,.98) !important;
+}
+
+/* ── ANIMATION ENTRÉE SCREENS ── */
+.screen.active {
+  animation: screen-fade-in .35s var(--ease-out) !important;
+}
+@keyframes screen-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
