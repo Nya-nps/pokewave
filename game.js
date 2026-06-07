@@ -3803,7 +3803,8 @@ function rollTalent(count=1) {
 
   const results = [];
   for (let i = 0; i < count; i++) {
-    if (p.talents.length >= MAX_TALENTS_PER_POKE) break;
+    // drawTalent gère lui-même le remplacement si le slot est plein —
+    // on ne break jamais : chaque lancer garantit au moins 1 talent
     const drawn = drawTalent(p);
     results.push(drawn);
   }
