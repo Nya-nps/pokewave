@@ -43,7 +43,7 @@ const SPRITE_BACK  = id => `${SPRITE_BASE}back/${id}.png`;
 const SPRITE_SHINY = id => `${SPRITE_BASE}shiny/${id}.png`;
 
 // ── SHINY ──
-const SHINY_ODDS = 1048; // 1/1048 (taux officiel Gen 6+)
+const SHINY_ODDS = 256; // 1/256
 function rollShiny() { return Math.floor(Math.random() * SHINY_ODDS) === 0; }
 function applyShinyBoost(poke) {
   // +15% on atk, def, spd, magic, hp
@@ -1109,7 +1109,7 @@ function startGame() {
   initDexFromRoster();
   const shinyMsg = starterIsShiny ? ' ✨ INCROYABLE ! Votre starter est SHINY !' : '';
   setMessage(`Bienvenue Dresseur ${player.name} ! ${player.cls} est prêt pour l'aventure !${shinyMsg}`);
-  if (starterIsShiny) notify('✨ SHINY ! Rare 1/1048 !');
+  if (starterIsShiny) notify('✨ SHINY ! Rare 1/256 !');
   
 }
 
