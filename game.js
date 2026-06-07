@@ -1269,6 +1269,7 @@ function addCapturedToRoster(capturedData) {
   }
   // Stats
   if (newPoke.isShiny) player.shinyCount = (player.shinyCount||0) + 1;
+  markDexSeen(capturedData.id);   // débloque l'entrée Pokédex à la capture
   updateGlobalStats('catches');
   checkAchievements();
 }
@@ -4742,13 +4743,7 @@ function showDexDetail(pokeId) {
   document.body.appendChild(modal);
 }
 
-// Auto-mark dex when capturing a pokemon
-const _origAddCaptured = addCapturedToRoster;
-function addCapturedToRoster(capturedData) {
-  _origAddCaptured(capturedData);
-  markDexSeen(capturedData.id);
-  // Also mark starter on game start — done via initDexFromRoster
-}
+// markDexSeen est appelé directement dans addCapturedToRoster (plus de wrapper récursif)
 
 function initDexFromRoster() {
   if (!player) return;
