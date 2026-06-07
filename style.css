@@ -69,8 +69,8 @@ body.menu #bg-img{opacity:0.55;filter:blur(3px) brightness(.8)}
 
 /* ── POKEMON SPRITE DISPLAY ── */
 .poke-display{width:96px;height:96px;image-rendering:pixelated;image-rendering:crisp-edges}
-.poke-display-lg{width:140px;height:140px;image-rendering:pixelated;filter:drop-shadow(0 0 20px rgba(255,214,10,0.7));animation:pokeBounce 2s ease-in-out infinite}
-.poke-display-enemy{width:140px;height:140px;image-rendering:pixelated;filter:drop-shadow(0 0 20px rgba(230,57,70,0.6));animation:pokeBounce 1.8s ease-in-out infinite;animation-delay:-0.9s}
+.poke-display-lg{width:140px;height:140px;image-rendering:pixelated;filter:drop-shadow(0 0 20px rgba(255,214,10,0.7));animation:pokeBounce 2s ease-in-out infinite;will-change:transform}
+.poke-display-enemy{width:140px;height:140px;image-rendering:pixelated;filter:drop-shadow(0 0 20px rgba(230,57,70,0.6));animation:pokeBounce 1.8s ease-in-out infinite;animation-delay:-0.9s;will-change:transform}
 @keyframes pokeBounce{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-14px) scale(1.06)}}
 @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-10px)}40%{transform:translateX(10px)}60%{transform:translateX(-8px)}80%{transform:translateX(8px)}}
 @keyframes flashWhite{0%,100%{filter:none}50%{filter:brightness(10) saturate(0)}}
@@ -110,7 +110,7 @@ body.menu #bg-img{opacity:0.55;filter:blur(3px) brightness(.8)}
 .hud-card{background:rgba(10,10,30,.75);border:2px solid var(--border);border-radius:10px;padding:.55rem .9rem;backdrop-filter:blur(8px)}
 .stat-name-hud{font-family:'Press Start 2P',monospace;font-size:.55rem;letter-spacing:.12em;color:var(--yellow);text-transform:uppercase;margin-bottom:.3rem}
 .bar-wrap{width:220px;height:22px;background:rgba(0,0,0,.55);border-radius:999px;overflow:hidden;border:2px solid rgba(255,255,255,.22);box-shadow:inset 0 3px 6px rgba(0,0,0,.6)}
-.bar-fill{height:100%;border-radius:999px;transition:width .4s ease;box-shadow:0 0 10px currentColor}
+.bar-fill{height:100%;border-radius:999px;transition:width .3s ease;box-shadow:0 0 6px currentColor;will-change:width}
 .bar-fill.hp{background:linear-gradient(90deg,#e63946,#ff6b9d)}
 .bar-fill.mp{background:linear-gradient(90deg,#4cc9f0,#c77dff)}
 .bar-fill.xp{background:linear-gradient(90deg,#ffd60a,#ff9a3c)}
@@ -138,7 +138,7 @@ body.menu #bg-img{opacity:0.55;filter:blur(3px) brightness(.8)}
 .combatant-name{font-family:'Press Start 2P',monospace;font-size:.72rem;color:var(--yellow);text-shadow:1px 1px 0 #000}
 .combatant-level{font-family:'Press Start 2P',monospace;font-size:.52rem;color:rgba(255,255,255,.6)}
 .hp-battle{width:180px;height:18px;background:rgba(0,0,0,.5);border-radius:999px;border:2px solid rgba(255,255,255,.2);overflow:hidden;margin-top:.2rem;box-shadow:inset 0 2px 4px rgba(0,0,0,.5)}
-.hp-battle-fill{height:100%;background:linear-gradient(90deg,#2dc653,#06d6a0);border-radius:999px;transition:width .5s ease;box-shadow:0 0 6px #2dc653}
+.hp-battle-fill{height:100%;background:linear-gradient(90deg,#2dc653,#06d6a0);border-radius:999px;transition:width .3s ease;box-shadow:0 0 4px #2dc653;will-change:width}
 .hp-text{font-family:'Press Start 2P',monospace;font-size:.52rem;color:rgba(255,255,255,.6)}
 #battle-log{background:rgba(10,10,30,.85);border:2px solid var(--border);backdrop-filter:blur(8px);padding:.9rem 1.4rem;font-size:.95rem;font-family:'Nunito',sans-serif;font-weight:800;color:var(--white);text-align:center;width:100%;max-width:600px;margin:.5rem auto;min-height:3rem;border-radius:10px;line-height:1.6}
 #battle-actions{display:flex;gap:.55rem;justify-content:center;flex-wrap:wrap;padding-top:.3rem}
@@ -517,6 +517,12 @@ body { background: #07071a !important; }
 .bar-fill.mp  { background: linear-gradient(90deg,#4cc9f0,#c77dff,#4cc9f0) !important; background-size:200% 100% !important; animation: barShimmer 3s linear infinite reverse !important; }
 .bar-fill.xp  { background: linear-gradient(90deg,#ffd60a,#ff9a3c,#ffd60a) !important; background-size:200% 100% !important; animation: barShimmer 2s linear infinite !important; }
 @keyframes barShimmer { 0%{background-position:0% 0%} 100%{background-position:200% 0%} }
+/* Désactiver shimmer sur mobile — trop coûteux */
+@media (max-width: 900px) {
+  .bar-fill.hp { animation: none !important; background: linear-gradient(90deg,#ff3060,#ff6b9d) !important; }
+  .bar-fill.mp { animation: none !important; background: linear-gradient(90deg,#4cc9f0,#c77dff) !important; }
+  .bar-fill.xp { animation: none !important; background: linear-gradient(90deg,#ffd60a,#ff9a3c) !important; }
+}
 
 /* Boutons action HUD */
 #action-btns .btn { box-shadow: 0 4px 0 #0d3580, 0 0 12px rgba(58,134,255,.3) !important; }
@@ -763,6 +769,9 @@ input, select, textarea { font-size: 16px !important; }
   .combatant { min-width: 140px !important; max-width: 46vw !important; padding: .55rem .5rem !important; }
   .poke-display-lg, .poke-display-enemy {
     width: 72px !important; height: 72px !important;
+    /* Désactiver le bounce sur mobile — économise GPU */
+    animation: none !important;
+    will-change: auto !important;
   }
   #battle-log {
     font-size: .76rem !important; max-height: 3.8rem !important;
@@ -858,6 +867,28 @@ input, select, textarea { font-size: 16px !important; }
 
   /* ── COMBATANT zone ── */
   .hp-battle { width: 130px !important; }
+}
+
+/* ══════════════════════════════════════════════════════════
+   PERFORMANCE — désactiver backdrop-filter sur mobile/tablette
+   (chaque blur = couche GPU séparée → lag majeur sur mobile)
+   Les fonds sont déjà quasi-opaques (rgba .95+), diff visuelle nulle
+   ══════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  *, *::before, *::after {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  /* Compenser la perte de flou par un fond légèrement plus opaque */
+  .combatant       { background: rgba(10,10,30,.95) !important; }
+  #battle-log      { background: rgba(10,10,30,.97) !important; }
+  #message-box     { background: rgba(10,10,30,.97) !important; }
+  #player-name-hud { background: rgba(10,10,30,.97) !important; }
+  .hud-card        { background: rgba(10,10,30,.97) !important; }
+  /* Réduire les box-shadow lourdes pendant le combat */
+  .combatant { box-shadow: 0 2px 8px rgba(0,0,0,.6) !important; }
+  /* Suspendre les animations de particules hors-écran principal */
+  #particles { display: none !important; }
 }
 
 /* ── Très petits écrans (≤ 400px) ── */

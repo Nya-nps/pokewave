@@ -1279,18 +1279,31 @@ function addCapturedToRoster(capturedData) {
 // ══════════════════════════════════════════
 // HUD
 // ══════════════════════════════════════════
+// Cache des éléments fréquents — évite 80+ getElementById/frame
+const _hudEls = {};
+function _hud(id) { return _hudEls[id] || (_hudEls[id] = document.getElementById(id)); }
+
+// updateHUD debouncé : plusieurs appels en rafale = 1 seul vrai rendu par frame
+let _hudPending = false;
 function updateHUD() {
   if (!player) return;
-  document.getElementById('player-name-hud').textContent = `${player.currentName} de ${player.name} ✦ Niv.${player.level}`;
-  document.getElementById('gold-val').textContent = player.gold;
+  if (_hudPending) return; // déjà prévu pour ce frame
+  _hudPending = true;
+  requestAnimationFrame(_doUpdateHUD);
+}
+function _doUpdateHUD() {
+  _hudPending = false;
+  if (!player) return;
+  _hud('player-name-hud').textContent = `${player.currentName} de ${player.name} ✦ Niv.${player.level}`;
+  _hud('gold-val').textContent = player.gold;
   setBar('bar-hp','val-hp', player.hp, player.maxHp);
   setBar('bar-xp','val-xp', player.xp, player.xpNext);
   updateHUDTrainer();
   // Tour button in dropdown
-  const tourBtn = document.getElementById('btn-tour-drop');
+  const tourBtn = _hud('btn-tour-drop');
   if (tourBtn) tourBtn.style.display = (player.trainerLevel||1) >= 10 ? 'block' : 'none';
   // Attack uses display
-  const atkDisp = document.getElementById('atk-uses-display');
+  const atkDisp = _hud('atk-uses-display');
   if (atkDisp) {
     const t1 = player.moveElem || player.type;
     const t2 = player.mMoveElem || player.type;
@@ -1299,8 +1312,8 @@ function updateHUD() {
 }
 function setBar(barId, valId, cur, max) {
   const pct = Math.max(0, Math.min(100, (cur/max)*100));
-  document.getElementById(barId).style.width = pct+'%';
-  document.getElementById(valId).textContent = `${Math.ceil(cur)} / ${max}`;
+  _hud(barId).style.width = pct+'%';
+  _hud(valId).textContent = `${Math.ceil(cur)} / ${max}`;
 }
 const eventLog = [];
 let _msgRafPending = false;
@@ -1379,11 +1392,11 @@ function updateKillHUD() {
   if (!player) return;
   const { wave, killsInWave, bossReady, diffMult, killsSinceBoss } = getWaveState();
   const display = Math.min(killsSinceBoss, KILLS_PER_WAVE);
-  const wl = document.getElementById('kill-wave-label');
-  const kl = document.getElementById('kill-count-label');
-  const bf = document.getElementById('kill-bar-fill');
-  const dl = document.getElementById('kill-diff-label');
-  const bb = document.getElementById('btn-boss');
+  const wl = _hud('kill-wave-label');
+  const kl = _hud('kill-count-label');
+  const bf = _hud('kill-bar-fill');
+  const dl = _hud('kill-diff-label');
+  const bb = _hud('btn-boss');
   if (wl) {
     const bossesBeaten = player.lastBossWave || 0;
     const zoneIdx = Math.min(bossesBeaten, ZONE_ORDER.length - 1);
@@ -5069,13 +5082,13 @@ function updateHUDTrainer() {
   const xp = player.trainerXP || 0;
   const xpNext = player.trainerXPNext || TRAINER_XP_PER_LEVEL(1);
   const pct = Math.min(100, Math.round((xp / xpNext) * 100));
-  const badge = document.getElementById('trainer-level-badge');
-  const bar   = document.getElementById('bar-trainer-xp');
-  const val   = document.getElementById('trainer-xp-val');
+  const badge = _hud('trainer-level-badge');
+  const bar   = _hud('bar-trainer-xp');
+  const val   = _hud('trainer-xp-val');
   if (badge) badge.textContent = `Niv.${lv}`;
   if (bar)   bar.style.width = pct + '%';
   if (val)   val.textContent = `${xp}/${xpNext}`;
-  const tourDrop = document.getElementById('btn-tour-drop');
+  const tourDrop = _hud('btn-tour-drop');
   if (tourDrop) tourDrop.style.display = lv >= 10 ? 'block' : 'none';
 }
 // ══════════════════════════════════════════
