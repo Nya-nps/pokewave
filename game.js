@@ -1201,8 +1201,10 @@ function switchToRosterPoke(idx, fromBattle=false) {
 function addCapturedToRoster(capturedData) {
   if (!player.roster) player.roster = [];
   if (!player.box) player.box = [];
-  const pData = GEN1.find(p=>p.id===capturedData.id);
-  const spd = GEN1_SPD[capturedData.id] || 50;
+  const _allPoke = (typeof ALL_POKEMON !== 'undefined') ? ALL_POKEMON : GEN1;
+  const _allSpd  = (typeof ALL_SPD   !== 'undefined') ? ALL_SPD   : GEN1_SPD;
+  const pData = _allPoke.find(p=>p.id===capturedData.id);
+  const spd = _allSpd[capturedData.id] || 50;
   const lvl = capturedData.level || 1;
   const scale = 1 + lvl * 0.12;
   const newPoke = {
@@ -3265,7 +3267,7 @@ function hoverZone(id) {
     z.pokemon.slice(0,12).forEach(pid => {
       const img = document.createElement('img');
       img.src = SPRITE_FRONT(pid); img.className = 'zone-poke-mini';
-      img.title = GEN1.find(p=>p.id===pid)?.n||'';
+      img.title = ((typeof ALL_POKEMON!=='undefined')?ALL_POKEMON:GEN1).find(p=>p.id===pid)?.n||'';
       pd.appendChild(img);
     });
   }
@@ -3855,7 +3857,7 @@ function drawTalent(p) {
 
   // If already has a talent, replace it — reset base stats first to avoid cumulative stacking
   if (p.talents && p.talents.length >= MAX_TALENTS_PER_POKE) {
-    const pData = GEN1.find(d => d.id === (p.spriteId || p.currentSpriteId));
+    const pData = ((typeof ALL_POKEMON!=='undefined')?ALL_POKEMON:GEN1).find(d => d.id === (p.spriteId || p.currentSpriteId));
     if (pData) {
       const lvl = p.level || 1;
       const scale = 1 + (lvl - 1) * 0.08;
@@ -4403,7 +4405,8 @@ function checkBreedingSlots() {
     if (!slot) return;
     if (Date.now() >= slot.endTime) {
       // Hatch!
-      const pData = GEN1.find(p=>p.id===slot.eggId);
+      const _ap = (typeof ALL_POKEMON!=='undefined')?ALL_POKEMON:GEN1;
+      const pData = _ap.find(p=>p.id===slot.eggId);
       if (pData) {
         addCapturedToRoster({
           name:pData.n, id:pData.id, type:pData.t,
@@ -4427,7 +4430,8 @@ function updateBreedingHUD() {
   el.style.display='flex';
   el.innerHTML = active.map(s => {
     const remaining = Math.max(0, Math.ceil((s.endTime-Date.now())/1000));
-    const pData = GEN1.find(p=>p.id===s.eggId);
+    const _apH = (typeof ALL_POKEMON!=='undefined')?ALL_POKEMON:GEN1;
+    const pData = _apH.find(p=>p.id===s.eggId);
     return `<div style="display:flex;align-items:center;gap:.3rem;font-family:'Press Start 2P',monospace;font-size:.32rem;color:rgba(255,255,255,.7)">
       🥚 ${pData?.n||'?'}${s.isShiny?'✨':''} — ${remaining}s
     </div>`;
@@ -4603,7 +4607,8 @@ function renderBreedingScreen() {
   if (slotsEl) {
     slotsEl.innerHTML = breedingSlots.map((s,i) => {
       if (!s) return `<div style="width:140px;height:80px;border:2px dashed rgba(255,255,255,.15);border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'Press Start 2P',monospace;font-size:.35rem;color:rgba(255,255,255,.3)">Slot ${i+1} libre</div>`;
-      const pData = GEN1.find(p=>p.id===s.eggId);
+      const _apR = (typeof ALL_POKEMON!=='undefined')?ALL_POKEMON:GEN1;
+      const pData = _apR.find(p=>p.id===s.eggId);
       const remaining = Math.max(0, Math.ceil((s.endTime-Date.now())/1000));
       const pct = Math.min(100, Math.round(((BREEDING_TIME-(s.endTime-Date.now()))/BREEDING_TIME)*100));
       return `<div style="width:140px;border:2px solid #ff88cc;border-radius:10px;padding:.5rem;background:rgba(255,136,204,.1)">
