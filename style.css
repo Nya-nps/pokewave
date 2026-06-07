@@ -696,3 +696,182 @@ body { background: #07071a !important; }
 #evo-sprite{width:160px;height:160px;image-rendering:pixelated;animation:evoSpin 0.4s linear infinite}
 @keyframes evoSpin{from{filter:brightness(10) saturate(0)}to{filter:brightness(1) saturate(1)}}
 #evo-text{font-family:'Press Start 2P',monospace;font-size:.9rem;color:var(--white);text-shadow:3px 3px 0 #000;text-align:center;line-height:2}
+/* ══════════════════════════════════════════════════════
+   ADAPTATION MOBILE — responsive touch-first
+   ══════════════════════════════════════════════════════ */
+
+/* Empêche le zoom iOS sur les inputs */
+input, select, textarea { font-size: 16px !important; }
+
+/* Touch-friendly : pas de double-tap zoom sur les boutons */
+.btn, button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+
+/* ── Tablettes (≤ 900px) ── */
+@media (max-width: 900px) {
+  :root {
+    --fs-xl: 0.68rem; --fs-lg: 0.58rem; --fs-md: 0.50rem;
+    --fs-sm: 0.43rem; --fs-xs: 0.36rem;
+  }
+  .menu-panel  { width: 96vw !important; }
+  .shop-panel  { width: 96vw !important; }
+  .inv-container { width: 98vw !important; }
+  #map-sidebar { width: 240px !important; }
+}
+
+/* ── Mobile (≤ 640px) ── */
+@media (max-width: 640px) {
+  :root {
+    --fs-xl: 0.60rem; --fs-lg: 0.52rem; --fs-md: 0.45rem;
+    --fs-sm: 0.39rem; --fs-xs: 0.33rem;
+    --pad-btn: .65rem .9rem; --pad-btn-sm: .55rem .7rem;
+  }
+
+  /* ── HUD top : panneau avatar compact ── */
+  #hud-top { align-items: flex-start !important; gap: .4rem !important; }
+  #hud-avatar-img { width: 52px !important; height: 52px !important; }
+  /* Panel dresseur à droite — réduit */
+  #hud-top > div:last-child > div:last-child {
+    width: 120px !important; padding: .5rem .65rem !important;
+  }
+  #hud-top > div:last-child > div:last-child > div:first-child > div:first-child { font-size: .38rem !important; }
+  #trainer-level-badge { font-size: .38rem !important; padding: .1rem .35rem !important; }
+  #trainer-xp-val { font-size: .28rem !important; }
+  /* Barres HP/XP moins larges */
+  .bar-wrap { width: clamp(100px, 38vw, 200px) !important; height: 14px !important; }
+  /* Kill bar */
+  #kill-bar-track { width: clamp(55px, 22vw, 100px) !important; }
+  /* Minimap */
+  #minimap { width: 55px !important; height: 42px !important; }
+
+  /* ── HUD bottom : grille 3-4 boutons par ligne ── */
+  #action-btns {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: .3rem !important; padding: .35rem !important;
+  }
+  #action-btns .btn {
+    font-size: .38rem !important; padding: .55rem .25rem !important;
+    min-height: 42px !important; line-height: 1.4 !important;
+  }
+  #message-box { font-size: .78rem !important; max-height: 4.5rem !important; padding: .4rem .6rem !important; }
+
+  /* ── BATTLE ── */
+  #battle-arena {
+    flex-wrap: wrap !important; gap: .4rem !important;
+    justify-content: center !important; padding: .4rem !important;
+  }
+  .combatant { min-width: 140px !important; max-width: 46vw !important; padding: .55rem .5rem !important; }
+  .poke-display-lg, .poke-display-enemy {
+    width: 72px !important; height: 72px !important;
+  }
+  #battle-log {
+    font-size: .76rem !important; max-height: 3.8rem !important;
+    padding: .35rem .55rem !important; margin: 0 .3rem !important;
+  }
+  #battle-actions {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: .3rem !important; padding: .35rem .4rem !important;
+  }
+  #battle-actions .btn {
+    font-size: .37rem !important; padding: .5rem .2rem !important;
+    min-height: 42px !important;
+  }
+  #battle-turn-info { font-size: .38rem !important; padding: .2rem !important; }
+
+  /* ── MAP ── */
+  #screen-map { flex-direction: column !important; }
+  #map-sidebar {
+    width: 100% !important; min-width: 0 !important;
+    max-height: 48vh !important; border-right: none !important;
+    border-bottom: 2px solid rgba(255,214,10,.25) !important;
+    overflow-y: auto !important;
+  }
+  #zone-info-pokes { max-height: 70px !important; overflow-y: auto !important; flex: none !important; }
+  #map-btns { flex-direction: row !important; flex-wrap: wrap !important; padding: .4rem .6rem !important; }
+  #map-btns .btn { font-size: .4rem !important; padding: .5rem .6rem !important; }
+  #map-canvas-wrap { min-height: 220px !important; }
+
+  /* ── SHOP ── */
+  .shop-panel { width: 98vw !important; padding: .8rem .7rem !important; }
+  .shop-items { max-height: 52vh !important; }
+  .shop-item { padding: .45rem .55rem !important; }
+  .shop-item-btn { min-height: 36px !important; }
+
+  /* ── INVENTAIRE ── */
+  .inv-container { width: 99vw !important; padding: .4rem !important; }
+  .inv-tab { padding: .45rem .7rem !important; font-size: .42rem !important; }
+
+  /* ── ÉQUIPE ── */
+  #screen-team { flex-direction: column !important; overflow-y: auto !important; }
+  #team-left-panel {
+    width: 100% !important; border-right: none !important;
+    border-bottom: 2px solid rgba(255,214,10,.3) !important;
+    max-height: 42vh !important; overflow-y: auto !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* ── POKÉDEX ── */
+  #pokedex-grid {
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: .3rem !important; padding: .4rem !important;
+  }
+  #dex-milestones { grid-template-columns: repeat(2, 1fr) !important; }
+
+  /* ── TALENT / QUÊTE / SUCCÈS / FORGE / ÉLEVAGE ── */
+  #screen-talents > div:first-child,
+  #screen-quests > div:first-child,
+  #screen-achievements > div:first-child,
+  #screen-forge > div:first-child,
+  #screen-skills > div:first-child,
+  #screen-prestige > div:first-child,
+  #screen-breeding > div:first-child {
+    padding: .6rem .9rem !important; min-height: 44px !important;
+  }
+  /* Talents : colonne verticale */
+  #screen-talents > div:last-child {
+    flex-direction: column !important; overflow-y: auto !important;
+  }
+  #screen-talents > div:last-child > div:nth-child(1),
+  #screen-talents > div:last-child > div:nth-child(3) {
+    width: 100% !important; max-height: none !important;
+  }
+  /* Skills scroll */
+  #screen-skills { padding: .8rem !important; overflow-y: auto !important; }
+  #skill-tree-content { overflow-x: auto !important; }
+  /* Achievements / forge : 1 colonne */
+  #achievements-content { grid-template-columns: 1fr !important; }
+  #forge-content { grid-template-columns: 1fr !important; }
+  #prestige-shop-content { grid-template-columns: 1fr !important; }
+  #breeding-roster { grid-template-columns: repeat(3, 1fr) !important; }
+
+  /* ── PANNEAU LATÉRAL ── */
+  #side-menu-panel { width: 94vw !important; }
+  #side-menu-panel > div:nth-child(2) { grid-template-columns: repeat(2, 1fr) !important; }
+
+  /* ── MENUS MODAUX ── */
+  .menu-panel { width: 97vw !important; padding: 1rem !important; }
+  #class-grid { max-height: 50vh !important; overflow-y: auto !important; }
+
+  /* ── NOTIFICATION ── */
+  #notif { font-size: .40rem !important; max-width: 92vw !important; word-break: break-word !important; top: .5rem !important; }
+
+  /* ── COMBATANT zone ── */
+  .hp-battle { width: 130px !important; }
+}
+
+/* ── Très petits écrans (≤ 400px) ── */
+@media (max-width: 400px) {
+  :root {
+    --fs-xl: 0.54rem; --fs-lg: 0.46rem; --fs-md: 0.40rem;
+    --fs-sm: 0.34rem; --fs-xs: 0.28rem;
+  }
+  #action-btns { grid-template-columns: repeat(2, 1fr) !important; }
+  #battle-actions { grid-template-columns: repeat(2, 1fr) !important; }
+  .combatant { max-width: 44vw !important; }
+  .poke-display-lg, .poke-display-enemy { width: 60px !important; height: 60px !important; }
+  #hud-avatar-img { width: 40px !important; height: 40px !important; }
+  #hud-top > div:last-child > div:last-child { width: 105px !important; }
+  #pokedex-grid { grid-template-columns: repeat(3, 1fr) !important; }
+  .bar-wrap { width: clamp(80px, 35vw, 150px) !important; }
+}
