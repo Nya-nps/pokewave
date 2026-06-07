@@ -6,7 +6,7 @@
 <title>PokéQuest — Île des Dragons Célestes</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="style.css"/>
-<link rel="stylesheet" href="theme.css?v=2"/>
+<link rel="stylesheet" href="theme.css?v=3"/>
 </head>
 <body class="menu">
 
@@ -84,27 +84,13 @@
     </div>
     <div style="display:flex;flex-direction:column;gap:.4rem">
       <label class="input-label">Pokémon de départ</label>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;justify-content:center;margin-bottom:.3rem">
+        <button class="gen-filter-btn active" data-gen="1" onclick="filterStarterGen(this)">Gen 1</button>
+        <button class="gen-filter-btn" data-gen="2" onclick="filterStarterGen(this)">Gen 2</button>
+        <button class="gen-filter-btn" data-gen="3" onclick="filterStarterGen(this)">Gen 3</button>
+      </div>
       <div class="class-grid" id="class-grid">
-        <div class="class-btn selected" data-class="Évoli">
-          <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/133.png" alt="Évoli"/>
-          Évoli
-          <span class="class-type">Normal · Équilibré</span>
-        </div>
-        <div class="class-btn" data-class="Carapuce">
-          <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/7.png" alt="Carapuce"/>
-          Carapuce
-          <span class="class-type">Eau · Défensif</span>
-        </div>
-        <div class="class-btn" data-class="Salamèche">
-          <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/4.png" alt="Salamèche"/>
-          Salamèche
-          <span class="class-type">Feu · Offensif</span>
-        </div>
-        <div class="class-btn" data-class="Bulbizarre">
-          <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png" alt="Bulbizarre"/>
-          Bulbizarre
-          <span class="class-type">Plante · Soutien</span>
-        </div>
+        <!-- Généré dynamiquement par data.js -->
       </div>
     </div>
     <button class="btn" onclick="startGame()">✦ PARTIR À L'AVENTURE !</button>
@@ -525,5 +511,6 @@
 </div>
 
 <script src="game.js"></script>
+<script src="data.js"></script>
 </body>
 </html>

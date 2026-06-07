@@ -826,3 +826,34 @@ body { background: var(--c-bg) !important; }
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+/* ── Boutons filtre Générations starters ── */
+.gen-filter-btn {
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.18);
+  color: rgba(255,255,255,.7);
+  font-family: 'Press Start 2P', monospace;
+  font-size: .45rem;
+  padding: .35rem .75rem;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all .2s;
+}
+.gen-filter-btn:hover {
+  background: rgba(255,255,255,.15);
+  color: #fff;
+}
+.gen-filter-btn.active {
+  background: linear-gradient(135deg, var(--blue), var(--purple));
+  border-color: var(--blue);
+  color: #fff;
+  box-shadow: 0 0 10px rgba(88,166,255,.4);
+}
+
+/* ── Grid starters scroll si beaucoup de cartes ── */
+#class-grid {
+  max-height: 280px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--blue) transparent;
+}
