@@ -43,7 +43,7 @@ const SPRITE_BACK  = id => `${SPRITE_BASE}back/${id}.png`;
 const SPRITE_SHINY = id => `${SPRITE_BASE}shiny/${id}.png`;
 
 // ── SHINY ──
-const SHINY_ODDS = 4096; // 1/4096
+const SHINY_ODDS = 1048; // 1/1048 (taux officiel Gen 6+)
 function rollShiny() { return Math.floor(Math.random() * SHINY_ODDS) === 0; }
 function applyShinyBoost(poke) {
   // +15% on atk, def, spd, magic, hp
@@ -1109,7 +1109,7 @@ function startGame() {
   initDexFromRoster();
   const shinyMsg = starterIsShiny ? ' ✨ INCROYABLE ! Votre starter est SHINY !' : '';
   setMessage(`Bienvenue Dresseur ${player.name} ! ${player.cls} est prêt pour l'aventure !${shinyMsg}`);
-  if (starterIsShiny) notify('✨ SHINY ! Rare 1/4096 !');
+  if (starterIsShiny) notify('✨ SHINY ! Rare 1/1048 !');
   
 }
 
@@ -1669,8 +1669,8 @@ function startBattle(enemyData) {
       setTimeout(()=>applyMegaEvo(activePoke), 800);
     }
   }
-  // Mark enemy as seen in Pokédex
-  if (enemy && enemy.id) markDexSeen(enemy.id);
+  // Pokédex : seule la capture débloque l'entrée (pas la rencontre)
+  // → markDexSeen est appelé uniquement dans addCapturedToRoster
 
   // Si FARM AUTO actif → activer auto-combat automatiquement
   if (farmAutoOn) {
