@@ -865,4 +865,229 @@ if (document.readyState !== 'loading') {
   buildStarterGrid(1);
 }
 
+// ══════════════════════════════════════════════════════════════
+//  PATCH POKÉDEX NATIONAL — couvre les 324 Pokémon
+// ══════════════════════════════════════════════════════════════
+
+const DEX_TOTAL_ALL = ALL_POKEMON.length; // 324
+
+const NEW_DEX_MILESTONES = [
+  {
+    pct: 25, count: Math.floor(DEX_TOTAL_ALL * 0.25), label: '25 %',
+    rewards: [
+      { type:'ball', id:'superball',   qty:5 },
+      { type:'item', id:'superpotion', qty:3 },
+    ]
+  },
+  {
+    pct: 50, count: Math.floor(DEX_TOTAL_ALL * 0.50), label: '50 %',
+    rewards: [
+      { type:'ball', id:'hyperball',   qty:5 },
+      { type:'candy',                  qty:3 },
+      { type:'item', id:'hyperpotion', qty:3 },
+    ]
+  },
+  {
+    pct: 75, count: Math.floor(DEX_TOTAL_ALL * 0.75), label: '75 %',
+    rewards: [
+      { type:'ball', id:'masterball',  qty:1 },
+      { type:'candy',                  qty:5 },
+      { type:'item', id:'hyperpotion', qty:5 },
+    ]
+  },
+  {
+    pct: 100, count: DEX_TOTAL_ALL,                   label: '100 %',
+    rewards: [
+      { type:'ball', id:'masterball',  qty:3 },
+      { type:'candy',                  qty:10 },
+      { type:'item', id:'hyperpotion', qty:10 },
+    ]
+  },
+];
+
+// État du filtre actif du Pokédex
+let _dexCurrentFilter = 'all';
+
+// Filtre appelé depuis les boutons HTML
+window.filterDexGen = function(gen, btn) {
+  _dexCurrentFilter = gen;
+  document.querySelectorAll('#screen-pokedex .gen-filter-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderDexGrid();
+};
+
+// Rendu de la grille seulement (réutilisable lors du filtre)
+function renderDexGrid() {
+  const seen = new Set((player?.dexSeen) || []);
+  const pool = _dexCurrentFilter === 'all'    ? ALL_POKEMON
+             : _dexCurrentFilter === '1'      ? GEN1
+             : _dexCurrentFilter === '2'      ? GEN2
+             : GEN3;
+
+  const grid = document.getElementById('pokedex-grid');
+  if (!grid) return;
+  grid.innerHTML = pool.map(p => {
+    const unlocked = seen.has(p.id);
+    const imgSrc   = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.id}.png`;
+    const numStr   = String(p.id).padStart(3, '0');
+    return `<div
+      style="background:rgba(${unlocked ? '255,255,255' : '0,0,0'},.04);
+             border:2px solid rgba(${unlocked ? '255,214,10' : '255,255,255'},.${unlocked ? '2' : '07'});
+             border-radius:10px;padding:.5rem .4rem;text-align:center;
+             transition:all .2s;cursor:${unlocked ? 'pointer' : 'default'}"
+      ${unlocked ? `onclick="showDexDetail(${p.id})"
+        onmouseover="this.style.borderColor='var(--yellow)'"
+        onmouseout="this.style.borderColor='rgba(255,214,10,.2)'"` : ''}>
+      <div style="font-family:'Press Start 2P',monospace;font-size:.28rem;color:rgba(255,255,255,.3);margin-bottom:.2rem">#${numStr}</div>
+      <img src="${imgSrc}" style="width:52px;height:52px;image-rendering:pixelated;${unlocked ? '' : 'filter:grayscale(1) brightness(.25) contrast(.8)'}"/>
+      <div style="font-family:'Press Start 2P',monospace;font-size:.3rem;color:${unlocked ? 'var(--yellow)' : 'rgba(255,255,255,.2)'};margin-top:.25rem;line-height:1.5">${unlocked ? p.n : '???'}</div>
+      ${unlocked ? `<div style="font-family:'Press Start 2P',monospace;font-size:.25rem;padding:.1rem .3rem;background:rgba(255,255,255,.07);border-radius:4px;color:rgba(255,255,255,.5);margin-top:.15rem">${p.t}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// Patch complet de renderPokedex
+window.renderPokedex = function() {
+  const seen  = new Set((player?.dexSeen) || []);
+  const total = seen.size;
+  const pct   = (total / DEX_TOTAL_ALL) * 100;
+
+  // Compteur et barre
+  const lbl = document.getElementById('dex-progress-label');
+  const bar = document.getElementById('dex-progress-bar');
+  if (lbl) lbl.textContent = `${total} / ${DEX_TOTAL_ALL} capturés`;
+  if (bar) bar.style.width = pct + '%';
+
+  // Milestones
+  const given = player?.dexMilestonesGiven || [];
+  const msEl  = document.getElementById('dex-milestones');
+  if (msEl) {
+    const ballNames = { pokeball:'Poké Ball', superball:'Super Ball', hyperball:'Hyper Ball', masterball:'Master Ball' };
+    const ballImgs  = {
+      pokeball:   'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png',
+      superball:  'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/great-ball.png',
+      hyperball:  'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/ultra-ball.png',
+      masterball: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/master-ball.png',
+    };
+    const itemNames = { potion:'Potion', superpotion:'Super Potion', hyperpotion:'Hyper Potion' };
+    const itemImgs  = {
+      potion:      'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/potion.png',
+      superpotion: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/super-potion.png',
+      hyperpotion: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/hyper-potion.png',
+    };
+    msEl.innerHTML = NEW_DEX_MILESTONES.map(m => {
+      const done      = given.includes(m.pct);
+      const reachable = total >= m.count;
+      const rewardLines = m.rewards.map(r => {
+        if (r.type === 'ball')
+          return `<div style="display:flex;align-items:center;gap:.35rem"><img src="${ballImgs[r.id]}" style="width:20px;height:20px;image-rendering:pixelated"/><span>${r.qty}× ${ballNames[r.id]||r.id}</span></div>`;
+        if (r.type === 'item')
+          return `<div style="display:flex;align-items:center;gap:.35rem"><img src="${itemImgs[r.id]}" style="width:20px;height:20px;image-rendering:pixelated"/><span>${r.qty}× ${itemNames[r.id]||r.id}</span></div>`;
+        if (r.type === 'candy')
+          return `<div style="display:flex;align-items:center;gap:.35rem"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/rare-candy.png" style="width:20px;height:20px;image-rendering:pixelated"/><span>${r.qty}× Super Bonbon</span></div>`;
+        return '';
+      }).join('');
+      return `<div style="background:${done ? 'rgba(45,198,83,.12)' : reachable ? 'rgba(255,214,10,.08)' : 'rgba(255,255,255,.03)'};border:2px solid ${done ? '#2dc653' : reachable ? '#ffd60a' : 'rgba(255,255,255,.12)'};border-radius:12px;padding:.7rem .9rem;display:flex;flex-direction:column;gap:.4rem">
+        <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.1rem">
+          <span style="font-size:1.1rem">${done ? '✅' : reachable ? '⚡' : '🔒'}</span>
+          <span style="font-family:'Press Start 2P',monospace;font-size:.52rem;color:${done ? '#2dc653' : reachable ? '#ffd60a' : 'rgba(255,255,255,.4)'}">${m.label}</span>
+          <span style="font-family:'Press Start 2P',monospace;font-size:.35rem;color:rgba(255,255,255,.4);margin-left:auto">${m.count} Pokémon</span>
+        </div>
+        <div style="font-family:'Press Start 2P',monospace;font-size:.34rem;color:rgba(255,255,255,.55);display:flex;flex-direction:column;gap:.25rem">${rewardLines}</div>
+        ${done ? '<div style="font-family:\'Press Start 2P\',monospace;font-size:.3rem;color:#2dc653;margin-top:.1rem">✓ Récompense récupérée</div>' : ''}
+      </div>`;
+    }).join('');
+  }
+
+  // Grille Pokémon (respecte le filtre actuel)
+  renderDexGrid();
+};
+
+// Patch showDexDetail — cherche dans ALL_POKEMON
+window.showDexDetail = function(pokeId) {
+  const p = ALL_POKEMON.find(x => x.id === pokeId);
+  if (!p) return;
+
+  const typeColor = tp => ({
+    Feu:'#ff6030', Eau:'#4488ff', Plante:'#44bb44', Électrik:'#ffcc00',
+    Normal:'#9999aa', Psy:'#ff4499', Vol:'#88aaee', Dragon:'#7038f8',
+    Poison:'#aa44bb', Combat:'#994422', Glace:'#88ccff', Sol:'#cc9944',
+    Roche:'#9a8080', Spectre:'#5544aa', Insecte:'#88aa22', Acier:'#aaaacc',
+    Ténèbres:'#443344', Fée:'#ff88cc',
+  }[tp] || '#666');
+
+  // Infos evo
+  const evoChain = EVO_CHAINS[p.id];
+  const evoText  = evoChain?.next
+    ? `<div style="font-family:'Press Start 2P',monospace;font-size:.32rem;color:rgba(255,255,255,.55);margin-top:.3rem">→ Évolue en <span style="color:var(--yellow)">${evoChain.name}</span> (niv. ${evoChain.level})</div>`
+    : '';
+
+  const typeBadges = p.t.split('/').map(t =>
+    `<span style="font-family:'Press Start 2P',monospace;font-size:.38rem;padding:.18rem .5rem;border-radius:4px;background:${typeColor(t)};color:#fff">${t}</span>`
+  ).join(' ');
+  const numStr   = String(p.id).padStart(3, '0');
+  const genLabel = p.id <= 151 ? 'Kanto' : p.id <= 251 ? 'Johto' : 'Hoenn';
+  const captured = ((player?.roster || []).concat(player?.box || []))
+    .filter(r => (r.spriteId || r.currentSpriteId) === p.id);
+
+  // Stats mini-bar
+  const statBar = (val, max, color) =>
+    `<div style="height:6px;width:100%;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden"><div style="height:100%;width:${Math.min(100, (val/max)*100)}%;background:${color};border-radius:3px"></div></div>`;
+
+  const html = `
+    <div style="display:flex;flex-direction:column;align-items:center;gap:.7rem;text-align:center">
+      <div style="display:flex;gap:.5rem;align-items:center">
+        <span style="font-family:'Press Start 2P',monospace;font-size:.4rem;color:rgba(255,255,255,.4)">#${numStr}</span>
+        <span style="font-family:'Press Start 2P',monospace;font-size:.32rem;padding:.12rem .4rem;border-radius:4px;background:rgba(255,255,255,.08);color:rgba(255,255,255,.5)">${genLabel}</span>
+      </div>
+      <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.id}.png"
+           style="width:96px;height:96px;image-rendering:pixelated;filter:drop-shadow(0 0 12px rgba(255,214,10,.4))"/>
+      <div style="font-family:'Press Start 2P',monospace;font-size:.65rem;color:var(--yellow)">${p.n}</div>
+      <div style="display:flex;gap:.4rem">${typeBadges}</div>
+      ${evoText}
+      <div style="width:100%;text-align:left;display:flex;flex-direction:column;gap:.3rem">
+        <div style="font-family:'Press Start 2P',monospace;font-size:.3rem;color:rgba(255,255,255,.5)">PV max base</div>
+        ${statBar(p.hp, 255, '#e63946')}
+        <div style="font-family:'Press Start 2P',monospace;font-size:.3rem;color:rgba(255,255,255,.5)">Attaque</div>
+        ${statBar(p.atk*5, 200, '#ff9a3c')}
+        <div style="font-family:'Press Start 2P',monospace;font-size:.3rem;color:rgba(255,255,255,.5)">Défense</div>
+        ${statBar((p.def||5)*5, 200, '#58a6ff')}
+        <div style="font-family:'Press Start 2P',monospace;font-size:.3rem;color:rgba(255,255,255,.5)">Vitesse</div>
+        ${statBar(ALL_SPD[p.id]||50, 180, '#2dc653')}
+      </div>
+      ${captured.length > 0 ? '<div style="font-family:\'Press Start 2P\',monospace;font-size:.38rem;color:#2dc653">✓ Dans votre équipe / box</div>' : ''}
+    </div>`;
+
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center';
+  modal.innerHTML = `<div style="background:rgba(10,10,30,.98);border:3px solid var(--yellow);border-radius:16px;padding:1.5rem;width:min(340px,92vw);max-height:90vh;overflow-y:auto;box-shadow:0 0 30px rgba(255,214,10,.2)">${html}<button class="btn" onclick="this.closest('div[style*=fixed]').remove()" style="margin-top:.7rem;font-size:.45rem;width:100%">✗ FERMER</button></div>`;
+  document.body.appendChild(modal);
+};
+
+// Patch checkDexMilestones — utilise NEW_DEX_MILESTONES et DEX_TOTAL_ALL
+window.checkDexMilestones = function() {
+  if (!player) return;
+  if (!player.dexMilestonesGiven) player.dexMilestonesGiven = [];
+  const seen = (player.dexSeen || []).length;
+  NEW_DEX_MILESTONES.forEach(m => {
+    if (seen >= m.count && !player.dexMilestonesGiven.includes(m.pct)) {
+      player.dexMilestonesGiven.push(m.pct);
+      // Give rewards (réutilise la logique de game.js via awardDexMilestone si dispo)
+      if (typeof awardDexMilestone === 'function') {
+        awardDexMilestone(m);
+      } else {
+        // Fallback manuel
+        m.rewards.forEach(r => {
+          if (!player) return;
+          if (r.type === 'ball')  { player.balls = player.balls || {}; player.balls[r.id] = (player.balls[r.id]||0) + r.qty; }
+          if (r.type === 'candy') { player.candies = (player.candies||0) + r.qty; }
+          if (r.type === 'item')  { player.bag = player.bag || {}; player.bag[r.id] = (player.bag[r.id]||0) + r.qty; }
+        });
+        if (typeof notify === 'function') notify(`🏅 Pokédex ${m.label} !`);
+        if (typeof saveGame === 'function') saveGame();
+      }
+    }
+  });
+};
+
 console.log(`✅ PokéWave Data loaded: ${ALL_POKEMON.length} Pokémon (Gen 1+2+3), ${ZONE_ORDER.length} zones`);
