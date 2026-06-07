@@ -1105,7 +1105,7 @@ function startGame() {
   startPassiveIncome();
   checkAchievements();
   updateDayNightHUD();
-  setInterval(updatePeriodicHUD, 5000);
+  startPeriodicHUD();
   initDexFromRoster();
   const shinyMsg = starterIsShiny ? ' ✨ INCROYABLE ! Votre starter est SHINY !' : '';
   setMessage(`Bienvenue Dresseur ${player.name} ! ${player.cls} est prêt pour l'aventure !${shinyMsg}`);
@@ -1303,16 +1303,23 @@ function setBar(barId, valId, cur, max) {
   document.getElementById(valId).textContent = `${Math.ceil(cur)} / ${max}`;
 }
 const eventLog = [];
+let _msgRafPending = false;
 function setMessage(text) {
   eventLog.push(text);
-  if (eventLog.length > 20) eventLog.shift();
-  const box = document.getElementById('message-box');
-  if (!box) return;
-  box.innerHTML = eventLog.map((msg, i) => {
-    const isLatest = i === eventLog.length - 1;
-    return `<div style="opacity:${isLatest ? 1 : Math.max(0.35, 0.35 + (i / eventLog.length) * 0.65)};${isLatest ? 'color:var(--white)' : 'color:rgba(200,210,255,.7)'}">${msg}</div>`;
-  }).join('');
-  box.scrollTop = box.scrollHeight;
+  if (eventLog.length > 12) eventLog.shift();
+  // Throttle DOM rebuild via RAF — pendant l'auto-battle évite les reflows en cascade
+  if (_msgRafPending) return;
+  _msgRafPending = true;
+  requestAnimationFrame(() => {
+    _msgRafPending = false;
+    const box = document.getElementById('message-box');
+    if (!box) return;
+    box.innerHTML = eventLog.map((msg, i) => {
+      const isLatest = i === eventLog.length - 1;
+      return `<div style="opacity:${isLatest ? 1 : Math.max(0.3, 0.3 + (i / eventLog.length) * 0.7)};${isLatest ? 'color:var(--white)' : 'color:rgba(200,210,255,.65)'}">${msg}</div>`;
+    }).join('');
+    box.scrollTop = box.scrollHeight;
+  });
 }
 function showZone(name) {
   const el = document.getElementById('zone-label');
@@ -2811,7 +2818,9 @@ function loadGame() {
   showZone(ZONES[player.currentZone]?.name || 'PokéQuest');
   getDailyQuests();
   startPassiveIncome();
+  startPeriodicHUD();
   checkAchievements();
+  updateDayNightHUD();
   setMessage(`Bienvenue de retour, Dresseur ${player.name} ! ${player.currentName} reprend l'aventure !`);
   
 }
@@ -2990,7 +2999,11 @@ function renderMap() {
     ctx.closePath();
   }
 
-  function drawFrame() {
+  // Carte limitée à ~30fps pour réduire la charge GPU/CPU
+  let _mapLastDraw = 0;
+  function drawFrame(ts) {
+    if (ts - _mapLastDraw < 33) { mapAnimFrame = requestAnimationFrame(drawFrame); return; }
+    _mapLastDraw = ts;
     mapPulseT += 0.04;
     const ctx = canvas.getContext('2d');
     const curZone = player.currentZone || 'bourg-palette';
@@ -4658,6 +4671,12 @@ function startBreedFromScreen() {
   renderBreedingScreen();
 }
 
+let _periodicHUDTimer = null;
+function startPeriodicHUD() {
+  if (_periodicHUDTimer) clearInterval(_periodicHUDTimer);
+  _periodicHUDTimer = setInterval(updatePeriodicHUD, 5000);
+}
+
 function updatePeriodicHUD() {
   if (!player) return;
   updateDayNightHUD();
@@ -4761,19 +4780,31 @@ function initDexFromRoster() {
   });
 }
 
+// ── mousemove throttlé via RAF (évite les style-recalcs à 60fps) ──
+let _bgLightPending = false;
+let _bgLightX = 0, _bgLightY = 0;
 document.addEventListener('mousemove', e => {
-  const bgLight = document.getElementById('bg-light');
-  if (bgLight) bgLight.style.background = `radial-gradient(circle 400px at ${e.clientX}px ${e.clientY}px, rgba(255,214,10,0.06) 0%, rgba(76,201,240,0.03) 40%, transparent 70%)`;
-});
+  _bgLightX = e.clientX; _bgLightY = e.clientY;
+  if (_bgLightPending) return;
+  _bgLightPending = true;
+  requestAnimationFrame(() => {
+    const bgLight = document.getElementById('bg-light');
+    if (bgLight) bgLight.style.background =
+      `radial-gradient(circle 400px at ${_bgLightX}px ${_bgLightY}px, rgba(255,214,10,0.06) 0%, rgba(76,201,240,0.03) 40%, transparent 70%)`;
+    _bgLightPending = false;
+  });
+}, { passive: true });
 
-const pCont=document.getElementById('particles');
-for (let i=0;i<30;i++){
-  const s=document.createElement('div'); s.className='spark';
-  s.style.left=Math.random()*100+'vw';
-  s.style.animationDuration=(9+Math.random()*14)+'s';
-  s.style.animationDelay=(-Math.random()*22)+'s';
-  s.style.width=s.style.height=(2+Math.random()*3)+'px';
-  s.style.background=Math.random()>.5?'#4cc9f0':'#ffd60a';
+// ── Particules : 10 sur mobile, 20 sur desktop ──
+const pCont = document.getElementById('particles');
+const PARTICLE_COUNT = window.innerWidth <= 640 ? 8 : 18;
+for (let i = 0; i < PARTICLE_COUNT; i++) {
+  const s = document.createElement('div'); s.className = 'spark';
+  s.style.left = Math.random()*100+'vw';
+  s.style.animationDuration = (9+Math.random()*14)+'s';
+  s.style.animationDelay   = (-Math.random()*22)+'s';
+  s.style.width = s.style.height = (2+Math.random()*3)+'px';
+  s.style.background = Math.random() > .5 ? '#4cc9f0' : '#ffd60a';
   pCont.appendChild(s);
 }
 
