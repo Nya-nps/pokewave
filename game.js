@@ -1680,7 +1680,7 @@ function startBattle(enemyData) {
   updateBattleHp(); disableBattleButtons(false);
   const shinyBadge = enemy.isShiny ? ' ✨' : '';
   document.getElementById('b-enemy-name').textContent = enemy.name + shinyBadge;
-  document.getElementById('battle-log').textContent = `${enemy.isShiny ? '✨ OH ! Un Pokémon SHINY apparaît ! ' : '⚡ Un '}${enemy.name} (${enemy.type}) sauvage apparaît !${matchupHint}`;
+  (_hud('battle-log')).textContent = `${enemy.isShiny ? '✨ OH ! Un Pokémon SHINY apparaît ! ' : '⚡ Un '}${enemy.name} (${enemy.type}) sauvage apparaît !${matchupHint}`;
   document.getElementById('catch-display').classList.remove('active');
   battleBusy = false;
   // Reset tour flag unless set by startTourFloor
@@ -1781,7 +1781,7 @@ let battleBusy = false;
 
 function setBattleTurn(turn) {
   battleTurn = turn;
-  const logEl = document.getElementById('battle-log');
+  const logEl = (_hud('battle-log'));
   if (turn === 'player') {
     disableBattleButtons(false);
     applyRestesHeal();
@@ -1807,19 +1807,19 @@ function setBattleTurn(turn) {
       if (player.hp<=0) {
         player.hp=0; updateBattleHp(); updateHUD();
         syncActiveFromPlayer();
-        document.getElementById('battle-log').textContent=`💀 ${player.currentName} est K.O. !`;
+        (_hud('battle-log')).textContent=`💀 ${player.currentName} est K.O. !`;
         // Check if there's another pokemon alive in roster
         const aliveIdx = player.roster ? player.roster.findIndex((p,i)=>i!==(player.activeRosterIdx||0) && p.hp > 0) : -1;
         if (aliveIdx >= 0) {
           setTimeout(()=>{
             const isTour = !!player._tourBattle;
-            document.getElementById('battle-log').textContent = isTour
+            (_hud('battle-log')).textContent = isTour
               ? `💀 ${player.currentName} est K.O. dans la Tour ! Choisissez un remplaçant !`
               : `💀 ${player.currentName} est K.O. ! Choisissez un autre Pokémon !`;
             // Auto-battle : switch automatiquement vers le prochain pokemon vivant
             if (autoBattleOn) {
               switchToRosterPoke(aliveIdx, true);
-              document.getElementById('battle-log').textContent = `💀 K.O. ! 🤖 Auto-switch → ${player.currentName} !`;
+              (_hud('battle-log')).textContent = `💀 K.O. ! 🤖 Auto-switch → ${player.currentName} !`;
               setBattleTurn('player');
               if (autoBattleTimer) clearTimeout(autoBattleTimer);
               autoBattleTimer = setTimeout(runAutoAction, 800);
@@ -1866,7 +1866,7 @@ function setBattleTurn(turn) {
         }
         return;
       }
-      document.getElementById('battle-log').textContent=log;
+      (_hud('battle-log')).textContent=log;
       updateBattleHp(); updateHUD();
       battleBusy = false;
       setBattleTurn('player');
@@ -2008,7 +2008,7 @@ function battleAction(action) {
     const fleeChance = Math.min(0.9, 0.35 + (player.spd - (enemy.spd||50)) / 200);
     if (Math.random()<fleeChance){ stopAutoBattle(); syncActiveFromPlayer(); showScreen('game'); setMessage('💨 Vous fuyez le combat !'); updateHUD(); return; }
     else log='💨 Impossible de fuir ! ';
-    document.getElementById('battle-log').textContent=log;
+    (_hud('battle-log')).textContent=log;
     setBattleTurn('enemy');
     return;
   } else if (action==='item') {
@@ -2020,9 +2020,9 @@ function battleAction(action) {
       else { heal=30; player.bag.potion--; used='Potion'; }
       player.hp = Math.min(player.maxHp, player.hp+heal);
       log=`🧪 ${used} utilisée sur ${player.currentName} ! +${heal} PV. `;
-    } else { log='🧪 Plus de Potions ! '; document.getElementById('battle-log').textContent=log; return; }
+    } else { log='🧪 Plus de Potions ! '; (_hud('battle-log')).textContent=log; return; }
     updateBattleHp(); updateHUD();
-    document.getElementById('battle-log').textContent=log;
+    (_hud('battle-log')).textContent=log;
     setBattleTurn('enemy');
     return;
   } else {
@@ -2037,7 +2037,7 @@ function battleAction(action) {
       log=`✨ ${player.currentName} utilise ${player.mMove} (${atkType}) ! `;
       if (effInfo.label) log += effInfo.label + ' ';
       log += dmg > 0 ? `${dmg} dégâts.` : '';
-      if (effInfo.label && effInfo.color) setTimeout(()=>{ const el=document.getElementById('battle-log'); el.style.color=effInfo.color; setTimeout(()=>el.style.color='',800); },50);
+      if (effInfo.label && effInfo.color && !_isMobile) { const _bl=_hud('battle-log'); if(_bl){_bl.style.color=effInfo.color; setTimeout(()=>{_bl.style.color='';},700);} }
     } else {
       const atkType = player.moveElem || player.type;
       const mult = getEffectiveness(atkType, enemy.type);
@@ -2048,7 +2048,7 @@ function battleAction(action) {
       log=`⚔ ${player.currentName} utilise ${player.move} (${atkType}) ! `;
       if (effInfo.label) log += effInfo.label + ' ';
       log += dmg > 0 ? `${dmg} dégâts.` : '';
-      if (effInfo.label && effInfo.color) setTimeout(()=>{ const el=document.getElementById('battle-log'); el.style.color=effInfo.color; setTimeout(()=>el.style.color='',800); },50);
+      if (effInfo.label && effInfo.color && !_isMobile) { const _bl=_hud('battle-log'); if(_bl){_bl.style.color=effInfo.color; setTimeout(()=>{_bl.style.color='';},700);} }
     }
     enemy.hp -= dmg;
     if (dmg>0) hurtSprite('enemy-battle-img');
@@ -2078,17 +2078,14 @@ function battleAction(action) {
     const kills = player.zoneKills[curZ];
     const killNeeded = ZONE_KILL_NEEDED;
     const killMsg = kills < killNeeded ? ` (${kills}/${killNeeded} Pokémon vaincus ici)` : kills===killNeeded ? ` 🔓 Zone débloquée ! Vous pouvez voyager !` : '';
-    document.getElementById('battle-log').textContent = `🏆 ${player.currentName} a vaincu ${enemy.name} ! +${xpG} XP +${goldG}₽ !${killMsg}`;
+    (_hud('battle-log')).textContent = `🏆 ${player.currentName} a vaincu ${enemy.name} ! +${xpG} XP +${goldG}₽ !${killMsg}`;
     disableBattleButtons(true); checkLevelUp();
     // Trainer XP: 5 per kill
     addTrainerXP(5);
     // Affinité +1 pour le pokemon actif
     if (player.roster?.[player.activeRosterIdx||0]) addAffinity(player.roster[player.activeRosterIdx||0], 1);
-    // Stats globales
-    updateGlobalStats('kills');
-    updateGlobalStats('battles');
-    const earnedGold = goldG;
-    updateGlobalStats('earn_gold', earnedGold);
+    // Stats globales — batch en 1 appel pour éviter 3× updateDailyProgress
+    updateGlobalStatsBatch({ kills:1, battles:1, earn_gold: goldG });
     // Shards from enemy type
     if (enemy.type) awardShardOnKill(enemy.type);
     // Random event trigger
@@ -2154,7 +2151,7 @@ function battleAction(action) {
   }
 
   // Determine turn order by speed
-  document.getElementById('battle-log').textContent=log;
+  (_hud('battle-log')).textContent=log;
   updateBattleHp(); updateHUD();
   // Refresh attack use counts on buttons
   document.getElementById('btn-attack').innerHTML = `⚔ ${player.move} <span class="atk-elem-badge elem-${player.moveElem||player.type}">${player.moveElem||player.type}</span>`;
@@ -2167,36 +2164,42 @@ function battleAction(action) {
 }
 
 // ── ATTACK ANIMATIONS ──
+// Particules d'attaque — 0 sur mobile (trop coûteux), 5 sur desktop
+const _isMobile = window.innerWidth <= 768;
 function playAttackAnim(type, fromEnemy) {
-  const layer = document.getElementById('anim-layer');
+  if (_isMobile) return; // skip sur mobile — économise ~12 DOM ops/attaque
+  const layer = _hud('anim-layer') || document.getElementById('anim-layer');
   layer.innerHTML = '';
-  const startX = fromEnemy ? '70%' : '25%';
-  const endX   = fromEnemy ? '25%' : '70%';
-
   const configs = {
-    fire:   { count:12, colors:['#ff4500','#ff8c00','#ffd700','#ff6347'], shape:'●', animName:'flameAnim',   dur:'0.7s' },
-    water:  { count:10, colors:['#4cc9f0','#00b4d8','#0077b6','#90e0ef'], shape:'◉', animName:'waterAnim',   dur:'0.6s' },
-    leaf:   { count:10, colors:['#2dc653','#80b918','#a7c957','#38b000'], shape:'♦', animName:'leafAnim',    dur:'0.7s' },
-    normal: { count:8,  colors:['#ffffff','#e0e0e0','#ffd60a'],           shape:'★', animName:'normalAnim',  dur:'0.5s' },
-    thunder:{ count:6,  colors:['#ffd60a','#ffff00','#ffa500'],           shape:'⚡', animName:'thunderAnim', dur:'0.4s' },
+    fire:   { count:5, colors:['#ff4500','#ff8c00','#ffd700'], shape:'●', animName:'flameAnim',   dur:'0.7s' },
+    water:  { count:5, colors:['#4cc9f0','#00b4d8','#90e0ef'], shape:'◉', animName:'waterAnim',   dur:'0.6s' },
+    leaf:   { count:5, colors:['#2dc653','#80b918','#38b000'], shape:'♦', animName:'leafAnim',    dur:'0.7s' },
+    normal: { count:4, colors:['#ffffff','#ffd60a'],           shape:'★', animName:'normalAnim',  dur:'0.5s' },
+    thunder:{ count:4, colors:['#ffd60a','#ffa500'],           shape:'⚡', animName:'thunderAnim', dur:'0.4s' },
   };
   const cfg = configs[type] || configs.normal;
-
-  for (let i=0; i<cfg.count; i++) {
+  const frag = document.createDocumentFragment(); // 1 seul reflow au lieu de N
+  for (let i = 0; i < cfg.count; i++) {
     const el = document.createElement('div');
-    el.style.cssText = `position:absolute;font-size:${14+Math.random()*16}px;color:${cfg.colors[Math.floor(Math.random()*cfg.colors.length)]};left:${fromEnemy?60+Math.random()*15:20+Math.random()*15}%;top:${30+Math.random()*40}%;animation:${cfg.animName} ${cfg.dur} ease ${i*0.05}s forwards;pointer-events:none;z-index:25;text-shadow:0 0 8px currentColor`;
+    el.style.cssText = `position:absolute;font-size:${16+Math.random()*12}px;color:${cfg.colors[Math.floor(Math.random()*cfg.colors.length)]};left:${fromEnemy?60+Math.random()*15:20+Math.random()*15}%;top:${30+Math.random()*40}%;animation:${cfg.animName} ${cfg.dur} ease ${i*0.06}s forwards;pointer-events:none;z-index:25`;
     el.textContent = cfg.shape;
-    layer.appendChild(el);
+    frag.appendChild(el);
   }
-  setTimeout(()=>layer.innerHTML='', 900);
+  layer.appendChild(frag);
+  setTimeout(()=>layer.innerHTML='', 750);
 }
 
+// hurtSprite sans forced layout reflow (void offsetWidth supprimé)
+// On alterne entre deux classes identiques pour redémarrer l'anim sans reflow
+let _hurtToggle = false;
 function hurtSprite(id) {
-  const el = document.getElementById(id);
-  el.classList.remove('sprite-hurt');
-  void el.offsetWidth;
-  el.classList.add('sprite-hurt');
-  setTimeout(()=>el.classList.remove('sprite-hurt'), 500);
+  const el = _hud(id) || document.getElementById(id);
+  if (!el) return;
+  _hurtToggle = !_hurtToggle;
+  el.classList.remove('sprite-hurt-a','sprite-hurt-b');
+  requestAnimationFrame(() => {
+    el.classList.add(_hurtToggle ? 'sprite-hurt-a' : 'sprite-hurt-b');
+  });
 }
 
 function disableBattleButtons(dis){ document.querySelectorAll('#battle-actions .btn').forEach(b=>b.disabled=dis); }
@@ -2232,7 +2235,7 @@ function throwBall(ballId) {
   const ballImg = item ? item.img : '';
 
   disableBattleButtons(true);
-  document.getElementById('battle-log').textContent = `⚽ Vous lancez une ${item.name} sur ${enemy.name} !`;
+  (_hud('battle-log')).textContent = `⚽ Vous lancez une ${item.name} sur ${enemy.name} !`;
 
   // Calcul taux de capture
   const hpRatio = enemy.hp / enemy.maxHp; // moins de vie = plus facile
@@ -2287,7 +2290,7 @@ function throwBall(ballId) {
           player.hp=Math.floor(player.maxHp*.2);
           showScreen('game'); updateHUD(); setMessage(`${enemy.name} s'est échappé et vous a mis K.O. !`);
         } else {
-          document.getElementById('battle-log').textContent=`${enemy.name} s'échappe et attaque pour ${eDmg} dégâts !`;
+          (_hud('battle-log')).textContent=`${enemy.name} s'échappe et attaque pour ${eDmg} dégâts !`;
           updateBattleHp(); updateHUD();
           battleBusy = false;
           setBattleTurn('player');
@@ -3576,7 +3579,7 @@ function confirmSwitch(idx) {
   document.getElementById('btn-attack').innerHTML = `⚔ ${player.move} <span class="atk-elem-badge elem-${player.moveElem||player.type}">${player.moveElem||player.type}</span>`;
   document.getElementById('btn-magic').innerHTML  = `✨ ${player.mMove} <span class="atk-elem-badge elem-${player.mMoveElem||player.type}">${player.mMoveElem||player.type}</span>`;
   updateBattleHp(); updateHUD();
-  document.getElementById('battle-log').textContent = `⇄ Go, ${player.currentName} !`;
+  (_hud('battle-log')).textContent = `⇄ Go, ${player.currentName} !`;
 
   // Enemy gets a free attack on switch
   disableBattleButtons(true);
@@ -5041,10 +5044,18 @@ function updateGlobalStats(type, amount=1) {
   if (!player) return;
   if (!player.stats) player.stats = {};
   player.stats[type] = (player.stats[type]||0) + amount;
-  // Daily quest progress
   updateDailyProgress(type, amount);
-  // Achievement check periodically
   if ((player.stats.kills||0) % 10 === 0 || type !== 'kills') checkAchievements();
+}
+// Version batch : évite 3× updateDailyProgress/frame pour un seul kill
+function updateGlobalStatsBatch(map) {
+  if (!player) return;
+  if (!player.stats) player.stats = {};
+  Object.entries(map).forEach(([type, amount]) => {
+    player.stats[type] = (player.stats[type]||0) + amount;
+    updateDailyProgress(type, amount);
+  });
+  if ((player.stats.kills||0) % 10 === 0) checkAchievements();
 }
 
 // ══════════════════════════════════════════

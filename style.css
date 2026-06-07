@@ -56,7 +56,7 @@ body.menu #bg-img{opacity:0.55;filter:blur(3px) brightness(.8)}
 .pokeball-bottom{position:absolute;bottom:0;left:0;right:0;height:50%;background:#f0f0f0}
 
 /* ── SCREENS ── */
-.screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10;opacity:0;pointer-events:none;transition:opacity 0.5s ease}
+.screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10;opacity:0;pointer-events:none;transition:opacity 0.4s ease;contain:layout style}
 .screen.active{opacity:1;pointer-events:all}
 
 /* ── TITLE ── */
@@ -74,7 +74,8 @@ body.menu #bg-img{opacity:0.55;filter:blur(3px) brightness(.8)}
 @keyframes pokeBounce{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-14px) scale(1.06)}}
 @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-10px)}40%{transform:translateX(10px)}60%{transform:translateX(-8px)}80%{transform:translateX(8px)}}
 @keyframes flashWhite{0%,100%{filter:none}50%{filter:brightness(10) saturate(0)}}
-.sprite-hurt{animation:shake 0.4s ease, flashWhite 0.4s ease!important}
+/* Deux classes identiques pour redémarrer l'anim sans forced reflow */
+.sprite-hurt,.sprite-hurt-a,.sprite-hurt-b{animation:shake 0.4s ease, flashWhite 0.4s ease!important}
 
 /* ── BUTTONS ── */
 .btn{font-family:'Press Start 2P',monospace;font-size:0.72rem;letter-spacing:.04em;padding:.75rem 1.8rem;border:3px solid rgba(255,255,255,0.35);background:linear-gradient(180deg,#3a86ff,#1a5fc8);color:#fff;cursor:pointer;position:relative;overflow:hidden;transition:all .15s;border-radius:6px;box-shadow:0 4px 0 #0d3580,0 6px 15px rgba(58,134,255,.35);text-shadow:1px 1px 0 rgba(0,0,0,.5);image-rendering:pixelated}
@@ -867,6 +868,17 @@ input, select, textarea { font-size: 16px !important; }
 
   /* ── COMBATANT zone ── */
   .hp-battle { width: 130px !important; }
+}
+
+/* ══════════════════════════════════════════════════════════
+   PERFORMANCE — supprimer transitions hover inutiles sur touch
+   ══════════════════════════════════════════════════════════ */
+@media (hover: none), (max-width: 900px) {
+  .btn, .class-btn, .smtile, .inv-tab, .item-card,
+  .pokemon-card, .shop-item, .shop-item-btn, .pd-move-card,
+  .pd-learn-card, .team-tab, .zone-poke-mini, .switch-poke-card {
+    transition: none !important;
+  }
 }
 
 /* ══════════════════════════════════════════════════════════
