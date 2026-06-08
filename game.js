@@ -1244,7 +1244,8 @@ function addCapturedToRoster(capturedData) {
   if (!player.box) player.box = [];
   const _allPoke = (typeof ALL_POKEMON !== 'undefined') ? ALL_POKEMON : GEN1;
   const _allSpd  = (typeof ALL_SPD   !== 'undefined') ? ALL_SPD   : GEN1_SPD;
-  const pData = _allPoke.find(p=>p.id===capturedData.id);
+  const _pokeMap = (typeof ALL_POKEMON_MAP !== 'undefined') ? ALL_POKEMON_MAP : null;
+  const pData = _pokeMap ? _pokeMap.get(capturedData.id) : _allPoke.find(p=>p.id===capturedData.id);
   const spd = _allSpd[capturedData.id] || 50;
   const lvl = capturedData.level || 1;
   const scale = 1 + lvl * 0.12;
@@ -1896,7 +1897,7 @@ function setBattleTurn(turn) {
               notify('💀 Défaite contre le World Boss !');
               setMessage('💀 Vous avez été vaincu par le World Boss… Retentez votre chance !');
             } else if (player._trialBattle) {
-              player._trialBattle = false;
+              player._trialBattle = false; player._trialBattleTp = 0;
               showScreen('game'); updateHUD();
               notify('💀 Défaite en Trial — aucun PT gagné.');
               setMessage('💀 Votre Pokémon a été vaincu en Trial. Réessayez !');
@@ -2180,8 +2181,9 @@ function battleAction(action) {
 
     // Trial battle victory — award TP, return to trial screen
     if (player._trialBattle) {
-      const trialTp = player._trialBattle.tp || 20;
+      const trialTp = player._trialBattleTp || 20;
       player._trialBattle = false;
+      player._trialBattleTp = 0;
       player.trialPoints = (player.trialPoints||0) + trialTp;
       player.trialWins   = (player.trialWins||0) + 1;
       setTimeout(()=>{
@@ -2934,6 +2936,7 @@ function loadGame() {
   if (!player.lastBossWave)   player.lastBossWave  = 0;
   if (!player.trialPoints)    player.trialPoints   = 0;
   if (!player.trialWins)      player.trialWins     = 0;
+  player._trialBattle = false; player._trialBattleTp = 0;
   if (!player.roster)       { player.roster = []; player.activeRosterIdx = 0; }
   if (player.roster.length === 0) {
     // Migrate from old save — build roster from player data
@@ -3099,6 +3102,20 @@ let mapPulseT      = 0;
 
 function getZoneById(id){ return KANTO_ZONES.find(z=>z.id===id); }
 
+// Canvas offscreen carte — persistants entre ouvertures, recréés seulement si dimensions changent
+let _mapBgOff = null, _mapBgOffCtx = null, _mapBgDrawn = false;
+let _mapRouteOff = null, _mapRouteOffCtx = null, _mapRouteSnap = null;
+let _mapOffW = 0, _mapOffH = 0;
+function _ensureMapOffscreen(W, H) {
+  if (_mapBgOff && _mapOffW === W && _mapOffH === H) return;
+  _mapBgOff = document.createElement('canvas'); _mapBgOff.width = W; _mapBgOff.height = H;
+  _mapBgOffCtx = _mapBgOff.getContext('2d');
+  _mapRouteOff = document.createElement('canvas'); _mapRouteOff.width = W; _mapRouteOff.height = H;
+  _mapRouteOffCtx = _mapRouteOff.getContext('2d');
+  _mapOffW = W; _mapOffH = H;
+  _mapBgDrawn = false; _mapRouteSnap = null;
+}
+
 function renderMap() {
   if (!player) return;
   if (!player.visitedZones) player.visitedZones = ['bourg-palette'];
@@ -3112,6 +3129,7 @@ function renderMap() {
   canvas.height = H;
   mapHitZones = [];
   if (mapAnimFrame) cancelAnimationFrame(mapAnimFrame);
+  _ensureMapOffscreen(W, H); // réutilise les canvas si dimensions identiques
 
   function px(pct){ return pct/100 * W; }
   function py(pct){ return pct/100 * H; }
@@ -3153,11 +3171,11 @@ function renderMap() {
     ctx.closePath();
   }
 
-  // ── Canvas hors-écran : fond (statique tant que bgImg ne change pas) ──
-  const bgOffscreen = document.createElement('canvas');
-  bgOffscreen.width = W; bgOffscreen.height = H;
-  const bgCtx = bgOffscreen.getContext('2d');
-  let _bgDrawn = false;
+  // ── Canvas hors-écran : fond (réutilise le canvas module-level) ──
+  const bgOffscreen  = _mapBgOff;
+  const bgCtx        = _mapBgOffCtx;
+  const routeOffscreen = _mapRouteOff;
+  const routeCtx     = _mapRouteOffCtx;
   function _drawBgOffscreen() {
     bgCtx.clearRect(0, 0, W, H);
     if (bgImg.complete && bgImg.naturalWidth > 0) {
@@ -3168,15 +3186,9 @@ function renderMap() {
       bgCtx.fillStyle = '#2a5c1a';
       bgCtx.fillRect(0, 0, W, H);
     }
-    _bgDrawn = true;
+    _mapBgDrawn = true;
   }
-  bgImg.onload = () => { _bgDrawn = false; };
-
-  // ── Canvas hors-écran : routes + légende (ne change que si visitedZones/curZone change) ──
-  const routeOffscreen = document.createElement('canvas');
-  routeOffscreen.width = W; routeOffscreen.height = H;
-  const routeCtx = routeOffscreen.getContext('2d');
-  let _routeSnap = null;
+  bgImg.onload = () => { _mapBgDrawn = false; };
   function _drawRoutesOffscreen() {
     const cz = player.currentZone || 'bourg-palette';
     routeCtx.clearRect(0, 0, W, H);
@@ -3249,7 +3261,7 @@ function renderMap() {
       routeCtx.fillStyle='#fff';
       routeCtx.fillText(l.label, legX+legFontSize+5, ly);
     });
-    _routeSnap = player.visitedZones.join(',') + '|' + cz;
+    _mapRouteSnap = player.visitedZones.join(',') + '|' + cz;
   }
 
   // ── drawFrame : limité à ~30fps, travail réduit au minimum par frame ──
@@ -3265,9 +3277,9 @@ function renderMap() {
     const killsOk = curKills >= killNeeded;
 
     // Reconstruit les caches hors-écran uniquement si l'état a changé
-    if (!_bgDrawn) _drawBgOffscreen();
+    if (!_mapBgDrawn) _drawBgOffscreen();
     const snap = player.visitedZones.join(',') + '|' + curZone;
-    if (snap !== _routeSnap) _drawRoutesOffscreen();
+    if (snap !== _mapRouteSnap) _drawRoutesOffscreen();
 
     // Composite rapide : 2 drawImage au lieu de tout redessiner
     mainCtx.drawImage(bgOffscreen, 0, 0);
@@ -5454,7 +5466,8 @@ function startTrialChallenge(idx) {
     level: trLvl, xp: 0, gold: 0,
     isLegendary: true, isTrainerBattle: true,
   };
-  player._trialBattle = { tp: c.tp };
+  player._trialBattle = true;
+  player._trialBattleTp = c.tp;
   showScreen('battle');
   startBattle(trialEnemy);
 }
