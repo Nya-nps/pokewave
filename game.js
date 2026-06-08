@@ -1305,7 +1305,7 @@ function addCapturedToRoster(capturedData) {
     hp: Math.round((pData?.hp||capturedData.hp) * scale),
     maxHp: Math.round((pData?.hp||capturedData.maxHp) * scale),
     mp: 50, maxMp: 50, xp: 0,
-    xpNext: Math.floor(100 * Math.pow(1.45, lvl-1)),
+    xpNext: xpForLevel(lvl),
     atk: Math.round((pData?.atk||10) * scale),
     def: Math.round((pData?.def||5) * scale),
     spAtk: Math.round((pData?.atk||8) * scale * 0.9),
@@ -1326,7 +1326,7 @@ function addCapturedToRoster(capturedData) {
 
   // ── NO DUPLICATE: chercher si cette espèce existe déjà dans roster + box ──
   const allPokes = [...player.roster, ...player.box];
-  const existing = allPokes.find(p => (p.spriteId || p.currentSpriteId) === capturedData.id);
+  const existing = allPokes.find(p => (p.currentSpriteId || p.spriteId) === capturedData.id);
 
   if (existing) {
     // Garder le shiny en priorité, sinon le plus haut niveau
@@ -5173,7 +5173,24 @@ function startBreedFromScreen() {
   const sel = player.breedingSelected||[];
   if (sel.length!==2) { notify('Sélectionnez 2 Pokémon !'); return; }
   const [a,b] = sel;
-  startBreeding(a.idx, b.idx);
+  const p1 = a.src==='box' ? player.box[a.idx] : player.roster[a.idx];
+  const p2 = b.src==='box' ? player.box[b.idx] : player.roster[b.idx];
+  if (!p1||!p2) { notify('Pokémon invalides !'); return; }
+  if ((p1.spriteId||p1.currentSpriteId)===(p2.spriteId||p2.currentSpriteId)) {
+    notify('Même espèce — croisement impossible !'); return;
+  }
+  const slotIdx = breedingSlots.findIndex(s=>s===null);
+  if (slotIdx===-1) { notify('Tous les slots d\'élevage sont occupés !'); return; }
+  const eggId = Math.random()<0.5 ? (p1.spriteId||p1.currentSpriteId) : (p2.spriteId||p2.currentSpriteId);
+  const avgLevel = Math.floor(((p1.level||1)+(p2.level||1))/2);
+  const isShiny = Math.random()<(1/512)*(player._shinyLuckMult||1);
+  breedingSlots[slotIdx] = {
+    eggId, avgLevel, isShiny,
+    startTime: Date.now(), endTime: Date.now()+BREEDING_TIME,
+    parent1: p1.currentName||p1.name, parent2: p2.currentName||p2.name,
+  };
+  notify('🥚 Œuf en incubation ! Prêt dans 30 secondes !');
+  updateBreedingHUD();
   player.breedingSelected=[];
   renderBreedingScreen();
 }
