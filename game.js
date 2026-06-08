@@ -1710,27 +1710,24 @@ function doRest() {
     return;
   }
   lastRestTime = now;
-  const hpPct = 0.35, mpPct = 0.40;
-  const hpG = Math.floor(player.maxHp * hpPct);
-  const mpG = Math.floor(player.maxMp * mpPct);
-  player.hp = Math.min(player.maxHp, player.hp + hpG);
-  player.mp = Math.min(player.maxMp, player.mp + mpG);
-  // Recharge toutes les utilisations d'attaques
-  player.moveUses = player.moveUsesMax || 6;
+  // Soin complet : le Centre Pokémon restaure 100 % des PV et PP
+  player.hp = player.maxHp;
+  player.mp = player.maxMp;
+  player.moveUses  = player.moveUsesMax  || 6;
   player.mMoveUses = player.mMoveUsesMax || 4;
-  // Heal all roster pokemon too
+  // Soin de toute l'équipe
   if (player.roster) {
     player.roster.forEach(p => {
-      p.hp = Math.min(p.maxHp, p.hp + Math.floor(p.maxHp * hpPct));
-      p.mp = Math.min(p.maxMp || 50, (p.mp||0) + Math.floor((p.maxMp||50) * mpPct));
-      p.moveUses = p.moveUsesMax || 6;
+      p.hp = p.maxHp;
+      p.mp = p.maxMp || 50;
+      p.moveUses  = p.moveUsesMax  || 6;
       p.mMoveUses = p.mMoveUsesMax || 4;
     });
     syncActiveFromPlayer(); syncPlayerFromActive();
   }
   updateHUD();
-  setMessage(`🏥 ${player.currentName} se repose au Centre Pokémon. +${Math.round(hpPct*100)}% PV (+${hpG}). Attaques rechargées !`);
-  notify('Repos ! ⏳30s');
+  setMessage(`🏥 ${player.currentName} est soigné à 100 % au Centre Pokémon ! PV et attaques entièrement restaurés.`);
+  notify('🏥 Soin complet ! ⏳30s');
   // Countdown display on button
   const btn = document.querySelector('#action-btns .btn.green');
   if (btn) {
@@ -2584,6 +2581,32 @@ function checkEvolution() {
   }
 }
 
+// Appliqué au chargement d'une sauvegarde : si le Pokémon a passé
+// son (ses) seuil(s) d'évolution sans déclencher d'animation, on corrige
+// en silence pour éviter qu'un Salamèche niveau 20 reste Salamèche.
+function checkEvolutionOnLoad() {
+  if (!player) return;
+  let evolved = false;
+  let chain = EVO_CHAINS[player.currentSpriteId];
+  while (chain && player.level >= chain.level) {
+    player.currentSpriteId = chain.next;
+    player.currentName = chain.name;
+    player.maxHp += 20;
+    player.hp = Math.min(player.maxHp, player.hp + 20);
+    player.maxMp = (player.maxMp||60) + 10;
+    player.mp  = Math.min(player.maxMp, (player.mp||0) + 10);
+    player.atk += 5; player.def += 4; player.magic += 4;
+    evolved = true;
+    chain = EVO_CHAINS[player.currentSpriteId]; // check stade suivant
+  }
+  if (evolved) {
+    syncActiveFromPlayer();
+    updateHUD();
+    notify(`🌟 ${player.currentName} — évolution appliquée !`);
+    setMessage(`🌟 ${player.currentName} avait dépassé son niveau d\'évolution ! Évolution appliquée automatiquement.`);
+  }
+}
+
 function triggerEvolution(chain) {
   const oldName = player.currentName;
   player.currentSpriteId = chain.next;
@@ -3153,6 +3176,8 @@ function loadGame() {
   if (!player.mMoveElem)    player.mMoveElem    = player.type;
   // Sync active roster pokemon to player
   if (player.roster.length > 0) syncPlayerFromActive();
+  // Rattraper les évolutions manquées (Pokémon déjà au-delà du niveau d'évolution)
+  checkEvolutionOnLoad();
   if (!player.dexSeen) { player.dexSeen = []; initDexFromRoster(); }
   showScreen('game'); updateHUD(); updateKillHUD();
   showZone(ZONES[player.currentZone]?.name || 'PokéQuest');
