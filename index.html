@@ -55,6 +55,7 @@
       <button onclick="showScreen('trial');toggleDropdown()" class="smtile" style="--tc:#a855f7;--bc:rgba(168,85,247,.1);--brd:rgba(168,85,247,.25)"><span>⚡</span>TRIAL</button>
       <button onclick="saveGame();toggleDropdown()" class="smtile" style="--tc:#e63946;--bc:rgba(230,57,70,.1);--brd:rgba(230,57,70,.25)"><span>💾</span>SAVE</button>
       <button onclick="showScreen('saves');toggleDropdown()" class="smtile" style="--tc:#4cc9f0;--bc:rgba(76,201,240,.1);--brd:rgba(76,201,240,.25)"><span>📦</span>EXPORT</button>
+      <button onclick="showScreen('wiki');toggleDropdown()" class="smtile" style="--tc:#06d6a0;--bc:rgba(6,214,160,.1);--brd:rgba(6,214,160,.25)"><span>📚</span>WIKI</button>
     </div>
   </div>
 </div>
@@ -540,6 +541,15 @@
 <!-- ══ SAVE MANAGER ══ -->
 <div id="screen-saves" class="screen" style="background:rgba(7,7,16,.97);padding:1.5rem;overflow-y:auto">
   <div style="width:min(560px,97vw);margin:0 auto" id="saves-content"></div>
+</div>
+
+<!-- ══ WIKI ══ -->
+<div id="screen-wiki" class="screen" style="background:rgba(7,7,16,.97);padding:1.5rem;overflow-y:auto">
+  <div style="width:min(640px,97vw);margin:0 auto">
+    <div style="font-family:'Press Start 2P',monospace;font-size:.75rem;color:#06d6a0;text-align:center;margin-bottom:1.2rem;text-shadow:0 0 12px rgba(6,214,160,.5)">📚 WIKI — GUIDE DU JOUEUR</div>
+    <div id="wiki-content"></div>
+    <button class="btn" onclick="showScreen('game')" style="width:100%;margin-top:1rem;background:linear-gradient(180deg,#555,#333)">↩ RETOUR</button>
+  </div>
 </div>
 <!-- Hidden file input for import -->
 <input type="file" id="save-file-input" accept=".json,.pwsave" style="display:none" onchange="handleSaveFileImport(event)"/>

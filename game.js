@@ -1070,6 +1070,7 @@ function showScreen(id) {
   else if (id==='forge')        { document.getElementById('screen-forge').classList.add('active'); renderForge(); }
   else if (id==='trial')        { document.getElementById('screen-trial').classList.add('active'); }
   else if (id==='saves')        { document.getElementById('screen-saves').classList.add('active'); renderSaveManager(); }
+  else if (id==='wiki')         { document.getElementById('screen-wiki').classList.add('active'); renderWiki(); }
   currentScreen = id;
 }
 
@@ -2201,19 +2202,25 @@ function battleAction(action) {
     // Tour mode: handle floor completion — ONLY if explicitly in a tour battle
     if (player._tourBattle && tourState) {
       player._tourBattle = false;
-      player.tourFloor = tourState.floor;
-      const isRewardFloor = player.tourFloor % 10 === 0;
+      const completedFloor = tourState.floor;
+      const isReplay = !!tourState.isReplay;
+      // Only advance tourFloor if this is a new record
+      if (!isReplay && completedFloor > (player.tourFloor || 0)) {
+        player.tourFloor = completedFloor;
+      }
+      const isRewardFloor = completedFloor % 10 === 0;
       setTimeout(()=>{
         stopAutoBattle();
         disableBattleButtons(false);
         syncActiveFromPlayer();
         showScreen('game');
         updateHUD();
-        if (isRewardFloor) {
-          showTourReward(player.tourFloor);
+        if (isRewardFloor && !isReplay) {
+          showTourReward(completedFloor);
         } else {
-          setMessage(`🏆 Étage ${player.tourFloor} de la Tour complété !`);
-          notify(`🏆 Étage ${player.tourFloor} ✓`);
+          const replayTag = isReplay ? ' (rejoué)' : '';
+          setMessage(`🏆 Étage ${completedFloor} de la Tour complété${replayTag} !`);
+          notify(`🏆 Étage ${completedFloor} ✓${replayTag}`);
           showTourMode();
         }
       }, 1800);
@@ -5587,9 +5594,115 @@ function levelUpPokemon(p) {
 }
 
 // ══════════════════════════════════════════
+// WIKI — GUIDE DU JOUEUR
+// ══════════════════════════════════════════
+function renderWiki() {
+  const el = document.getElementById('wiki-content');
+  if (!el) return;
+  const section = (icon, title, color, rows) => `
+    <details style="margin-bottom:.7rem;border:1px solid ${color}44;border-radius:10px;overflow:hidden">
+      <summary style="cursor:pointer;padding:.7rem 1rem;background:${color}18;font-family:'Press Start 2P',monospace;font-size:.45rem;color:${color};display:flex;align-items:center;gap:.5rem;list-style:none;user-select:none">
+        ${icon} ${title}
+      </summary>
+      <div style="padding:.8rem 1rem;display:flex;flex-direction:column;gap:.45rem;background:rgba(0,0,0,.3)">
+        ${rows.map(r=>`<div style="font-family:'Press Start 2P',monospace;font-size:.38rem;color:rgba(255,255,255,.75);line-height:1.9;padding:.3rem .5rem;background:rgba(255,255,255,.03);border-left:2px solid ${color}66;border-radius:0 6px 6px 0">${r}</div>`).join('')}
+      </div>
+    </details>`;
+  el.innerHTML = [
+    section('🎮','EXPLORATION & COMBAT','#06d6a0',[
+      '➤ Explore pour rencontrer des Pokémon sauvages et gagner de l\'or.',
+      '➤ Chaque vague de 10 victoires déclenche un Boss d\'exploration.',
+      '➤ Le Farm Auto explore et combat automatiquement en boucle.',
+      '➤ Utilise ✋ MANUEL en combat pour stopper l\'auto et agir toi-même.',
+      '➤ Les Pokémon K.O. ne peuvent pas combattre — soigne-les au Centre.',
+    ]),
+    section('⚔️','ACTIONS EN COMBAT','#4cc9f0',[
+      '➤ ATTAQUE : dégâts physiques standards, toujours disponible.',
+      '➤ CAPACITÉ : attaque spéciale élémentaire, 4 utilisations par combat.',
+      '➤ POTION : soigne ton Pokémon actif en plein combat.',
+      '➤ CAPTURER : lance une Poké Ball sur le Pokémon sauvage.',
+      '➤ CHANGER : switche vers un autre Pokémon de ton équipe.',
+      '➤ FUITE : 70 % de chance de quitter le combat (impossible en modes spéciaux).',
+    ]),
+    section('⚽','CAPTURE','#ffd60a',[
+      '➤ La capture est possible sur tous les Pokémon sauvages ET les boss d\'exploration.',
+      '➤ DÉSACTIVÉE pendant : Tour Infinie, World Boss, Trial, Dresseurs.',
+      '➤ Poké Ball ×1 · Super Ball ×1.5 · Hyper Ball ×2 · Master Ball = capture garantie.',
+      '➤ Les Pokémon K.O. ou avec peu de PV sont plus faciles à capturer.',
+      '➤ Ton Pokédex se complète automatiquement à chaque nouvelle capture.',
+    ]),
+    section('✨','POKÉMON SHINY','#f72585',[
+      '➤ Taux d\'apparition : 1 chance sur 256 à chaque rencontre.',
+      '➤ Un shiny a ses stats boostées de +20 % sur toutes les valeurs.',
+      '➤ Reconnaissable au badge ✨ sur le sprite et dans ton équipe.',
+      '➤ La Gemme Éclat (boutique Trial) force un Pokémon de ton équipe à devenir shiny.',
+      '➤ Les œufs d\'élevage peuvent aussi produire des shiny (même taux).',
+    ]),
+    section('📏','VARIANTES DE TAILLE','#a855f7',[
+      '➤ Chaque Pokémon capturé reçoit une taille aléatoire qui modifie ses stats.',
+      '➤ 🔬 Lilliputien (2%) : stats ×0.80 — très rare, stats réduites.',
+      '➤ 🔹 Petit (13%) : stats ×0.92.',
+      '➤ ⬜ Normal (50%) : stats ×1.00 — le plus commun.',
+      '➤ 🔷 Grand (25%) : stats ×1.10.',
+      '➤ 🔶 Géant (8%) : stats ×1.25.',
+      '➤ 🔴 Colossal (2%) : stats ×1.50 — très rare, stats très élevées.',
+    ]),
+    section('🏆','TOUR INFINIE','#ffd60a',[
+      '➤ Accessible au niveau Dresseur 10 via le menu ☰.',
+      '➤ Affronte des ennemis de plus en plus puissants à chaque étage.',
+      '➤ Tu peux choisir de refaire un étage déjà vaincu (sélecteur d\'étage).',
+      '➤ Tous les 10 étages : récompenses spéciales (balls, bonbons, or).',
+      '➤ La capture est DÉSACTIVÉE en Tour — uniquement pour la gloire.',
+      '➤ Défaite = sortie de la Tour, étage remis à zéro.',
+    ]),
+    section('⚡','MODE TRIAL','#a855f7',[
+      '➤ Affronte des Pokémon Légendaires en échange de Points Trial (PT).',
+      '➤ 5 tiers de difficulté : Tier 1 (20 PT) → Tier 5 (85 PT).',
+      '➤ Les PT s\'accumulent et servent dans la Boutique Trial exclusive.',
+      '➤ Boutique Trial : Orbes invocateurs, Gemme Éclat — introuvables ailleurs.',
+      '➤ Les Orbes permettent de déclencher un combat contre un légendaire capturable.',
+      '➤ La capture est DÉSACTIVÉE pendant les défis Trial eux-mêmes.',
+    ]),
+    section('🌍','WORLD BOSS','#e63946',[
+      '➤ Apparaît toutes les 2 heures environ (timer en bas de l\'écran).',
+      '➤ Pokémon légendaire extrêmement puissant — prépare ton meilleur combattant.',
+      '➤ Récompense : or massif + bonus spéciaux selon le boss.',
+      '➤ La capture est DÉSACTIVÉE contre le World Boss.',
+      '➤ Défaite = aucune pénalité, tu peux retenter dès que le timer le permet.',
+    ]),
+    section('🥚','ÉLEVAGE','#ff88cc',[
+      '➤ Sélectionne deux Pokémon compatibles pour créer un œuf.',
+      '➤ L\'œuf éclot après un certain nombre de pas (explorations).',
+      '➤ Le bébé hérite d\'un talent aléatoire parmi ceux de ses parents.',
+      '➤ Chance de shiny (1/256) comme pour les captures sauvages.',
+    ]),
+    section('✨','TALENTS & COMPÉTENCES','#c77dff',[
+      '➤ Chaque Pokémon peut avoir jusqu\'à 3 talents passifs.',
+      '➤ Les talents se débloquent avec des Jetons de Talent (victoires, succès).',
+      '➤ Exemples : Vol-Santé (soin auto), Bouclier, Coup Critique…',
+      '➤ L\'écran Compétences (📊) montre les bonus de ton Dresseur.',
+    ]),
+    section('⭐','PRESTIGE','#ffd60a',[
+      '➤ Disponible une fois ton Pokémon actif au niveau 100.',
+      '➤ Remet le jeu à zéro mais octroie des bonus permanents cumulables.',
+      '➤ Plus tu prestiges souvent, plus tes bonus (or, XP, stats) augmentent.',
+      '➤ Les succès et le Pokédex sont conservés après un Prestige.',
+    ]),
+    section('💾','SAUVEGARDE','#4cc9f0',[
+      '➤ Sauvegarde automatique à chaque victoire de combat.',
+      '➤ SAVE dans le menu = sauvegarde manuelle immédiate.',
+      '➤ EXPORT : télécharge un fichier .pwsave — garde-le précieusement !',
+      '➤ Code de sauvegarde : texte Base64 pour copier-coller entre appareils.',
+      '➤ En cas de perte : le bouton "Restaurer depuis IndexedDB" récupère une copie locale.',
+    ]),
+  ].join('');
+}
+
+// ══════════════════════════════════════════
 // MODE TOUR
 // ══════════════════════════════════════════
 let tourState = null; // { floor, pokemon, enemy, phase:'choose'|'fight'|'reward' }
+let _tourSelectedFloor = null; // null = prochain étage non battu
 
 const TOUR_FLOOR_ENEMIES = floor => {
   const scale = 1 + floor * 0.18;
@@ -5816,14 +5929,42 @@ function closeTourMode() {
 }
 
 function renderTourScreen() {
-  const floor = (player.tourFloor || 0);
-  const floorDisplay = floor + 1;
+  const maxFloor = (player.tourFloor || 0); // highest beaten floor (0 = none beaten yet)
+  // Default selection: next unbeaten floor
+  if (_tourSelectedFloor === null) _tourSelectedFloor = maxFloor + 1;
+  // Clamp: can't select beyond next floor
+  if (_tourSelectedFloor > maxFloor + 1) _tourSelectedFloor = maxFloor + 1;
+
+  const selectedFloor = _tourSelectedFloor;
+  const isRewardFloor = selectedFloor % 10 === 0;
+  const diff = (1 + (selectedFloor - 1) * 0.18).toFixed(2);
   const el = document.getElementById('tour-content');
   if (!el) return;
 
-  // Choose pokemon for this floor
+  // Floor selector grid — floors 1..maxFloor already beaten + next floor
+  let floorGrid = '';
+  if (maxFloor >= 1) {
+    const badges = [];
+    for (let f = 1; f <= maxFloor + 1; f++) {
+      const isNext = f === maxFloor + 1;
+      const isSel  = f === selectedFloor;
+      const isRew  = f % 10 === 0;
+      const bg     = isSel  ? '#ffd60a' : isNext ? 'rgba(255,214,10,.15)' : isRew ? 'rgba(255,214,10,.08)' : 'rgba(255,255,255,.05)';
+      const border = isSel  ? '#ffd60a' : isNext ? 'rgba(255,214,10,.5)'  : 'rgba(255,255,255,.15)';
+      const color  = isSel  ? '#0a0a1a' : isNext ? '#ffd60a'              : isRew ? '#ffd700' : 'rgba(255,255,255,.7)';
+      const label  = isNext ? `▶ ${f}` : isRew ? `★ ${f}` : `${f}`;
+      badges.push(`<div onclick="selectTourFloor(${f})" style="cursor:pointer;padding:.3rem .4rem;background:${bg};border:1.5px solid ${border};border-radius:6px;font-family:'Press Start 2P',monospace;font-size:.35rem;color:${color};text-align:center;min-width:28px;transition:all .15s">${label}</div>`);
+    }
+    floorGrid = `
+      <div style="margin-bottom:.9rem">
+        <div style="font-family:'Press Start 2P',monospace;font-size:.4rem;color:rgba(255,255,255,.5);margin-bottom:.4rem">Choisir l'étage :</div>
+        <div style="display:flex;flex-wrap:wrap;gap:.3rem">${badges.join('')}</div>
+      </div>`;
+  }
+
+  // Pokemon picker
   const rosterAlive = (player.roster || []).filter(p => p.hp > 0);
-  const pokeChoices = rosterAlive.map((p, i) => {
+  const pokeChoices = rosterAlive.map(p => {
     const spriteId = p.currentSpriteId || p.spriteId;
     const imgSrc = p.isShiny ? SPRITE_SHINY(spriteId) : SPRITE_FRONT(spriteId);
     const heldItem = p.heldItem ? HELD_ITEMS[p.heldItem] : null;
@@ -5840,24 +5981,35 @@ function renderTourScreen() {
     </div>`;
   }).join('');
 
-  const isRewardFloor = floorDisplay % 10 === 0;
   el.innerHTML = `
     <div style="text-align:center;margin-bottom:1rem">
       <div style="font-family:'Press Start 2P',monospace;font-size:.75rem;color:var(--yellow);text-shadow:2px 2px 0 var(--pokered)">🏆 TOUR INFINIE</div>
-      <div style="font-family:'Press Start 2P',monospace;font-size:.5rem;color:rgba(255,255,255,.6);margin-top:.4rem">Étage <span style="color:var(--yellow)">${floorDisplay}</span>${isRewardFloor ? ' <span style="color:#ffd700">★ RÉCOMPENSE !</span>' : ''}</div>
-      <div style="font-size:.75rem;color:rgba(255,255,255,.5);margin-top:.2rem">Difficulté : x${(1 + floor * 0.18).toFixed(2)}</div>
+      <div style="font-family:'Press Start 2P',monospace;font-size:.5rem;color:rgba(255,255,255,.6);margin-top:.4rem">
+        Étage sélectionné : <span style="color:var(--yellow)">${selectedFloor}</span>${isRewardFloor ? ' <span style="color:#ffd700">★ RÉCOMPENSE !</span>' : ''}
+        ${selectedFloor <= maxFloor ? ' <span style="color:#06d6a0;font-size:.4rem">(déjà battu)</span>' : ''}
+      </div>
+      <div style="font-size:.75rem;color:rgba(255,255,255,.5);margin-top:.2rem">Difficulté : ×${diff}</div>
     </div>
+    ${floorGrid}
     <div style="font-family:'Press Start 2P',monospace;font-size:.45rem;color:var(--blue);margin-bottom:.6rem">Choisissez votre Pokémon :</div>
     <div style="display:flex;flex-direction:column;gap:.5rem;margin-bottom:1rem">${pokeChoices || '<div style="color:rgba(255,100,100,.8);font-size:.6rem">Tous vos Pokémon sont K.O. !</div>'}</div>
     <button class="btn red" onclick="closeTourMode()" style="width:100%">↩ QUITTER LA TOUR</button>
   `;
 }
 
+function selectTourFloor(f) {
+  _tourSelectedFloor = f;
+  renderTourScreen();
+}
+
 function startTourFloor(rosterIdx) {
   if (!player.roster[rosterIdx] || player.roster[rosterIdx].hp <= 0) return;
-  const floor = player.tourFloor || 0;
-  const tourEnemy = TOUR_FLOOR_ENEMIES(floor + 1);
-  tourState = { floor: floor + 1, rosterIdx };
+  const maxFloor = player.tourFloor || 0;
+  const targetFloor = (_tourSelectedFloor !== null) ? _tourSelectedFloor : (maxFloor + 1);
+  _tourSelectedFloor = null; // reset pour la prochaine ouverture
+  const tourEnemy = TOUR_FLOOR_ENEMIES(targetFloor);
+  // Si on rejoue un étage déjà battu, on ne met pas à jour tourFloor en cas de victoire
+  tourState = { floor: targetFloor, rosterIdx, isReplay: targetFloor <= maxFloor };
 
   // Temporarily set active pokemon to chosen one
   syncActiveFromPlayer();
