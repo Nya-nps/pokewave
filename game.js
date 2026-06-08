@@ -625,47 +625,56 @@ function typeToAnim(type) {
   return map[type] || 'normal';
 }
 
-// Niveau min/max par zone
+// Niveau min/max par zone (progression ZONE_ORDER + zones annexes)
+// Chaque zone a une tranche de niveau fixe — le niveau ennemi est tiré aléatoirement dans cet intervalle.
 const ZONE_LEVELS = {
-  'bourg-palette':  [2,5],
-  'route-1':        [3,6],
-  'jadielle':       [4,7],
-  'route-2':        [5,9],
-  'foret-jade':     [6,10],
-  'argenta':        [8,13],
-  'route-3':        [9,14],
-  'mt-lune':        [10,16],
-  'brindibourg':    [13,18],
-  'route-4':        [14,19],
-  'route-24':       [14,18],
-  'route-25':       [13,17],
-  'safrania':       [18,25],
-  'route-5':        [15,20],
-  'route-6':        [16,21],
-  'cramois-ile':    [20,28],
-  'route-7':        [18,24],
-  'lavanville':     [20,26],
-  'route-8':        [18,24],
-  'route-12':       [22,28],
-  'azuria':         [20,27],
-  'grotte-azuria':  [19,25],
-  'route-9':        [20,26],
-  'route-10':       [21,27],
-  'carmin-sur-mer': [25,32],
-  'route-11':       [23,29],
-  'route-21':       [25,33],
-  'parmanie':       [28,36],
-  'route-13':       [26,32],
-  'route-14':       [27,33],
-  'route-15':       [25,31],
-  'celadopole':     [22,29],
-  'route-16':       [20,26],
-  'route-19':       [28,35],
-  'route-20':       [29,37],
-  'iles-ecume':     [35,45],
-  'route-22':       [32,40],
-  'ligue-pokemon':  [50,70],
-  'jadielle-nord':  [6,11],
+  // ── Zones de progression principale (ZONE_ORDER) ──
+  'bourg-palette':  [1,  8],
+  'route-3':        [5,  12],
+  'foret-jade':     [8,  15],
+  'mt-lune':        [12, 20],
+  'argenta':        [15, 25],
+  'brindibourg':    [20, 30],
+  'route-5-6':      [25, 35],
+  'celadopole':     [30, 40],
+  'route-9-10':     [35, 45],
+  'tour-pokemon':   [38, 48],
+  'lavanville':     [42, 52],
+  'grotte-azuria':  [45, 55],
+  'safrania':       [50, 60],
+  'route-13-15':    [52, 62],
+  'parmanie':       [55, 65],
+  'safari-zone':    [58, 68],
+  'carmin-sur-mer': [62, 72],
+  'route-19-20':    [65, 75],
+  'iles-ecume':     [70, 85],
+  'ligue-pokemon':  [80, 100],
+  // ── Zones annexes ──
+  'route-1':        [3,  6],
+  'jadielle':       [4,  7],
+  'route-2':        [5,  9],
+  'route-4':        [14, 19],
+  'route-24':       [14, 18],
+  'route-25':       [13, 17],
+  'route-5':        [20, 27],
+  'route-6':        [22, 28],
+  'cramois-ile':    [28, 36],
+  'route-7':        [24, 32],
+  'route-8':        [24, 32],
+  'route-12':       [30, 38],
+  'azuria':         [26, 34],
+  'route-9':        [32, 40],
+  'route-10':       [33, 41],
+  'route-11':       [28, 36],
+  'route-21':       [40, 50],
+  'route-13':       [38, 48],
+  'route-14':       [40, 50],
+  'route-15':       [38, 47],
+  'route-16':       [28, 36],
+  'route-19':       [55, 65],
+  'route-20':       [57, 67],
+  'route-22':       [48, 58],
+  'jadielle-nord':  [6,  11],
 };
 
 // Vitesse originale Gen 1 par pokémon
@@ -1607,21 +1616,9 @@ function updateKillHUD() {
   if (bf) bf.style.width = `${Math.min(100,(display/KILLS_PER_WAVE)*100)}%`;
   if (dl) dl.textContent = `×${diffMult}`;
   if (bb) bb.style.display = bossReady ? 'inline-block' : 'none';
-  _updateQuestHUD();
-}
-
-// ── Mini-tracker quêtes journalières dans le HUD ──
-function _updateQuestHUD() {
-  const bar = document.getElementById('quest-hud-bar');
-  if (!bar || !player) return;
-  const quests = player.dailyQuests || [];
-  if (!quests.length) { bar.style.display='none'; return; }
-  bar.style.display = 'flex';
-  bar.innerHTML = quests.map(q => {
-    const pct = Math.min(100, Math.round(((q.progress||0)/q.goal)*100));
-    const color = q.done ? '#2dc653' : pct > 50 ? '#ffd60a' : 'rgba(255,255,255,.5)';
-    return `<span title="${q.desc}" style="color:${color}">${q.done?'✅':' '} ${q.title.length > 12 ? q.title.slice(0,12)+'…':q.title} ${q.done?'':pct+'%'}</span>`;
-  }).join('<span style="color:rgba(255,255,255,.2)">│</span>');
+  // Bouton Replay Boss — visible si au moins 1 boss a été battu
+  const brp = _hud('btn-boss-replay');
+  if (brp) brp.style.display = (player.lastBossWave||0) >= 1 ? 'inline-block' : 'none';
 }
 
 function recordKill() {
@@ -1653,8 +1650,10 @@ function _bossFixedLevel(wave) {
   return Math.min(100, 5 + wave * 5);
 }
 function _bossStatMult(wave) {
-  // Multiplicateur de stats : 1.8 en vague 1, +0.2 par vague, max 8.0
-  return Math.min(8.0, 1.6 + wave * 0.2);
+  // Vague 1 : ×1.8 (intro abordable)
+  // Vague 2+ : palier plus dur — ×2.2 puis +0.30 par vague (max ×10.0)
+  if (wave <= 1) return 1.8;
+  return Math.min(10.0, 2.2 + (wave - 2) * 0.30);
 }
 
 function generateBossEnemy() {
@@ -1721,6 +1720,71 @@ function challengeBoss() {
   startBattle(boss);
 }
 
+// ── Replay Boss ──────────────────────────
+function openBossReplayMenu() {
+  if (!player) return;
+  const maxWave = player.lastBossWave || 0;
+  if (maxWave < 1) { notify('Aucun boss battu encore !'); return; }
+  const list = document.getElementById('boss-replay-list');
+  if (list) {
+    const BOSS_POOL = [
+      {id:6,n:'Dracaufeu'},{id:9,n:'Tortank'},{id:3,n:'Florizarre'},{id:130,n:'Léviator'},
+      {id:131,n:'Lokhlass'},{id:143,n:'Ronflex'},{id:149,n:'Dracolosse'},{id:142,n:'Ptéra'},
+      {id:59,n:'Arcanin'},{id:65,n:'Alakazam'},{id:68,n:'Mackogneur'},{id:94,n:'Ectoplasma'},
+      {id:144,n:'Artikodin'},{id:145,n:'Électhor'},{id:146,n:'Sulfura'},{id:150,n:'Mewtwo'},{id:151,n:'Mew'},
+    ];
+    list.innerHTML = '';
+    for (let w = 1; w <= maxWave; w++) {
+      const b = BOSS_POOL[(w-1) % BOSS_POOL.length];
+      const lv = _bossFixedLevel(w);
+      const sc = _bossStatMult(w);
+      const el = document.createElement('div');
+      el.style.cssText = 'display:flex;align-items:center;gap:.6rem;padding:.45rem .6rem;background:rgba(255,255,255,.04);border:1px solid rgba(255,100,50,.25);border-radius:8px;cursor:pointer;font-family:\'Press Start 2P\',monospace;font-size:.34rem;color:rgba(255,255,255,.8)';
+      el.innerHTML = `<img src="${SPRITE_FRONT(b.id)}" style="width:36px;height:36px;image-rendering:pixelated"/><span style="flex:1">V.${w} — ${b.n} Niv.${lv}</span><span style="color:#ff8055">×${sc.toFixed(1)} stats</span>`;
+      el.onmouseenter = () => { el.style.background='rgba(255,100,50,.12)'; el.style.borderColor='rgba(255,100,50,.6)'; };
+      el.onmouseleave = () => { el.style.background='rgba(255,255,255,.04)'; el.style.borderColor='rgba(255,100,50,.25)'; };
+      el.onclick = () => { closeBossReplayMenu(); replayBoss(w); };
+      list.appendChild(el);
+    }
+  }
+  document.getElementById('boss-replay-overlay').style.display = 'flex';
+}
+function closeBossReplayMenu() {
+  document.getElementById('boss-replay-overlay').style.display = 'none';
+}
+function replayBoss(wave) {
+  if (!player) return;
+  // Générer le boss de la vague demandée (niveau et stats fixes)
+  const bossLevel = _bossFixedLevel(wave);
+  const sc        = _bossStatMult(wave);
+  const BOSS_POOL = [
+    {id:6,n:'Dracaufeu',t:'Feu'},{id:9,n:'Tortank',t:'Eau'},{id:3,n:'Florizarre',t:'Plante'},
+    {id:130,n:'Léviator',t:'Eau'},{id:131,n:'Lokhlass',t:'Glace'},{id:143,n:'Ronflex',t:'Normal'},
+    {id:149,n:'Dracolosse',t:'Dragon'},{id:142,n:'Ptéra',t:'Vol'},{id:59,n:'Arcanin',t:'Feu'},
+    {id:65,n:'Alakazam',t:'Psy'},{id:68,n:'Mackogneur',t:'Combat'},{id:94,n:'Ectoplasma',t:'Spectre'},
+    {id:144,n:'Artikodin',t:'Glace'},{id:145,n:'Électhor',t:'Électrik'},{id:146,n:'Sulfura',t:'Feu'},
+    {id:150,n:'Mewtwo',t:'Psy'},{id:151,n:'Mew',t:'Psy'},
+  ];
+  const b = BOSS_POOL[(wave-1) % BOSS_POOL.length];
+  const pData = (typeof ALL_POKEMON!=='undefined' ? ALL_POKEMON : GEN1).find(p => p.id === b.id);
+  const hp  = Math.round((pData?.hp||80)  * sc * 1.4);
+  const atk = Math.round((pData?.atk||12) * sc);
+  const def = Math.round((pData?.def||8)  * sc * 0.9);
+  const spd = Math.round(60 * (1 + wave * 0.03));
+  const boss = {
+    name: `🔁 ${b.n} (Boss V.${wave})`,
+    id: b.id, level: bossLevel,
+    hp, maxHp: hp, atk, def, spd, type: b.t,
+    xp: 0, gold: 0, // Pas de récompenses en replay
+    isBoss: true, isShiny: false,
+    _bossWave: wave, _statMult: sc,
+  };
+  notify(`🔁 Replay Boss V.${wave} — Niv.${bossLevel} ×${sc.toFixed(1)} stats`);
+  setMessage(`🔁 Entraînement — Boss Vague ${wave} : ${boss.name} Niv.${bossLevel} ! Aucune récompense.`);
+  player._bossBattle = { wave, isReplay: true };
+  startBattle(boss);
+}
+
 // ══════════════════════════════════════════
 // EXPLORE
 // ══════════════════════════════════════════
@@ -1748,10 +1812,11 @@ function doExplore() {
       : _allPoke[Math.floor(Math.random() * _allPoke.length)].id;
     const pData   = (_pokeMap?.get(pokeId)) || _allPoke.find(p => p.id === pokeId) || _allPoke[Math.floor(Math.random()*_allPoke.length)];
 
-    const baseLv    = Math.max(1, Math.floor((player.level||1) * 0.8 + wave * 1.5));
-    const enemyLevel = baseLv + Math.floor(Math.random() * 4);
-    const lvlScale  = scale * (1 + enemyLevel * 0.12);
-    const baseSpd   = _allSpdT[pData.id] || 50;
+    // Tranche de niveau fixe par zone (plus de scaling sur le niveau du joueur)
+    const zoneLvRange = ZONE_LEVELS[zoneId] || [1, 8];
+    const enemyLevel  = zoneLvRange[0] + Math.floor(Math.random() * (zoneLvRange[1] - zoneLvRange[0] + 1));
+    const lvlScale    = 1 + enemyLevel * 0.12;
+    const baseSpd     = _allSpdT[pData.id] || 50;
     const e = {
       name: pData.n, id: pData.id, level: enemyLevel,
       hp:   Math.round(pData.hp  * lvlScale),
@@ -1979,12 +2044,22 @@ function startBattle(enemyData) {
   // Pokédex : seule la capture débloque l'entrée (pas la rencontre)
   // → markDexSeen est appelé uniquement dans addCapturedToRoster
 
-  // Si FARM AUTO actif → activer auto-combat automatiquement
-  if (farmAutoOn) {
+  // Shiny rencontré : animation + pause farm auto obligatoire
+  if (enemy.isShiny) {
+    triggerShinyEncounterEffect();
+    if (farmAutoOn) {
+      // Stopper le farm auto pour que le joueur puisse décider de capturer
+      farmAutoOn = false;
+      if (farmAutoTimer) { clearTimeout(farmAutoTimer); farmAutoTimer = null; }
+      const faBtn = document.getElementById('btn-farm-auto');
+      if (faBtn) { faBtn.style.background='linear-gradient(180deg,#888,#555)'; faBtn.style.boxShadow='0 4px 0 #222'; faBtn.textContent='🤖 AUTO'; }
+      notify('✨ SHINY ! 🛑 Farm Auto pausé — prends ta décision !');
+    }
+    // On ne lance PAS l'auto-combat sur un shiny — combat manuel uniquement
+  } else if (farmAutoOn) {
     autoBattleOn = true;
     const abBtn = document.getElementById('btn-auto');
     if (abBtn) { abBtn.style.background='linear-gradient(180deg,#2dc653,#1a8035)'; abBtn.style.boxShadow='0 4px 0 #0c4019'; abBtn.textContent='🤖 AUTO ON'; }
-    // Lancer le premier coup auto après un délai pour laisser le combat s'initialiser
     if (autoBattleTimer) clearTimeout(autoBattleTimer);
     autoBattleTimer = setTimeout(runAutoAction, 1200);
   }
@@ -2444,19 +2519,32 @@ function battleAction(action) {
     // Boss battle victory
     if (player._bossBattle) {
       const bossWave = (player._bossBattle && player._bossBattle.wave) ? player._bossBattle.wave : getWaveState().wave;
+      const wasReplay = !!player._bossBattle.isReplay;
       player._bossBattle = null;
-      if (!player.lastBossWave || player.lastBossWave < bossWave) player.lastBossWave = bossWave;
-      if (!player.totalKills) player.totalKills = bossWave * KILLS_PER_WAVE;
+      if (!wasReplay) {
+        // Boss classique : avancer lastBossWave et réinitialiser le compteur de kills
+        // (empêche l'enchaînement immédiat de plusieurs boss)
+        if (!player.lastBossWave || player.lastBossWave < bossWave) player.lastBossWave = bossWave;
+        // Forcer totalKills à bossWave × 10 pour repartir de 0/10
+        player.totalKills = bossWave * KILLS_PER_WAVE;
+      }
       updateKillHUD();
-      const bonusGold = Math.round(500 * bossWave);
-      player.gold += bonusGold;
-      updateHUD();
-      notify(`🏆 Boss Vague ${bossWave} vaincu ! +${bonusGold}₽`);
-      setMessage(`🏆 Boss vaincu ! Vague ${bossWave+1} commence — difficulté +15% ! +${bonusGold}₽`);
-      updateGlobalStats('boss_kills');
-      gainSkillPoints(3 + bossWave);
-      checkAchievements();
-      _silentSave(); // toujours sauvegarder après un boss
+      if (wasReplay) {
+        // Replay : pas de récompenses, juste un message
+        updateHUD();
+        notify(`🔁 Boss Vague ${bossWave} rejoué — entraînement accompli !`);
+        setMessage(`🔁 Boss Vague ${bossWave} rejoué — aucune récompense (entraînement pur).`);
+      } else {
+        const bonusGold = Math.round(500 * bossWave);
+        player.gold += bonusGold;
+        updateHUD();
+        notify(`🏆 Boss Vague ${bossWave} vaincu ! +${bonusGold}₽`);
+        setMessage(`🏆 Boss vaincu ! Vague ${bossWave+1} commence — difficulté +15% ! +${bonusGold}₽`);
+        updateGlobalStats('boss_kills');
+        gainSkillPoints(3 + bossWave);
+        checkAchievements();
+        _silentSave();
+      }
       setTimeout(()=>{ stopAutoBattle(); disableBattleButtons(false); syncActiveFromPlayer(); showScreen('game'); updateHUD(); updateKillHUD(); }, 1800);
       return;
     }
@@ -6477,6 +6565,33 @@ document.addEventListener('click', function(e) {
   if (!overlay || overlay.style.display === 'none') return;
   if (e.target === overlay) closeZonePicker();
 }, { passive: true });
+
+// ══════════════════════════════════════════
+// SHINY ENCOUNTER EFFECT
+// ══════════════════════════════════════════
+function triggerShinyEncounterEffect() {
+  // Flash lumineux plein écran
+  const overlay = document.getElementById('shiny-flash-overlay');
+  if (overlay) {
+    overlay.style.display = 'block';
+    // Relancer l'animation à chaque rencontre
+    overlay.style.animation = 'none';
+    void overlay.offsetWidth; // reflow pour reset l'animation
+    overlay.style.animation = 'shinyFlash 1.5s ease-out forwards';
+    setTimeout(() => { overlay.style.display = 'none'; }, 1600);
+  }
+  // Animation scintillante sur le sprite ennemi
+  const sprite = document.getElementById('enemy-battle-img');
+  if (sprite) {
+    sprite.classList.remove('shiny-anim');
+    void sprite.offsetWidth;
+    sprite.classList.add('shiny-anim');
+    setTimeout(() => sprite.classList.remove('shiny-anim'), 1300);
+  }
+  // Message et notification
+  notify('✨ OH ! Un Pokémon SHINY apparaît !!!');
+  setMessage('✨✨ SHINY ! Un Pokémon aux couleurs uniques vous défie — capturez-le ! ✨✨');
+}
 
 // ══════════════════════════════════════════
 // RACCOURCIS CLAVIER (QoL)

@@ -958,3 +958,18 @@ input, select, textarea { font-size: 16px !important; }
 .zone-choice-item .zc-icon { font-size: .75rem; flex-shrink: 0; }
 .zone-choice-item .zc-name { flex: 1; }
 .zone-choice-item .zc-badge { font-size: .6rem; }
+
+/* ── Shiny encounter flash animation ── */
+@keyframes shinyFlash {
+  0%   { opacity: 0; transform: scale(0.6); }
+  15%  { opacity: 1; transform: scale(1.15); }
+  40%  { opacity: .9; }
+  100% { opacity: 0; transform: scale(1.4); }
+}
+@keyframes shinySprite {
+  0%,100% { filter: drop-shadow(0 0 0px gold); }
+  25%  { filter: drop-shadow(0 0 18px gold) drop-shadow(0 0 36px #fffbe0) brightness(1.6); }
+  50%  { filter: drop-shadow(0 0 8px gold); }
+  75%  { filter: drop-shadow(0 0 22px #fff176) brightness(1.4); }
+}
+.shiny-anim { animation: shinySprite 1.2s ease-in-out; }
