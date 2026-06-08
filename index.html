@@ -238,14 +238,6 @@
       <button class="btn red" onclick="closeCatchMenu()">Annuler</button>
     </div>
   </div>
-  <!-- switch pokemon menu -->
-  <div id="switch-pokemon-menu">
-    <div style="background:rgba(10,10,30,.97);border:3px solid var(--blue);border-radius:14px;padding:1.5rem;width:min(500px,95vw);display:flex;flex-direction:column;gap:1rem">
-      <div style="font-family:'Press Start 2P',monospace;font-size:.55rem;color:var(--blue);text-align:center;line-height:2">⇄ Changer de Pokémon</div>
-      <div id="switch-poke-list" style="display:flex;flex-wrap:wrap;gap:.6rem;justify-content:center"></div>
-      <button class="btn red" onclick="closeSwitchMenu()">Annuler</button>
-    </div>
-  </div>
 </div>
 
 <!-- ══ INVENTORY ══ -->
@@ -554,7 +546,16 @@
 <!-- Hidden file input for import -->
 <input type="file" id="save-file-input" accept=".json,.pwsave" style="display:none" onchange="handleSaveFileImport(event)"/>
 
-<script src="game.js?v=8"></script>
+<!-- ══ SWITCH MENU — top-level, hors de tout stacking context ══ -->
+<div id="switch-pokemon-menu" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.82);align-items:center;justify-content:center">
+  <div style="background:rgba(10,10,30,.97);border:3px solid var(--blue);border-radius:14px;padding:1.5rem;width:min(500px,95vw);display:flex;flex-direction:column;gap:1rem;max-height:90vh;overflow-y:auto">
+    <div style="font-family:'Press Start 2P',monospace;font-size:.55rem;color:var(--blue);text-align:center;line-height:2">⇄ Changer de Pokémon</div>
+    <div id="switch-poke-list" style="display:flex;flex-wrap:wrap;gap:.6rem;justify-content:center"></div>
+    <button class="btn red" id="btn-cancel-switch" onclick="closeSwitchMenu()">Annuler</button>
+  </div>
+</div>
+
+<script src="game.js?v=9"></script>
 <script src="data.js?v=4"></script>
 <script src="mechanics.js?v=2"></script>
 </body>

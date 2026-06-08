@@ -3924,25 +3924,34 @@ document.getElementById('map-canvas').addEventListener('mouseleave',()=>{
 let switchForcedAfterKO = false;
 
 function openSwitchMenu(forced=false) {
-  if (!player || !player.roster || player.roster.length <= 1) {
-    if (!forced) notify('Pas d\'autre Pokémon dans l\'équipe !');
+  const hasAlive = (player?.roster||[]).some((p,i) => i !== (player.activeRosterIdx||0) && p.hp > 0);
+  if (!hasAlive) {
+    if (!forced) notify('Pas d\'autre Pokémon disponible !');
     return;
   }
   switchForcedAfterKO = forced;
+  battleBusy = false; // réinitialise l'état pour éviter tout blocage
   const list = document.getElementById('switch-poke-list');
   list.innerHTML = '';
+
+  const cancelBtn = document.getElementById('btn-cancel-switch');
+  if (cancelBtn) cancelBtn.style.display = forced ? 'none' : '';
+
   player.roster.forEach((p, idx) => {
     const isActive = idx === (player.activeRosterIdx||0);
     const isFainted = p.hp <= 0;
     const dual = p.dualType || getPokeType(p.currentSpriteId||p.spriteId, p.type);
-    const typeBadges = dual.includes('/') 
+    const typeBadges = dual.includes('/')
       ? dual.split('/').map(t=>`<span class="poke-type-badge type-${t}" style="font-size:.28rem;padding:.1rem .35rem">${t}</span>`).join('')
       : `<span class="poke-type-badge type-${dual}" style="font-size:.28rem;padding:.1rem .35rem">${dual}</span>`;
-    const card = document.createElement('div');
-    card.className = `switch-poke-card${isActive?' active-poke':''}${isFainted?' fainted':''}`;
     const imgSrc = p.isShiny ? SPRITE_SHINY(p.currentSpriteId||p.spriteId) : SPRITE_FRONT(p.currentSpriteId||p.spriteId);
     const shinyStyle = p.isShiny ? 'filter:drop-shadow(0 0 5px #ffd700)' : '';
     const shinyLabel = p.isShiny ? ' ✨' : '';
+    const selectable = !isFainted && !isActive;
+    const card = document.createElement('div');
+    card.className = `switch-poke-card${isActive?' active-poke':''}${isFainted?' fainted':''}`;
+    card.dataset.rosterIdx = idx;
+    card.dataset.selectable = selectable ? '1' : '0';
     card.innerHTML = `
       <img src="${imgSrc}" style="width:64px;height:64px;image-rendering:pixelated;${shinyStyle}"/>
       <div style="font-family:'Press Start 2P',monospace;font-size:.38rem;color:${p.isShiny?'#ffd700':'var(--yellow)'};line-height:1.6">${p.currentName||p.name}${shinyLabel}${isActive?' ★':''}</div>
@@ -3952,22 +3961,36 @@ function openSwitchMenu(forced=false) {
         <div style="height:100%;background:linear-gradient(90deg,#e63946,#ff6b9d);width:${Math.max(0,Math.round((p.hp/p.maxHp)*100))}%;border-radius:999px"></div>
       </div>
       <div style="font-size:.6rem;color:rgba(255,255,255,.5)">${Math.ceil(p.hp)}/${p.maxHp}</div>
+      ${selectable ? '' : `<div style="font-size:.55rem;color:rgba(255,100,100,.7);margin-top:.2rem">${isFainted?'K.O.':'En combat'}</div>`}
     `;
-    if (!isFainted && !isActive) card.onclick = () => confirmSwitch(idx);
     list.appendChild(card);
   });
-  document.getElementById('switch-pokemon-menu').classList.add('active');
+
+  // Event delegation — un seul handler sur le conteneur
+  list.onclick = (e) => {
+    const card = e.target.closest('[data-roster-idx]');
+    if (!card || card.dataset.selectable !== '1') return;
+    confirmSwitch(parseInt(card.dataset.rosterIdx, 10));
+  };
+
+  const menu = document.getElementById('switch-pokemon-menu');
+  menu.style.display = 'flex';
+  menu.classList.add('active');
 }
 
 function closeSwitchMenu() {
-  if (switchForcedAfterKO) return; // can't cancel forced switch
-  document.getElementById('switch-pokemon-menu').classList.remove('active');
+  if (switchForcedAfterKO) return;
+  const menu = document.getElementById('switch-pokemon-menu');
+  menu.style.display = 'none';
+  menu.classList.remove('active');
 }
 
 function confirmSwitch(idx) {
   const success = switchToRosterPoke(idx, true);
   if (!success) return;
-  document.getElementById('switch-pokemon-menu').classList.remove('active');
+  const _sm = document.getElementById('switch-pokemon-menu');
+  _sm.style.display = 'none';
+  _sm.classList.remove('active');
   switchForcedAfterKO = false;
 
   // Update battle UI

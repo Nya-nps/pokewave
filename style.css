@@ -21,9 +21,8 @@ body{width:100vw;height:100vh;overflow:hidden;font-family:'Nunito',sans-serif;fo
 #bg-light{position:fixed;inset:0;z-index:1;pointer-events:none;transition:background 0.08s ease-out}
 body.battle #bg-img{opacity:0.35;filter:brightness(.7) saturate(1.3)}
 body.menu #bg-img{opacity:0.55;filter:blur(3px) brightness(.8)}
-/* Switch pokemon in battle */
-#switch-pokemon-menu{display:none;position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.8);align-items:center;justify-content:center}
-#switch-pokemon-menu.active{display:flex}
+/* Switch pokemon in battle — top-level overlay, z-index:9999 (inline style) */
+#switch-pokemon-menu.active{display:flex!important}
 .switch-poke-card{background:rgba(10,10,30,.92);border:2px solid var(--border);border-radius:12px;padding:.9rem 1.1rem;text-align:center;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:.35rem;min-width:120px}
 .switch-poke-card:hover{border-color:var(--yellow);transform:translateY(-2px);background:rgba(255,214,10,.08)}
 .switch-poke-card.fainted{opacity:.35;cursor:not-allowed;pointer-events:none}
