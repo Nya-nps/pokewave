@@ -1811,8 +1811,8 @@ function doExplore() {
       : _allPoke[Math.floor(Math.random() * _allPoke.length)].id;
     const pData   = (_pokeMap?.get(pokeId)) || _allPoke.find(p => p.id === pokeId) || _allPoke[Math.floor(Math.random()*_allPoke.length)];
 
-    // Tranche de niveau fixe par zone (plus de scaling sur le niveau du joueur)
-    const zoneLvRange = ZONE_LEVELS[zoneId] || [1, 8];
+    // Tranche de niveau fixe par zone — fallback sur zone auto si l'ID est inconnu
+    const zoneLvRange = ZONE_LEVELS[zoneId] || ZONE_LEVELS[ZONE_ORDER[zoneIdx]] || [1, 8];
     const enemyLevel  = zoneLvRange[0] + Math.floor(Math.random() * (zoneLvRange[1] - zoneLvRange[0] + 1));
     const lvlScale    = 1 + enemyLevel * 0.15;
     const baseSpd     = _allSpdT[pData.id] || 50;
@@ -2780,12 +2780,12 @@ function checkRosterLevelUp(p) {
     p.xp -= p.xpNext;
     p.level++;
     p.xpNext = xpForLevel(p.level);
-    p.maxHp  = (p.maxHp||50) + 14;
-    p.hp     = Math.min(p.maxHp, (p.hp||0) + 14);
+    p.maxHp  = (p.maxHp||50) + 10;
+    p.hp     = Math.min(p.maxHp, (p.hp||0) + 10);
     p.maxMp  = (p.maxMp||50) + 8;
     p.mp     = Math.min(p.maxMp, (p.mp||0) + 8);
     p.atk    = (p.atk||0) + 3;
-    p.def    = (p.def||0) + 2;
+    p.def    = (p.def||0) + 1;
     p.magic  = (p.magic||0) + 2;
     p.spd    = (p.spd||0) + 1;
     if (p.spAtk !== undefined) p.spAtk += 2;
@@ -2824,8 +2824,8 @@ function checkLevelUp() {
     player.moveUses = player.moveUsesMax || 6;
     player.mMoveUses = player.mMoveUsesMax || 4;
     syncActiveFromPlayer();
-    notify(`⬆ Niv.${player.level} ! +14PV +3ATQ +2DEF +2Mag +1Vit`);
-    setMessage(`🌟 ${player.currentName} passe au Niveau ${player.level} ! ❤️+14PV  ⚔️+3ATQ  🛡️+2DEF  ✨+2Mag  ⚡+1Vit`);
+    notify(`⬆ Niv.${player.level} ! +10PV +3ATQ +1DEF +2Mag +1Vit`);
+    setMessage(`🌟 ${player.currentName} passe au Niveau ${player.level} ! ❤️+10PV  ⚔️+3ATQ  🛡️+1DEF  ✨+2Mag  ⚡+1Vit`);
     updateGlobalStats('level_ups');
     checkAchievements();
     const lvlMoves = (LEVEL_UP_MOVES[player.type] || LEVEL_UP_MOVES['Normal']).filter(m => m.lv === player.level && MOVES_DB[m.move]);
@@ -5043,15 +5043,19 @@ function challengeWorldBoss() {
     return;
   }
   const lv = player.level || 1;
-  const scale = 1 + lv * 0.06;
   const b = WORLD_BOSS_POOL[Math.floor(Math.random() * WORLD_BOSS_POOL.length)];
   const level = Math.max(80, Math.min(450, lv + 55));
+  // Stats calées sur le joueur — toujours challengeant mais mathématiquement faisable.
+  // +10% HP par kill pour la progression longue durée.
+  const difficulty = 1 + (player.worldBossKills || 0) * 0.10;
+  const bossHp  = Math.round(player.maxHp  * 3 * difficulty);
+  const bossAtk = Math.round(player.maxHp  * 0.15 + Math.floor(player.def / 2));
+  const bossDef = Math.round(player.atk * 0.40);
   const boss = {
     name:`🌍 ${b.n}`, id:b.id, level,
-    hp:Math.round(b.hp*scale), maxHp:Math.round(b.hp*scale),
-    atk:Math.round(b.atk*scale), def:Math.round(b.def*scale),
+    hp:bossHp, maxHp:bossHp, atk:bossAtk, def:bossDef,
     spd:b.spd, type:b.type,
-    xp:level*50, gold:Math.round(b.gold*scale),
+    xp:level*50, gold:Math.round(b.gold * difficulty),
     isWorldBoss:true, isShiny:false,
   };
   notify(`🌍 ${boss.name} — Niv.${boss.level} !`);

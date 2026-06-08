@@ -1591,8 +1591,9 @@ Object.assign(LEVEL_UP_MOVES, {
         : (ALL_POKEMON[Math.floor(Math.random() * ALL_POKEMON.length)].id);
       const pData = ALL_POKEMON_MAP.get(pokeId) || ALL_POKEMON[Math.floor(Math.random()*ALL_POKEMON.length)];
 
-      // Tranche de niveau fixe par zone — plus de scaling niveau joueur
-      const zoneLvRange = ZONE_LEVELS[zoneId] || [1, 8];
+      // Tranche de niveau fixe par zone — fallback sur la zone auto si l'ID est inconnu
+      const autoLvRange = ZONE_LEVELS[ZONE_ORDER[autoIdx]] || [1, 8];
+      const zoneLvRange = ZONE_LEVELS[zoneId] || autoLvRange;
       const enemyLevel  = zoneLvRange[0] + Math.floor(Math.random() * (zoneLvRange[1] - zoneLvRange[0] + 1));
       const lvlScale    = 1 + enemyLevel * 0.15;
       const baseSpd     = ALL_SPD[pData.id] || 50;
