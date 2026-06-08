@@ -1069,6 +1069,7 @@ function showScreen(id) {
   else if (id==='achievements') { document.getElementById('screen-achievements').classList.add('active'); renderAchievements(); }
   else if (id==='forge')        { document.getElementById('screen-forge').classList.add('active'); renderForge(); }
   else if (id==='trial')        { document.getElementById('screen-trial').classList.add('active'); }
+  else if (id==='saves')        { document.getElementById('screen-saves').classList.add('active'); renderSaveManager(); }
   currentScreen = id;
 }
 
@@ -2980,6 +2981,245 @@ function loadGame() {
   updateDayNightHUD();
   setMessage(`Bienvenue de retour, Dresseur ${player.name} ! ${player.currentName} reprend l'aventure !`);
   
+}
+
+// ══════════════════════════════════════════
+// SAVE MANAGER — Export / Import / Code
+// ══════════════════════════════════════════
+const SAVE_VERSION = '2.1';
+const SAVE_KEY = 'pokemonRPG_save_v2';
+const IDB_DB = 'pokewaveDB';
+const IDB_STORE = 'saves';
+
+// ── IndexedDB : double sauvegarde robuste (survive aux purges localStorage) ──
+function _idbSave(data) {
+  try {
+    const req = indexedDB.open(IDB_DB, 1);
+    req.onupgradeneeded = e => e.target.result.createObjectStore(IDB_STORE, { keyPath: 'id' });
+    req.onsuccess = e => {
+      const db = e.target.result;
+      const tx = db.transaction(IDB_STORE, 'readwrite');
+      tx.objectStore(IDB_STORE).put({ id: 'main', data, ts: Date.now() });
+    };
+  } catch (_) {}
+}
+function _idbLoad(cb) {
+  try {
+    const req = indexedDB.open(IDB_DB, 1);
+    req.onupgradeneeded = e => e.target.result.createObjectStore(IDB_STORE, { keyPath: 'id' });
+    req.onsuccess = e => {
+      const db = e.target.result;
+      const tx = db.transaction(IDB_STORE, 'readonly');
+      const get = tx.objectStore(IDB_STORE).get('main');
+      get.onsuccess = () => cb(get.result?.data || null);
+      get.onerror = () => cb(null);
+    };
+    req.onerror = () => cb(null);
+  } catch (_) { cb(null); }
+}
+
+// Surcharge saveGame pour double-write
+const _origSaveGame = saveGame;
+saveGame = function() {
+  if (!player) return;
+  const serialized = JSON.stringify(player);
+  localStorage.setItem(SAVE_KEY, serialized);
+  _idbSave(serialized);
+  notify('Partie sauvegardée !');
+  setMessage('💾 Votre aventure a été sauvegardée.');
+};
+
+// ── Export — télécharge un fichier .pwsave (JSON) ──
+function exportSave() {
+  const raw = localStorage.getItem(SAVE_KEY);
+  if (!raw) { notify('Aucune sauvegarde à exporter !'); return; }
+  const p = JSON.parse(raw);
+  const bundle = {
+    _pw_version:     SAVE_VERSION,
+    _pw_export_date: new Date().toISOString(),
+    _pw_player:      p.name || '?',
+    _pw_level:       p.level || 1,
+    _pw_kills:       p.totalKills || 0,
+    save:            p
+  };
+  const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  const date = new Date().toISOString().slice(0,10);
+  a.href     = url;
+  a.download = `pokewave_${p.name||'save'}_${date}.pwsave`;
+  a.click();
+  URL.revokeObjectURL(url);
+  notify('💾 Sauvegarde exportée !');
+}
+
+// ── Code de sauvegarde — base64 compact ──
+function copySaveCode() {
+  const raw = localStorage.getItem(SAVE_KEY);
+  if (!raw) { notify('Aucune sauvegarde !'); return; }
+  const code = btoa(encodeURIComponent(raw));
+  navigator.clipboard.writeText(code).then(() => {
+    notify('📋 Code copié dans le presse-papier !');
+    renderSaveManager();
+  }).catch(() => {
+    // Fallback : afficher le code dans une zone
+    const el = document.getElementById('save-code-display');
+    if (el) { el.value = code; el.style.display='block'; el.select(); }
+    notify('📋 Code affiché ci-dessous — copiez-le manuellement');
+  });
+}
+
+function loadSaveCode() {
+  const el = document.getElementById('save-code-input');
+  if (!el) return;
+  const code = el.value.trim();
+  if (!code) { notify('Collez un code de sauvegarde !'); return; }
+  try {
+    const raw = decodeURIComponent(atob(code));
+    _applyImportedSave(raw, 'code');
+  } catch(_) {
+    notify('❌ Code invalide ou corrompu !');
+  }
+}
+
+// ── Import depuis fichier ──
+function triggerSaveFileImport() {
+  document.getElementById('save-file-input').click();
+}
+function handleSaveFileImport(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  e.target.value = '';
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const text = ev.target.result;
+      const parsed = JSON.parse(text);
+      // Supporte les deux formats : bundle {save:...} ou save direct
+      const raw = parsed.save ? JSON.stringify(parsed.save) : text;
+      const preview = parsed.save ? parsed : null;
+      _confirmImport(raw, preview);
+    } catch(_) {
+      notify('❌ Fichier invalide !');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function _confirmImport(raw, preview) {
+  const p = preview?.save || JSON.parse(raw);
+  const info = preview
+    ? `Dresseur : ${preview._pw_player || p.name} · Niv.${p.level||1} · ${p.totalKills||0} victoires\nExporté le : ${preview._pw_export_date ? new Date(preview._pw_export_date).toLocaleString('fr-FR') : '?'}`
+    : `Dresseur : ${p.name||'?'} · Niv.${p.level||1}`;
+
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;inset:0;z-index:999;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center';
+  modal.innerHTML = `<div style="background:rgba(10,10,30,.98);border:3px solid #4cc9f0;border-radius:16px;padding:1.8rem;width:min(380px,94vw);display:flex;flex-direction:column;gap:1rem">
+    <div style="font-family:'Press Start 2P',monospace;font-size:.65rem;color:#4cc9f0;text-align:center">📦 IMPORTER SAUVEGARDE</div>
+    <div style="font-family:'Press Start 2P',monospace;font-size:.36rem;color:rgba(255,255,255,.7);line-height:2;background:rgba(0,0,0,.3);padding:.8rem;border-radius:8px">${info.replace(/\n/g,'<br>')}</div>
+    <div style="font-family:'Press Start 2P',monospace;font-size:.32rem;color:#ff9a3c;text-align:center">⚠ Remplacera la sauvegarde locale actuelle !</div>
+    <div style="display:flex;gap:.6rem">
+      <button onclick="this.closest('[style*=fixed]').remove()" style="flex:1;padding:.6rem;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:8px;color:#fff;cursor:pointer;font-family:'Press Start 2P',monospace;font-size:.38rem">✗ Annuler</button>
+      <button id="_import_confirm_btn" style="flex:1;padding:.6rem;background:linear-gradient(180deg,#4cc9f0,#1a8ab5);border:none;border-radius:8px;color:#fff;cursor:pointer;font-family:'Press Start 2P',monospace;font-size:.38rem">✓ Importer</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+  modal.querySelector('#_import_confirm_btn').onclick = () => {
+    modal.remove();
+    _applyImportedSave(raw, 'file');
+  };
+}
+
+function _applyImportedSave(raw, source) {
+  try {
+    const p = JSON.parse(raw);
+    if (!p || !p.name) throw new Error('no player');
+    localStorage.setItem(SAVE_KEY, JSON.stringify(p));
+    _idbSave(JSON.stringify(p));
+    notify(`✅ Sauvegarde importée (${source}) — rechargement…`);
+    setTimeout(() => { loadGame(); showScreen('game'); }, 800);
+  } catch(_) {
+    notify('❌ Sauvegarde corrompue ou incompatible !');
+  }
+}
+
+// ── Récupération de secours depuis IndexedDB ──
+function restoreFromIDB() {
+  _idbLoad(raw => {
+    if (!raw) { notify('Aucune sauvegarde IndexedDB trouvée !'); return; }
+    _confirmImport(raw, null);
+  });
+}
+
+// ── Rendu de l'écran de gestion des sauvegardes ──
+function renderSaveManager() {
+  const el = document.getElementById('saves-content');
+  if (!el) return;
+
+  // Infos save locale
+  const raw = localStorage.getItem(SAVE_KEY);
+  let localInfo = '<span style="color:rgba(255,255,255,.4)">Aucune sauvegarde locale</span>';
+  if (raw) {
+    try {
+      const p = JSON.parse(raw);
+      const date = p._lastSaveDate ? new Date(p._lastSaveDate).toLocaleString('fr-FR') : 'Date inconnue';
+      localInfo = `<b style="color:#ffd700">${p.name||'?'}</b> · Niv.<b>${p.level||1}</b> · ${p.totalKills||0} victoires<br><span style="color:rgba(255,255,255,.4);font-size:.55rem">${date}</span>`;
+    } catch(_) {}
+  }
+
+  const fromGame = !!player;
+  const backBtn = fromGame
+    ? `<button class="btn" onclick="showScreen('game')" style="width:100%;margin-top:.5rem">↩ RETOUR AU JEU</button>`
+    : `<button class="btn" onclick="showScreen('title')" style="width:100%;margin-top:.5rem">↩ MENU PRINCIPAL</button>`;
+
+  el.innerHTML = `
+    <div style="text-align:center;margin-bottom:1.2rem">
+      <div style="font-family:'Press Start 2P',monospace;font-size:.7rem;color:#4cc9f0;text-shadow:2px 2px 0 #000">💾 GESTION DES SAUVEGARDES</div>
+      <div style="font-family:'Press Start 2P',monospace;font-size:.32rem;color:rgba(255,255,255,.4);margin-top:.4rem">Export · Import · Code de récupération</div>
+    </div>
+
+    <!-- Sauvegarde actuelle -->
+    <div style="background:rgba(76,201,240,.07);border:2px solid rgba(76,201,240,.3);border-radius:12px;padding:1rem;margin-bottom:.8rem">
+      <div style="font-family:'Press Start 2P',monospace;font-size:.4rem;color:#4cc9f0;margin-bottom:.5rem">📊 SAUVEGARDE LOCALE</div>
+      <div style="font-family:'Press Start 2P',monospace;font-size:.38rem;line-height:2">${localInfo}</div>
+      ${fromGame ? `<button onclick="saveGame();renderSaveManager()" style="margin-top:.6rem;width:100%;padding:.45rem;background:linear-gradient(180deg,#2dc653,#1a8035);border:none;border-radius:8px;color:#fff;cursor:pointer;font-family:'Press Start 2P',monospace;font-size:.38rem">💾 Sauvegarder maintenant</button>` : ''}
+    </div>
+
+    <!-- Export -->
+    <div style="background:rgba(255,255,255,.04);border:2px solid rgba(255,255,255,.12);border-radius:12px;padding:1rem;margin-bottom:.8rem">
+      <div style="font-family:'Press Start 2P',monospace;font-size:.4rem;color:#ffd700;margin-bottom:.3rem">📤 EXPORTER</div>
+      <div style="font-family:'Press Start 2P',monospace;font-size:.3rem;color:rgba(255,255,255,.4);margin-bottom:.6rem">Télécharge un fichier .pwsave sur votre appareil.<br>Gardez-le précieusement — il suffit à tout restaurer.</div>
+      <button onclick="exportSave()" style="width:100%;padding:.5rem;background:linear-gradient(180deg,#ffd700,#b8860b);border:none;border-radius:8px;color:#000;cursor:pointer;font-family:'Press Start 2P',monospace;font-size:.4rem">⬇ Télécharger .pwsave</button>
+    </div>
+
+    <!-- Import fichier -->
+    <div style="background:rgba(255,255,255,.04);border:2px solid rgba(255,255,255,.12);border-radius:12px;padding:1rem;margin-bottom:.8rem">
+      <div style="font-family:'Press Start 2P',monospace;font-size:.4rem;color:#ffd700;margin-bottom:.3rem">📥 IMPORTER UN FICHIER</div>
+      <div style="font-family:'Press Start 2P',monospace;font-size:.3rem;color:rgba(255,255,255,.4);margin-bottom:.6rem">Sélectionnez un fichier .pwsave exporté précédemment.<br>Votre progression actuelle sera remplacée.</div>
+      <button onclick="triggerSaveFileImport()" style="width:100%;padding:.5rem;background:linear-gradient(180deg,#4cc9f0,#1a8ab5);border:none;border-radius:8px;color:#fff;cursor:pointer;font-family:'Press Start 2P',monospace;font-size:.4rem">📂 Choisir un fichier</button>
+    </div>
+
+    <!-- Code de sauvegarde -->
+    <div style="background:rgba(255,255,255,.04);border:2px solid rgba(255,255,255,.12);border-radius:12px;padding:1rem;margin-bottom:.8rem">
+      <div style="font-family:'Press Start 2P',monospace;font-size:.4rem;color:#a855f7;margin-bottom:.3rem">📋 CODE DE SAUVEGARDE</div>
+      <div style="font-family:'Press Start 2P',monospace;font-size:.3rem;color:rgba(255,255,255,.4);margin-bottom:.6rem">Génère un code texte à coller dans un bloc-notes.<br>Pratique si le téléchargement de fichier ne fonctionne pas.</div>
+      <div style="display:flex;gap:.4rem;margin-bottom:.4rem">
+        <button onclick="copySaveCode()" style="flex:1;padding:.45rem;background:linear-gradient(180deg,#a855f7,#7c3aed);border:none;border-radius:8px;color:#fff;cursor:pointer;font-family:'Press Start 2P',monospace;font-size:.36rem">📋 Copier le code</button>
+      </div>
+      <textarea id="save-code-display" style="display:none;width:100%;height:80px;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.15);border-radius:6px;color:#a855f7;font-size:.55rem;padding:.4rem;resize:none;box-sizing:border-box" readonly placeholder="Le code apparaîtra ici…"></textarea>
+      <div style="font-family:'Press Start 2P',monospace;font-size:.3rem;color:rgba(255,255,255,.4);margin-top:.5rem;margin-bottom:.25rem">Restaurer depuis un code :</div>
+      <textarea id="save-code-input" style="width:100%;height:60px;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.15);border-radius:6px;color:#fff;font-size:.55rem;padding:.4rem;resize:none;box-sizing:border-box" placeholder="Collez votre code ici…"></textarea>
+      <button onclick="loadSaveCode()" style="width:100%;margin-top:.35rem;padding:.45rem;background:linear-gradient(180deg,#06d6a0,#048a68);border:none;border-radius:8px;color:#fff;cursor:pointer;font-family:'Press Start 2P',monospace;font-size:.36rem">✓ Restaurer depuis le code</button>
+    </div>
+
+    <!-- Récupération IndexedDB -->
+    <div style="background:rgba(255,154,60,.05);border:2px solid rgba(255,154,60,.2);border-radius:12px;padding:1rem;margin-bottom:.8rem">
+      <div style="font-family:'Press Start 2P',monospace;font-size:.4rem;color:#ff9a3c;margin-bottom:.3rem">🔧 RÉCUPÉRATION D'URGENCE</div>
+      <div style="font-family:'Press Start 2P',monospace;font-size:.3rem;color:rgba(255,255,255,.4);margin-bottom:.6rem">Chaque sauvegarde est aussi écrite dans IndexedDB (plus<br>robuste que localStorage). Utilisez si localStorage est vide.</div>
+      <button onclick="restoreFromIDB()" style="width:100%;padding:.45rem;background:linear-gradient(180deg,#ff9a3c,#c75a00);border:none;border-radius:8px;color:#fff;cursor:pointer;font-family:'Press Start 2P',monospace;font-size:.36rem">🔧 Restaurer depuis IndexedDB</button>
+    </div>
+
+    ${backBtn}`;
 }
 
 // ══════════════════════════════════════════
