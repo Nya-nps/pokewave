@@ -136,7 +136,7 @@ const SHOP_ITEMS = [
   { id:'pokeball',     name:'Poké Ball',    desc:'Taux de capture: 1×',    price:200,  catchRate:1,    img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png',    type:'ball' },
   { id:'superball',    name:'Super Ball',   desc:'Taux de capture: 1.5×',  price:600,  catchRate:1.5,  img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/great-ball.png',  type:'ball' },
   { id:'hyperball',    name:'Hyper Ball',   desc:'Taux de capture: 2×',    price:1200, catchRate:2,    img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/ultra-ball.png',  type:'ball' },
-  { id:'masterball',   name:'Master Ball',  desc:'Capture garantie !',     price:10000,catchRate:999,  img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/master-ball.png', type:'ball' },
+  { id:'masterball',   name:'Master Ball',  desc:'Capture garantie !',     price:80000,catchRate:999,  img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/master-ball.png', type:'ball' },
   { id:'potion',       name:'Potion',       desc:'Restaure 30 PV',         price:300,  heal:30,        img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/potion.png',     type:'heal' },
   { id:'superpotion',  name:'Super Potion', desc:'Restaure 60 PV',         price:700,  heal:60,        img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/super-potion.png',type:'heal' },
   { id:'hyperpotion',  name:'Hyper Potion', desc:'Restaure 120 PV',        price:1200, heal:120,       img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/hyper-potion.png',type:'heal' },
@@ -1594,7 +1594,7 @@ function doExplore() {
     if (e.isShiny) { e.hp=Math.round(e.hp*1.15); e.maxHp=e.hp; e.atk=Math.round(e.atk*1.15); e.def=Math.round(e.def*1.15); e.spd=Math.round(e.spd*1.15); }
     showPreBattleMenu(e);
   } else if (roll < 0.68) {
-    const g = Math.floor(Math.random()*25)+8;
+    const g = Math.floor(Math.random()*10)+3;
     player.gold += g; updateHUD();
     setMessage(`✦ Vous trouvez ${g} Pokédollars !`); notify(`+${g} ₽`);
   } else if (roll < 0.78) {
@@ -2178,7 +2178,7 @@ function battleAction(action) {
     const badgeBonus  = 1 + badgeCount * 0.5;
     const baseXP      = enemy.xp || 10;
     const xpG         = Math.round(baseXP * 3 * lvRatio * badgeBonus);
-    const goldG       = Math.round((enemy.gold + Math.floor(Math.random()*10)) * getGoldMultiplier());
+    const goldG       = Math.round((enemy.gold * 0.5 + Math.floor(Math.random()*5)) * getGoldMultiplier());
     player.xp+=xpG; player.gold+=goldG;
     // XP pour tout le roster (50% au bench)
     if (player.roster) player.roster.forEach((p,i)=>{ if(i!==(player.activeRosterIdx||0) && p.hp>0){ p.xp=(p.xp||0)+Math.floor(xpG*0.5); } });
@@ -2220,7 +2220,7 @@ function battleAction(action) {
       if (!player.lastBossWave || player.lastBossWave < bossWave) player.lastBossWave = bossWave;
       if (!player.totalKills) player.totalKills = bossWave * KILLS_PER_WAVE;
       updateKillHUD();
-      const bonusGold = Math.round(500 * bossWave);
+      const bonusGold = Math.round(200 * bossWave);
       player.gold += bonusGold;
       updateHUD();
       notify(`🏆 Boss Vague ${bossWave} vaincu ! +${bonusGold}₽`);
