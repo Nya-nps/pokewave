@@ -2003,10 +2003,13 @@ function toggleAutoBattle() {
     if (autoBattleTimer) clearTimeout(autoBattleTimer);
     autoBattleTimer = setTimeout(runAutoAction, 600);
   } else {
-    btn.style.background = 'linear-gradient(180deg,#888,#555)';
-    btn.style.boxShadow = '0 4px 0 #222';
-    btn.textContent = '🤖 AUTO';
+    btn.style.background = 'linear-gradient(180deg,#e63946,#9b1d23)';
+    btn.style.boxShadow = '0 4px 0 #550f13';
+    btn.textContent = '✋ MANUEL';
     if (autoBattleTimer) { clearTimeout(autoBattleTimer); autoBattleTimer = null; }
+    // Rendre la main au joueur immédiatement si c'est son tour
+    if (battleTurn === 'player' && !battleBusy) disableBattleButtons(false);
+    setMessage('✋ Auto-combat désactivé — vous avez la main !');
   }
 }
 
@@ -2014,7 +2017,7 @@ function stopAutoBattle() {
   autoBattleOn = false;
   if (autoBattleTimer) { clearTimeout(autoBattleTimer); autoBattleTimer = null; }
   const btn = document.getElementById('btn-auto');
-  if (btn) { btn.style.background = 'linear-gradient(180deg,#888,#555)'; btn.style.boxShadow = '0 4px 0 #222'; btn.textContent = '🤖 AUTO'; }
+  if (btn) { btn.style.background = 'linear-gradient(180deg,#888,#555)'; btn.style.boxShadow = '0 4px 0 #222'; btn.textContent = '🤖 AUTO'; btn.style.boxShadow = '0 4px 0 #222'; }
   // Si farm auto toujours actif, reprendre l'exploration rapidement
   if (farmAutoOn) {
     if (farmAutoTimer) { clearTimeout(farmAutoTimer); farmAutoTimer = null; }
@@ -2273,7 +2276,12 @@ function hurtSprite(id) {
   });
 }
 
-function disableBattleButtons(dis){ document.querySelectorAll('#battle-actions .btn').forEach(b=>b.disabled=dis); }
+function disableBattleButtons(dis){
+  document.querySelectorAll('#battle-actions .btn').forEach(b=>{
+    if (b.id === 'btn-auto') return; // toujours cliquable pour interrompre l'auto
+    b.disabled = dis;
+  });
+}
 
 // ── CATCH MENU ──
 function openCatchMenu() {
