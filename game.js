@@ -2344,6 +2344,10 @@ function disableBattleButtons(dis){
 // ── CATCH MENU ──
 function openCatchMenu() {
   if (!player||!enemy) return;
+  if (enemy.isBoss || player._bossBattle || player._worldBossBattle) {
+    notify('⛔ Les Boss ne peuvent pas être capturés !');
+    return;
+  }
   const list = document.getElementById('catch-ball-list');
   list.innerHTML = '';
   const ballTypes = ['pokeball','superball','hyperball','masterball'];
