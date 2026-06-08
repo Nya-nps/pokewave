@@ -5097,10 +5097,10 @@ function renderBreedingScreen() {
     </div>`;
   }).join('');
   const sel = player.breedingSelected||[];
-  const brdBtn = `<button class="btn" onclick="startBreedFromScreen()" ${sel.length===2?'':'disabled'} style="font-size:.52rem;background:linear-gradient(180deg,#ff88cc,#cc3388);box-shadow:0 4px 0 #881144;margin-top:.5rem;${sel.length!==2?'opacity:.4':''}">🥚 Créer un Œuf</button>`;
-  const existing = document.getElementById('breed-action-btn');
-  if (existing) existing.outerHTML = brdBtn;
-  else document.getElementById('screen-breeding').insertAdjacentHTML('beforeend', `<div id="breed-action-btn">${brdBtn}</div>`);
+  const brdActionDiv = document.getElementById('breed-action-btn');
+  if (brdActionDiv) {
+    brdActionDiv.innerHTML = `<button class="btn" onclick="startBreedFromScreen()" ${sel.length===2?'':'disabled'} style="width:100%;font-size:.52rem;background:linear-gradient(180deg,#ff88cc,#cc3388);box-shadow:0 4px 0 #881144;margin-top:.5rem;${sel.length!==2?'opacity:.4':''}">🥚 Créer un Œuf</button>`;
+  }
 }
 
 function toggleBreedSelect(src, idx) {
