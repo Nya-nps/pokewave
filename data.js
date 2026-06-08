@@ -884,6 +884,8 @@ const LEGENDARIES_IDS = [144,145,146,149,150,151,243,244,245,249,250,251,377,378
 // ──────────────────────────────────────────────────────────────
 const ALL_POKEMON = [...GEN1, ...GEN2, ...GEN3, ...GEN4, ...GEN5, ...GEN6, ...GEN7, ...GEN8, ...GEN9];
 const ALL_SPD = {...GEN1_SPD, ...GEN2_SPD, ...GEN3_SPD, ...GEN4_SPD, ...GEN5_SPD, ...GEN6_SPD, ...GEN7_SPD, ...GEN8_SPD, ...GEN9_SPD};
+// Index Map O(1) pour lookups fréquents par ID (remplace .find() O(n))
+const ALL_POKEMON_MAP = new Map(ALL_POKEMON.map(p => [p.id, p]));
 
 // ──────────────────────────────────────────────────────────────
 // CHAÎNES D'ÉVOLUTION — GEN 2 & 3
@@ -1416,7 +1418,7 @@ Object.assign(LEVEL_UP_MOVES, {
       const pokeId = pool.length > 0
         ? pool[Math.floor(Math.random() * pool.length)]
         : (ALL_POKEMON[Math.floor(Math.random() * ALL_POKEMON.length)].id);
-      const pData = ALL_POKEMON.find(p => p.id === pokeId) || ALL_POKEMON[Math.floor(Math.random()*ALL_POKEMON.length)];
+      const pData = ALL_POKEMON_MAP.get(pokeId) || ALL_POKEMON[Math.floor(Math.random()*ALL_POKEMON.length)];
 
       const baseLv    = Math.max(1, Math.floor((player.level||1) * 0.8 + wave * 1.5));
       const enemyLevel = baseLv + Math.floor(Math.random() * 4);
@@ -1550,22 +1552,31 @@ const NEW_DEX_MILESTONES = [
 
 // État du filtre actif du Pokédex
 let _dexCurrentFilter = 'all';
+let _dexPage = 0;
+const DEX_PAGE_SIZE = 80;
+
+const _GEN_MAP = { '1':GEN1,'2':GEN2,'3':GEN3,'4':GEN4,'5':GEN5,'6':GEN6,'7':GEN7,'8':GEN8,'9':GEN9 };
 
 // Filtre appelé depuis les boutons HTML
 window.filterDexGen = function(gen, btn) {
   _dexCurrentFilter = gen;
+  _dexPage = 0;
   document.querySelectorAll('#screen-pokedex .gen-filter-btn').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
   renderDexGrid();
 };
+window.dexPageNext = function() { _dexPage++; renderDexGrid(); };
+window.dexPagePrev = function() { _dexPage = Math.max(0,_dexPage-1); renderDexGrid(); };
 
 // Rendu de la grille seulement (réutilisable lors du filtre)
 function renderDexGrid() {
   const seen = new Set((player?.dexSeen) || []);
-  const pool = _dexCurrentFilter === 'all'    ? ALL_POKEMON
-             : _dexCurrentFilter === '1'      ? GEN1
-             : _dexCurrentFilter === '2'      ? GEN2
-             : GEN3;
+  const fullPool = _dexCurrentFilter === 'all' ? ALL_POKEMON
+                 : (_GEN_MAP[_dexCurrentFilter] || ALL_POKEMON);
+  // Pagination uniquement pour "all" (1010 entrées)
+  const usePaging = _dexCurrentFilter === 'all';
+  const totalPages = usePaging ? Math.ceil(fullPool.length / DEX_PAGE_SIZE) : 1;
+  const pool = usePaging ? fullPool.slice(_dexPage * DEX_PAGE_SIZE, (_dexPage+1) * DEX_PAGE_SIZE) : fullPool;
 
   const grid = document.getElementById('pokedex-grid');
   if (!grid) return;
@@ -1587,6 +1598,22 @@ function renderDexGrid() {
       ${unlocked ? `<div style="font-family:'Press Start 2P',monospace;font-size:.25rem;padding:.1rem .3rem;background:rgba(255,255,255,.07);border-radius:4px;color:rgba(255,255,255,.5);margin-top:.15rem">${p.t}</div>` : ''}
     </div>`;
   }).join('');
+
+  // Contrôles de pagination (uniquement en mode "all")
+  const pageCtrl = document.getElementById('dex-pagination');
+  if (pageCtrl) {
+    if (usePaging && totalPages > 1) {
+      const start = _dexPage * DEX_PAGE_SIZE + 1;
+      const end   = Math.min((_dexPage+1)*DEX_PAGE_SIZE, fullPool.length);
+      pageCtrl.style.display = 'flex';
+      pageCtrl.innerHTML = `
+        <button onclick="dexPagePrev()" ${_dexPage===0?'disabled':''} style="font-family:'Press Start 2P',monospace;font-size:.38rem;padding:.35rem .7rem;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:6px;color:#fff;cursor:pointer;${_dexPage===0?'opacity:.3':''}">◀</button>
+        <span style="font-family:'Press Start 2P',monospace;font-size:.35rem;color:rgba(255,255,255,.5)">#${start}–${end} / ${fullPool.length}</span>
+        <button onclick="dexPageNext()" ${_dexPage>=totalPages-1?'disabled':''} style="font-family:'Press Start 2P',monospace;font-size:.38rem;padding:.35rem .7rem;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:6px;color:#fff;cursor:pointer;${_dexPage>=totalPages-1?'opacity:.3':''}">▶</button>`;
+    } else {
+      pageCtrl.style.display = 'none';
+    }
+  }
 }
 
 // Patch complet de renderPokedex
@@ -1648,7 +1675,7 @@ window.renderPokedex = function() {
 
 // Patch showDexDetail — cherche dans ALL_POKEMON
 window.showDexDetail = function(pokeId) {
-  const p = ALL_POKEMON.find(x => x.id === pokeId);
+  const p = ALL_POKEMON_MAP.get(pokeId) || ALL_POKEMON.find(x => x.id === pokeId);
   if (!p) return;
 
   const typeColor = tp => ({
