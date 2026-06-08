@@ -1391,6 +1391,8 @@ function updateHUD() {
 function _doUpdateHUD() {
   _hudPending = false;
   if (!player) return;
+  // En écran battle, seul updateBattleHp est utile — skip le HUD de jeu
+  if (currentScreen === 'battle') return;
   _hud('player-name-hud').textContent = `${player.currentName} de ${player.name} ✦ Niv.${player.level}`;
   _hud('gold-val').textContent = player.gold;
   setBar('bar-hp','val-hp', player.hp, player.maxHp);
@@ -1413,12 +1415,13 @@ function _doUpdateHUD() {
   // Tour button in dropdown
   const tourBtn = _hud('btn-tour-drop');
   if (tourBtn) tourBtn.style.display = (player.trainerLevel||1) >= 10 ? 'block' : 'none';
-  // Attack uses display
+  // Attack uses display — rebuild innerHTML seulement si le contenu a changé
   const atkDisp = _hud('atk-uses-display');
   if (atkDisp) {
     const t1 = player.moveElem || player.type;
     const t2 = player.mMoveElem || player.type;
-    atkDisp.innerHTML = `<span class="atk-use-label">${player.move||'Atk'}</span><span class="atk-elem-badge elem-${t1}" style="font-size:.28rem;padding:.1rem .3rem">${t1}</span><span style="width:.5rem;display:inline-block"></span><span class="atk-use-label">${player.mMove||'Magie'}</span><span class="atk-elem-badge elem-${t2}" style="font-size:.28rem;padding:.1rem .3rem">${t2}</span>`;
+    const newAtkHtml = `<span class="atk-use-label">${player.move||'Atk'}</span><span class="atk-elem-badge elem-${t1}" style="font-size:.28rem;padding:.1rem .3rem">${t1}</span><span style="width:.5rem;display:inline-block"></span><span class="atk-use-label">${player.mMove||'Magie'}</span><span class="atk-elem-badge elem-${t2}" style="font-size:.28rem;padding:.1rem .3rem">${t2}</span>`;
+    if (atkDisp._cachedHtml !== newAtkHtml) { atkDisp.innerHTML = newAtkHtml; atkDisp._cachedHtml = newAtkHtml; }
   }
 }
 function setBar(barId, valId, cur, max) {
@@ -1935,8 +1938,11 @@ function startBattle(enemyData) {
   if (hisMult >= 2)  matchupHint += ` ❗ Ennemi super efficace !`;
   document.getElementById('player-battle-img').src = playerShiny ? SPRITE_SHINY(player.currentSpriteId) : SPRITE_FRONT(player.currentSpriteId);
   document.getElementById('enemy-battle-img').src = enemy.isShiny ? SPRITE_SHINY(enemy.id) : SPRITE_FRONT(enemy.id);
-  document.getElementById('btn-attack').innerHTML = `⚔ ${player.move} <span class="atk-elem-badge elem-${player.moveElem||player.type}">${player.moveElem||player.type}</span>`;
-  document.getElementById('btn-magic').innerHTML = `✨ ${player.mMove} <span class="atk-elem-badge elem-${player.mMoveElem||player.type}">${player.mMoveElem||player.type}</span>`;
+  const _ba = _hud('btn-attack'); const _bm = _hud('btn-magic');
+  const _ah = `⚔ ${player.move} <span class="atk-elem-badge elem-${player.moveElem||player.type}">${player.moveElem||player.type}</span>`;
+  const _mh = `✨ ${player.mMove} <span class="atk-elem-badge elem-${player.mMoveElem||player.type}">${player.mMoveElem||player.type}</span>`;
+  if (_ba) { _ba.innerHTML = _ah; _ba._cachedHtml = _ah; }
+  if (_bm) { _bm.innerHTML = _mh; _bm._cachedHtml = _mh; }
   updateBattleHp(); disableBattleButtons(false);
   // Désactiver la capture uniquement pendant les modes spéciaux (Tour, World Boss, Trial, Dresseurs)
   const _isCaptureBlocked = !!(enemy.isWorldBoss || enemy.isBoss || enemy.isTrainerBattle || player._bossBattle || player._tourBattle || player._worldBossBattle || player._trialBattle || player._gymBattle);
@@ -1986,12 +1992,12 @@ function updateBattleHp() {
   const pPct = Math.max(0,(player.hp/player.maxHp)*100);
   const ePct = Math.max(0,(enemy.hp/enemy.maxHp)*100);
   const barColor = pct => pct > 50 ? 'linear-gradient(90deg,#2dc653,#06d6a0)' : pct > 20 ? 'linear-gradient(90deg,#ffd60a,#ff9a3c)' : 'linear-gradient(90deg,#e63946,#ff6b9d)';
-  const pBar = document.getElementById('b-hp-player');
-  const eBar = document.getElementById('b-hp-enemy');
+  const pBar = _hud('b-hp-player');
+  const eBar = _hud('b-hp-enemy');
   pBar.style.width = pPct+'%'; pBar.style.background = barColor(pPct);
   eBar.style.width = ePct+'%'; eBar.style.background = barColor(ePct);
-  document.getElementById('b-hp-player-text').textContent = `${Math.ceil(player.hp)} / ${player.maxHp}`;
-  document.getElementById('b-hp-enemy-text').textContent = `${Math.ceil(enemy.hp)} / ${enemy.maxHp}`;
+  _hud('b-hp-player-text').textContent = `${Math.ceil(player.hp)} / ${player.maxHp}`;
+  _hud('b-hp-enemy-text').textContent = `${Math.ceil(enemy.hp)} / ${enemy.maxHp}`;
 }
 
 // ══════════════════════════════════════════
@@ -2263,9 +2269,9 @@ function runAutoAction() {
   // Arrêter si auto désactivé ou combat terminé
   if (!autoBattleOn || !enemy || !player || currentScreen !== 'battle') return;
 
-  // Attendre si c'est le tour ennemi ou occupé
+  // Attendre si c'est le tour ennemi ou occupé (polling allongé pour réduire la charge CPU)
   if (battleTurn !== 'player' || battleBusy) {
-    autoBattleTimer = setTimeout(runAutoAction, 300);
+    autoBattleTimer = setTimeout(runAutoAction, 500);
     return;
   }
 
@@ -2367,13 +2373,19 @@ function battleAction(action) {
     player.xp+=xpG; player.gold+=goldG;
     if (player._winStreak > 0 && player._winStreak % 5 === 0 && !player._bossBattle)
       notify(`🔥 Streak ×${player._winStreak} — bonus or ×${streakBonus.toFixed(1)} !`);
-    // XP pour tout le roster (50% au bench) + level-up automatique si seuil atteint
-    if (player.roster) player.roster.forEach((p,i)=>{
-      if(i!==(player.activeRosterIdx||0) && p.hp>0){
-        p.xp=(p.xp||0)+Math.floor(xpG*0.5);
-        checkRosterLevelUp(p);
-      }
-    });
+    // XP pour tout le roster (50% au bench) + level-up silencieux
+    if (player.roster) {
+      const leveledNames = [];
+      player.roster.forEach((p,i)=>{
+        if(i!==(player.activeRosterIdx||0) && p.hp>0){
+          p.xp=(p.xp||0)+Math.floor(xpG*0.5);
+          if (checkRosterLevelUp(p)) leveledNames.push(`${p.currentName||p.name} Niv.${p.level}`);
+        }
+      });
+      // Une seule notif groupée si plusieurs level-ups (évite le spam)
+      if (leveledNames.length === 1) notify(`⬆ ${leveledNames[0]} ! (banc)`);
+      else if (leveledNames.length > 1) notify(`⬆ ${leveledNames.length} Pokémon ont monté de niveau ! (banc)`);
+    }
     // Compteur kills par zone
     if (!player.zoneKills) player.zoneKills = {};
     const curZ = player.currentZone || 'bourg-palette';
@@ -2481,9 +2493,12 @@ function battleAction(action) {
   // Determine turn order by speed
   (_hud('battle-log')).textContent=log;
   updateBattleHp(); updateHUD();
-  // Refresh attack use counts on buttons
-  document.getElementById('btn-attack').innerHTML = `⚔ ${player.move} <span class="atk-elem-badge elem-${player.moveElem||player.type}">${player.moveElem||player.type}</span>`;
-  document.getElementById('btn-magic').innerHTML  = `✨ ${player.mMove} <span class="atk-elem-badge elem-${player.mMoveElem||player.type}">${player.mMoveElem||player.type}</span>`;
+  // Refresh attack buttons — seulement si le contenu a réellement changé
+  const _btnAtk = _hud('btn-attack'); const _btnMag = _hud('btn-magic');
+  const _atkH = `⚔ ${player.move} <span class="atk-elem-badge elem-${player.moveElem||player.type}">${player.moveElem||player.type}</span>`;
+  const _magH = `✨ ${player.mMove} <span class="atk-elem-badge elem-${player.mMoveElem||player.type}">${player.mMoveElem||player.type}</span>`;
+  if (_btnAtk && _btnAtk._cachedHtml !== _atkH) { _btnAtk.innerHTML = _atkH; _btnAtk._cachedHtml = _atkH; }
+  if (_btnMag && _btnMag._cachedHtml !== _magH) { _btnMag.innerHTML = _magH; _btnMag._cachedHtml = _magH; }
 
   // Player attacked — now check if enemy is faster for next turn or just pass to enemy
   battleBusy = true;
@@ -2651,8 +2666,9 @@ function throwBall(ballId) {
 // ══════════════════════════════════════════
 
 // Level-up silencieux pour les Pokémon en banc (ils gagnent 50% d'XP)
+// Retourne true si au moins un niveau a été gagné (pour notifications groupées)
 function checkRosterLevelUp(p) {
-  if (!p || !p.level) return;
+  if (!p || !p.level) return false;
   if (!p.xpNext) p.xpNext = xpForLevel(p.level);
   let leveled = false;
   while ((p.xp||0) >= p.xpNext) {
@@ -2672,7 +2688,7 @@ function checkRosterLevelUp(p) {
     leveled = true;
   }
   if (leveled) {
-    // Vérifier les évolutions pour ce Pokémon en banc
+    // Vérifier les évolutions pour ce Pokémon en banc (silencieux)
     let chain = EVO_CHAINS[p.currentSpriteId || p.spriteId];
     while (chain && p.level >= chain.level) {
       p.currentSpriteId = chain.next;
@@ -2682,8 +2698,10 @@ function checkRosterLevelUp(p) {
       p.atk += 5; p.def += 4; p.magic += 4;
       chain = EVO_CHAINS[p.currentSpriteId];
     }
-    notify(`⬆ ${p.currentName||p.name} → Niveau ${p.level} ! (banc)`);
+    // Pas de notify() ici — évite le spam pendant le farming
+    // La notif groupée est gérée par l'appelant
   }
+  return leveled;
 }
 
 function checkLevelUp() {
@@ -3383,11 +3401,19 @@ saveGame = function() {
 let _autoSaveKillCounter = 0;
 function _silentSave() {
   if (!player) return;
-  try {
-    const serialized = JSON.stringify(player);
-    localStorage.setItem(SAVE_KEY, serialized);
-    _idbSave(serialized);
-  } catch(e) {}
+  // Utilise requestIdleCallback si disponible pour éviter de bloquer le thread principal
+  const doSave = () => {
+    try {
+      const serialized = JSON.stringify(player);
+      localStorage.setItem(SAVE_KEY, serialized);
+      _idbSave(serialized);
+    } catch(e) {}
+  };
+  if (window.requestIdleCallback) {
+    requestIdleCallback(doSave, { timeout: 2000 });
+  } else {
+    setTimeout(doSave, 0);
+  }
 }
 // Auto-save toutes les 3 minutes en arrière-plan
 if (window._autoSaveInterval) clearInterval(window._autoSaveInterval);
@@ -4361,8 +4387,11 @@ function confirmSwitch(idx) {
     pTypeBadge.textContent = dual;
     pTypeBadge.className = 'poke-type-badge type-'+dual;
   }
-  document.getElementById('btn-attack').innerHTML = `⚔ ${player.move} <span class="atk-elem-badge elem-${player.moveElem||player.type}">${player.moveElem||player.type}</span>`;
-  document.getElementById('btn-magic').innerHTML  = `✨ ${player.mMove} <span class="atk-elem-badge elem-${player.mMoveElem||player.type}">${player.mMoveElem||player.type}</span>`;
+  const _sw_ba = _hud('btn-attack'); const _sw_bm = _hud('btn-magic');
+  const _sw_ah = `⚔ ${player.move} <span class="atk-elem-badge elem-${player.moveElem||player.type}">${player.moveElem||player.type}</span>`;
+  const _sw_mh = `✨ ${player.mMove} <span class="atk-elem-badge elem-${player.mMoveElem||player.type}">${player.mMoveElem||player.type}</span>`;
+  if (_sw_ba) { _sw_ba.innerHTML = _sw_ah; _sw_ba._cachedHtml = _sw_ah; }
+  if (_sw_bm) { _sw_bm.innerHTML = _sw_mh; _sw_bm._cachedHtml = _sw_mh; }
   updateBattleHp(); updateHUD();
   (_hud('battle-log')).textContent = `⇄ Go, ${player.currentName} !`;
 
