@@ -5300,27 +5300,27 @@ function awardShardOnKill(enemyType) {
 // ══════════════════════════════════════════
 const SKILL_TREE = {
   // Colonne Combat
-  'atk-boost-1':   { name:'Attaque +',      desc:'+5% ATK équipe',    cost:500,  req:[],                    row:0, col:0, apply:()=>{ applySkillToTeam(p=>{ p.atk=Math.round(p.atk*1.05); }); } },
-  'atk-boost-2':   { name:'Attaque ++',     desc:'+10% ATK équipe',   cost:1500, req:['atk-boost-1'],       row:1, col:0, apply:()=>{ applySkillToTeam(p=>{ p.atk=Math.round(p.atk*1.10); }); } },
-  'atk-boost-3':   { name:'Attaque MAX',    desc:'+20% ATK équipe',   cost:4000, req:['atk-boost-2'],       row:2, col:0, apply:()=>{ applySkillToTeam(p=>{ p.atk=Math.round(p.atk*1.20); }); } },
-  'def-boost-1':   { name:'Défense +',      desc:'+5% DEF équipe',    cost:500,  req:[],                    row:0, col:1, apply:()=>{ applySkillToTeam(p=>{ p.def=Math.round(p.def*1.05); }); } },
-  'def-boost-2':   { name:'Défense ++',     desc:'+10% DEF équipe',   cost:1500, req:['def-boost-1'],       row:1, col:1, apply:()=>{ applySkillToTeam(p=>{ p.def=Math.round(p.def*1.10); }); } },
-  'hp-boost-1':    { name:'Vitalité +',     desc:'+10% PV équipe',    cost:800,  req:[],                    row:0, col:2, apply:()=>{ applySkillToTeam(p=>{ p.maxHp=Math.round(p.maxHp*1.10);p.hp=p.maxHp; }); } },
-  'hp-boost-2':    { name:'Vitalité ++',    desc:'+20% PV équipe',    cost:2000, req:['hp-boost-1'],        row:1, col:2, apply:()=>{ applySkillToTeam(p=>{ p.maxHp=Math.round(p.maxHp*1.20);p.hp=p.maxHp; }); } },
+  'atk-boost-1':   { name:'Attaque +',      desc:'+5% ATK équipe',    cost:100,  req:[],                    row:0, col:0, apply:()=>{ applySkillToTeam(p=>{ p.atk=Math.round(p.atk*1.05); }); } },
+  'atk-boost-2':   { name:'Attaque ++',     desc:'+10% ATK équipe',   cost:300,  req:['atk-boost-1'],       row:1, col:0, apply:()=>{ applySkillToTeam(p=>{ p.atk=Math.round(p.atk*1.10); }); } },
+  'atk-boost-3':   { name:'Attaque MAX',    desc:'+20% ATK équipe',   cost:800,  req:['atk-boost-2'],       row:2, col:0, apply:()=>{ applySkillToTeam(p=>{ p.atk=Math.round(p.atk*1.20); }); } },
+  'def-boost-1':   { name:'Défense +',      desc:'+5% DEF équipe',    cost:100,  req:[],                    row:0, col:1, apply:()=>{ applySkillToTeam(p=>{ p.def=Math.round(p.def*1.05); }); } },
+  'def-boost-2':   { name:'Défense ++',     desc:'+10% DEF équipe',   cost:300,  req:['def-boost-1'],       row:1, col:1, apply:()=>{ applySkillToTeam(p=>{ p.def=Math.round(p.def*1.10); }); } },
+  'hp-boost-1':    { name:'Vitalité +',     desc:'+10% PV équipe',    cost:150,  req:[],                    row:0, col:2, apply:()=>{ applySkillToTeam(p=>{ p.maxHp=Math.round(p.maxHp*1.10);p.hp=p.maxHp; }); } },
+  'hp-boost-2':    { name:'Vitalité ++',    desc:'+20% PV équipe',    cost:400,  req:['hp-boost-1'],        row:1, col:2, apply:()=>{ applySkillToTeam(p=>{ p.maxHp=Math.round(p.maxHp*1.20);p.hp=p.maxHp; }); } },
   // Colonne Économie
-  'gold-find-1':   { name:'Fortune I',      desc:'+20% or des combats', cost:1000,req:[],                   row:0, col:3, apply:()=>{ player._globalGoldBonus=(player._globalGoldBonus||0)+0.20; } },
-  'gold-find-2':   { name:'Fortune II',     desc:'+40% or des combats', cost:3000,req:['gold-find-1'],      row:1, col:3, apply:()=>{ player._globalGoldBonus=(player._globalGoldBonus||0)+0.40; } },
-  'xp-boost-1':    { name:'Étude I',        desc:'+20% XP de combat',   cost:1000,req:[],                   row:0, col:4, apply:()=>{ player._globalXPBonus=(player._globalXPBonus||0)+0.20; } },
-  'xp-boost-2':    { name:'Étude II',       desc:'+40% XP de combat',   cost:3000,req:['xp-boost-1'],       row:1, col:4, apply:()=>{ player._globalXPBonus=(player._globalXPBonus||0)+0.40; } },
-  'passive-inc-1': { name:'Rentier I',      desc:'+5₽/s passif',        cost:2000,req:['gold-find-1'],      row:2, col:3, apply:()=>{ player._passiveIncome=(player._passiveIncome||0)+5; } },
-  'passive-inc-2': { name:'Rentier II',     desc:'+15₽/s passif',       cost:6000,req:['passive-inc-1'],    row:3, col:3, apply:()=>{ player._passiveIncome=(player._passiveIncome||0)+15; } },
+  'gold-find-1':   { name:'Fortune I',      desc:'+20% or des combats', cost:200, req:[],                   row:0, col:3, apply:()=>{ player._globalGoldBonus=(player._globalGoldBonus||0)+0.20; } },
+  'gold-find-2':   { name:'Fortune II',     desc:'+40% or des combats', cost:600, req:['gold-find-1'],      row:1, col:3, apply:()=>{ player._globalGoldBonus=(player._globalGoldBonus||0)+0.40; } },
+  'xp-boost-1':    { name:'Étude I',        desc:'+20% XP de combat',   cost:200, req:[],                   row:0, col:4, apply:()=>{ player._globalXPBonus=(player._globalXPBonus||0)+0.20; } },
+  'xp-boost-2':    { name:'Étude II',       desc:'+40% XP de combat',   cost:600, req:['xp-boost-1'],       row:1, col:4, apply:()=>{ player._globalXPBonus=(player._globalXPBonus||0)+0.40; } },
+  'passive-inc-1': { name:'Rentier I',      desc:'+5₽/s passif',        cost:400, req:['gold-find-1'],      row:2, col:3, apply:()=>{ player._passiveIncome=(player._passiveIncome||0)+5; } },
+  'passive-inc-2': { name:'Rentier II',     desc:'+15₽/s passif',       cost:1200,req:['passive-inc-1'],    row:3, col:3, apply:()=>{ player._passiveIncome=(player._passiveIncome||0)+15; } },
   // Colonne Capture
-  'catch-rate-1':  { name:'Pisteur I',      desc:'+10% taux capture',   cost:800, req:[],                   row:0, col:5, apply:()=>{ player._catchBonus=(player._catchBonus||0)+0.10; } },
-  'catch-rate-2':  { name:'Pisteur II',     desc:'+20% taux capture',   cost:2500,req:['catch-rate-1'],     row:1, col:5, apply:()=>{ player._catchBonus=(player._catchBonus||0)+0.20; } },
-  'shiny-luck-1':  { name:'Shiny Luck I',   desc:'Shiny ×2',            cost:5000,req:['catch-rate-1'],     row:2, col:5, apply:()=>{ player._shinyLuckMult=(player._shinyLuckMult||1)*2; } },
-  'shiny-luck-2':  { name:'Shiny Luck II',  desc:'Shiny ×4',            cost:15000,req:['shiny-luck-1'],    row:3, col:5, apply:()=>{ player._shinyLuckMult=(player._shinyLuckMult||1)*4; } },
+  'catch-rate-1':  { name:'Pisteur I',      desc:'+10% taux capture',   cost:150, req:[],                   row:0, col:5, apply:()=>{ player._catchBonus=(player._catchBonus||0)+0.10; } },
+  'catch-rate-2':  { name:'Pisteur II',     desc:'+20% taux capture',   cost:500, req:['catch-rate-1'],     row:1, col:5, apply:()=>{ player._catchBonus=(player._catchBonus||0)+0.20; } },
+  'shiny-luck-1':  { name:'Shiny Luck I',   desc:'Shiny ×2',            cost:1000,req:['catch-rate-1'],     row:2, col:5, apply:()=>{ player._shinyLuckMult=(player._shinyLuckMult||1)*2; } },
+  'shiny-luck-2':  { name:'Shiny Luck II',  desc:'Shiny ×4',            cost:3000,req:['shiny-luck-1'],     row:3, col:5, apply:()=>{ player._shinyLuckMult=(player._shinyLuckMult||1)*4; } },
   // Centre
-  'all-boost':     { name:'MAÎTRISE',       desc:'+15% tout',           cost:20000,req:['atk-boost-2','xp-boost-2','catch-rate-2'], row:3,col:2,
+  'all-boost':     { name:'MAÎTRISE',       desc:'+15% tout',           cost:4000, req:['atk-boost-2','xp-boost-2','catch-rate-2'], row:3,col:2,
     apply:()=>{ applySkillToTeam(p=>{p.atk=Math.round(p.atk*1.15);p.def=Math.round(p.def*1.15);p.maxHp=Math.round(p.maxHp*1.15);p.hp=p.maxHp;});
                 player._globalGoldBonus=(player._globalGoldBonus||0)+0.15;
                 player._globalXPBonus=(player._globalXPBonus||0)+0.15; } },
