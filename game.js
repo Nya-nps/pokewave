@@ -1724,8 +1724,8 @@ function startBattle(enemyData) {
   document.getElementById('btn-attack').innerHTML = `⚔ ${player.move} <span class="atk-elem-badge elem-${player.moveElem||player.type}">${player.moveElem||player.type}</span>`;
   document.getElementById('btn-magic').innerHTML = `✨ ${player.mMove} <span class="atk-elem-badge elem-${player.mMoveElem||player.type}">${player.mMoveElem||player.type}</span>`;
   updateBattleHp(); disableBattleButtons(false);
-  // Désactiver le bouton Capture pour les combats boss/tour/world/trial
-  const _isCaptureBlocked = !!(enemy.isBoss || enemy.isWorldBoss || enemy.isTrainerBattle || player._tourBattle || player._worldBossBattle || player._trialBattle);
+  // Désactiver la capture uniquement pendant les modes spéciaux (Tour, World Boss, Trial, Dresseurs)
+  const _isCaptureBlocked = !!(enemy.isWorldBoss || enemy.isTrainerBattle || player._tourBattle || player._worldBossBattle || player._trialBattle);
   const btnCatch = document.getElementById('btn-catch-battle');
   if (btnCatch) { btnCatch.style.display = _isCaptureBlocked ? 'none' : ''; }
   const shinyBadge = enemy.isShiny ? ' ✨' : '';
