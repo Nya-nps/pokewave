@@ -54,7 +54,7 @@ body { background: var(--c-bg) !important; }
 @keyframes float-up { 0%{transform:translateY(0) scale(1);opacity:.8} 100%{transform:translateY(-80px) scale(.5);opacity:0} }
 @keyframes drift    { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
 @keyframes pulse-glow { 0%,100%{opacity:.6} 50%{opacity:1} }
-@keyframes shimmer  { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+@keyframes shimmer  { 0%{transform:translateX(-200%)} 100%{transform:translateX(300%)} }
 @keyframes slide-in-right { from{transform:translateX(100%);opacity:0} to{transform:translateX(0);opacity:1} }
 @keyframes pop-in   { from{transform:scale(.85);opacity:0} to{transform:scale(1);opacity:1} }
 @keyframes glow-pulse { 0%,100%{box-shadow:0 0 12px currentColor} 50%{box-shadow:0 0 28px currentColor, 0 0 50px currentColor} }
@@ -134,23 +134,30 @@ body { background: var(--c-bg) !important; }
   transition: width .4s var(--ease-out) !important;
   position: relative !important;
 }
+.bar-fill {
+  overflow: hidden !important;
+}
 .bar-fill.hp {
-  background: linear-gradient(90deg, #ff2244, #ff6b9d, #ff2244) !important;
-  background-size: 200% !important;
-  animation: shimmer 3s linear infinite !important;
+  background: linear-gradient(90deg, #ff2244, #ff6b9d) !important;
   box-shadow: 0 0 12px rgba(255,50,80,.6) !important;
 }
 .bar-fill.mp {
-  background: linear-gradient(90deg, #4cc9f0, #c77dff, #4cc9f0) !important;
-  background-size: 200% !important;
-  animation: shimmer 3s linear infinite reverse !important;
+  background: linear-gradient(90deg, #4cc9f0, #c77dff) !important;
   box-shadow: 0 0 12px rgba(76,201,240,.5) !important;
 }
 .bar-fill.xp {
-  background: linear-gradient(90deg, #ffd60a, #ff9a3c, #ffd60a) !important;
-  background-size: 200% !important;
-  animation: shimmer 2.5s linear infinite !important;
+  background: linear-gradient(90deg, #ffd60a, #ff9a3c) !important;
   box-shadow: 0 0 12px rgba(255,214,10,.5) !important;
+}
+/* Shimmer GPU via ::after transform (compositor — pas de repaint) */
+.bar-fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.25), transparent);
+  animation: shimmer 2.5s linear infinite;
+  will-change: transform;
+  pointer-events: none;
 }
 
 #player-name-hud {
@@ -857,3 +864,39 @@ body { background: var(--c-bg) !important; }
   scrollbar-width: thin;
   scrollbar-color: var(--blue) transparent;
 }
+
+/* ══ PERFORMANCE — backdrop-filter désactivé sur éléments visibles en continu ══
+   Chaque backdrop-filter = copie GPU du framebuffer à chaque frame → lag constant.
+   Les fonds sont déjà quasi-opaques : diff visuelle nulle.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.hud-card,
+#player-name-hud,
+#gold-display,
+#message-box,
+#kill-counter-hud,
+.combatant,
+#battle-log,
+#screen-menu,
+#screen-inventory,
+#screen-shop,
+#screen-team,
+#screen-talents,
+#screen-quests,
+#screen-achievements,
+#screen-forge,
+#screen-skills,
+#screen-prestige,
+#screen-breeding {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+/* Compenser par un fond légèrement plus opaque sur les éléments HUD */
+.hud-card         { background: rgba(14,10,40,.96) !important; }
+#player-name-hud  { background: rgba(14,10,40,.96) !important; }
+#gold-display     { background: rgba(30,22,5,.94) !important; }
+#message-box      { background: rgba(10,8,30,.96) !important; }
+#kill-counter-hud { background: rgba(14,10,40,.96) !important; }
+.combatant        { background: rgba(10,8,30,.96) !important; }
+#battle-log       { background: rgba(10,8,30,.97) !important; }
+/* Désactiver shimmer sur mobile */
+@media (max-width: 900px) { .bar-fill::after { display: none !important; } }
