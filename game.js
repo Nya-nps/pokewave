@@ -627,54 +627,55 @@ function typeToAnim(type) {
 
 // Niveau min/max par zone (progression ZONE_ORDER + zones annexes)
 // Chaque zone a une tranche de niveau fixe — le niveau ennemi est tiré aléatoirement dans cet intervalle.
+// Niveaux fixes par zone — plafond porté à 500 (contenu end-game)
 const ZONE_LEVELS = {
-  // ── Zones de progression principale (ZONE_ORDER) ──
-  'bourg-palette':  [1,  8],
-  'route-3':        [5,  12],
-  'foret-jade':     [8,  15],
-  'mt-lune':        [12, 20],
-  'argenta':        [15, 25],
-  'brindibourg':    [20, 30],
-  'route-5-6':      [25, 35],
-  'celadopole':     [30, 40],
-  'route-9-10':     [35, 45],
-  'tour-pokemon':   [38, 48],
-  'lavanville':     [42, 52],
-  'grotte-azuria':  [45, 55],
-  'safrania':       [50, 60],
-  'route-13-15':    [52, 62],
-  'parmanie':       [55, 65],
-  'safari-zone':    [58, 68],
-  'carmin-sur-mer': [62, 72],
-  'route-19-20':    [65, 75],
-  'iles-ecume':     [70, 85],
-  'ligue-pokemon':  [80, 100],
-  // ── Zones annexes ──
-  'route-1':        [3,  6],
-  'jadielle':       [4,  7],
-  'route-2':        [5,  9],
-  'route-4':        [14, 19],
-  'route-24':       [14, 18],
-  'route-25':       [13, 17],
-  'route-5':        [20, 27],
-  'route-6':        [22, 28],
-  'cramois-ile':    [28, 36],
-  'route-7':        [24, 32],
-  'route-8':        [24, 32],
-  'route-12':       [30, 38],
-  'azuria':         [26, 34],
-  'route-9':        [32, 40],
-  'route-10':       [33, 41],
-  'route-11':       [28, 36],
-  'route-21':       [40, 50],
-  'route-13':       [38, 48],
-  'route-14':       [40, 50],
-  'route-15':       [38, 47],
-  'route-16':       [28, 36],
-  'route-19':       [55, 65],
-  'route-20':       [57, 67],
-  'route-22':       [48, 58],
-  'jadielle-nord':  [6,  11],
+  // ── Zones de progression principale (ZONE_ORDER — 20 zones, Niv.1→500) ──
+  'bourg-palette':  [1,   12],
+  'route-3':        [8,   22],
+  'foret-jade':     [15,  35],
+  'mt-lune':        [28,  52],
+  'argenta':        [44,  70],
+  'brindibourg':    [60,  90],
+  'route-5-6':      [78,  112],
+  'celadopole':     [98,  138],
+  'route-9-10':     [122, 168],
+  'tour-pokemon':   [150, 198],
+  'lavanville':     [180, 235],
+  'grotte-azuria':  [215, 272],
+  'safrania':       [252, 315],
+  'route-13-15':    [292, 360],
+  'parmanie':       [335, 405],
+  'safari-zone':    [380, 455],
+  'carmin-sur-mer': [415, 472],
+  'route-19-20':    [440, 485],
+  'iles-ecume':     [458, 495],
+  'ligue-pokemon':  [470, 500],
+  // ── Zones annexes (proportionnelles aux zones principales adjacentes) ──
+  'route-1':        [3,   10],
+  'jadielle':       [5,   14],
+  'route-2':        [6,   18],
+  'route-4':        [32,  58],
+  'route-24':       [30,  55],
+  'route-25':       [28,  52],
+  'route-5':        [48,  78],
+  'route-6':        [52,  85],
+  'cramois-ile':    [72,  108],
+  'route-7':        [62,  95],
+  'route-8':        [62,  95],
+  'route-12':       [78,  115],
+  'azuria':         [68,  105],
+  'route-9':        [85,  125],
+  'route-10':       [88,  130],
+  'route-11':       [72,  108],
+  'route-21':       [115, 158],
+  'route-13':       [108, 148],
+  'route-14':       [115, 158],
+  'route-15':       [105, 145],
+  'route-16':       [72,  108],
+  'route-19':       [175, 240],
+  'route-20':       [182, 250],
+  'route-22':       [145, 198],
+  'jadielle-nord':  [8,   22],
 };
 
 // Vitesse originale Gen 1 par pokémon
@@ -2136,8 +2137,8 @@ function getGoldMultiplier() {
   return (p && p.heldItem === 'amulette-or') ? 1.3 : 1.0;
 }
 function xpForLevel(n) {
-  // Courbe "Medium Fast" allégée — facteur ×3 (−25 % vs l'ancienne ×4)
-  // lv10≈993  lv30≈8373  lv50≈22953  lv100≈90903
+  // Courbe quadratique — plafond porté à 500
+  // lv10≈993  lv50≈22953  lv100≈90903  lv200≈361803  lv300≈812703  lv500≈2254503
   return Math.floor(3 * (3*n*n + 3*n + 1));
 }
 let battleTurn = 'player'; // 'player' or 'enemy'
@@ -5049,7 +5050,7 @@ function challengeWorldBoss() {
   const lv = player.level || 1;
   const scale = 1 + lv * 0.06;
   const b = WORLD_BOSS_POOL[Math.floor(Math.random() * WORLD_BOSS_POOL.length)];
-  const level = Math.max(80, Math.min(100, lv + 55));
+  const level = Math.max(80, Math.min(450, lv + 55));
   const boss = {
     name:`🌍 ${b.n}`, id:b.id, level,
     hp:Math.round(b.hp*scale), maxHp:Math.round(b.hp*scale),
@@ -5883,7 +5884,10 @@ const ACHIEVEMENTS = [
   { id:'lv-10',         title:'Apprenti',         desc:'Atteindre le niveau 10',     icon:'⬆️',  condition:p=>(p.level||1)>=10,            reward:{gold:200} },
   { id:'lv-30',         title:'Confirmé',         desc:'Atteindre le niveau 30',     icon:'⬆️',  condition:p=>(p.level||1)>=30,            reward:{gold:1000, candy:2} },
   { id:'lv-50',         title:'Expert',           desc:'Atteindre le niveau 50',     icon:'⬆️',  condition:p=>(p.level||1)>=50,            reward:{gold:3000, tokens:3} },
-  { id:'lv-100',        title:'Maître',           desc:'Atteindre le niveau 100',    icon:'👑',  condition:p=>(p.level||1)>=100,           reward:{gold:10000, tokens:10, candy:10} },
+  { id:'lv-100',        title:'Maître',           desc:'Atteindre le niveau 100',    icon:'👑',  condition:p=>(p.level||1)>=100,           reward:{gold:10000,  tokens:10, candy:10} },
+  { id:'lv-200',        title:'Champion',         desc:'Atteindre le niveau 200',    icon:'🔥',  condition:p=>(p.level||1)>=200,           reward:{gold:50000,  tokens:25, candy:20} },
+  { id:'lv-300',        title:'Élite',            desc:'Atteindre le niveau 300',    icon:'💎',  condition:p=>(p.level||1)>=300,           reward:{gold:150000, tokens:50, candy:35} },
+  { id:'lv-500',        title:'Transcendant',     desc:'Atteindre le niveau 500',    icon:'🌌',  condition:p=>(p.level||1)>=500,           reward:{gold:500000, tokens:150,candy:100} },
   // Tour
   { id:'tour-10',       title:'Grimpeur',         desc:'Atteindre l\'étage 10',      icon:'🏔️',  condition:p=>(p.tourFloor||0)>=10,        reward:{gold:1000, tokens:2} },
   { id:'tour-25',       title:'Alpiniste',        desc:'Atteindre l\'étage 25',      icon:'🗻',  condition:p=>(p.tourFloor||0)>=25,        reward:{gold:3000, tokens:3, candy:3} },
@@ -6325,7 +6329,7 @@ const TOUR_FLOOR_ENEMIES = floor => {
   const spd = GEN1_SPD[pData.id] || 50;
   return {
     name: pData.n, id: pData.id,
-    level: Math.max(1, Math.min(100, floor * 3 + Math.floor(Math.random() * 5))),
+    level: Math.max(1, Math.min(500, floor * 3 + Math.floor(Math.random() * 5))),
     hp: Math.round(pData.hp * scale), maxHp: Math.round(pData.hp * scale),
     atk: Math.round(pData.atk * scale), def: Math.round(pData.def * scale) || 1,
     spd: Math.round(spd * scale), xp: 0, gold: 0, type: pData.t,
