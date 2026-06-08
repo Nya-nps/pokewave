@@ -58,6 +58,37 @@ function applyShinyBoost(poke) {
   if (poke.spDef) poke.spDef = Math.round(poke.spDef * B);
 }
 
+// ── SIZE VARIANTS ──
+const SIZE_VARIANTS = [
+  { id:'lilliputien', label:'Lilliputien', emoji:'🔬', mult:0.80, color:'#a0c4ff' },
+  { id:'petit',       label:'Petit',       emoji:'🔹', mult:0.92, color:'#bde0fe' },
+  { id:'normal',      label:'Normal',      emoji:'⬜', mult:1.00, color:'#ffffff'  },
+  { id:'grand',       label:'Grand',       emoji:'🔷', mult:1.10, color:'#ffd166' },
+  { id:'géant',       label:'Géant',       emoji:'🔶', mult:1.25, color:'#ef9b20' },
+  { id:'colossal',    label:'Colossal',    emoji:'🔴', mult:1.50, color:'#e63946' },
+];
+function rollSizeVariant() {
+  const r = Math.random() * 100;
+  if (r < 2)  return SIZE_VARIANTS[0];
+  if (r < 15) return SIZE_VARIANTS[1];
+  if (r < 65) return SIZE_VARIANTS[2];
+  if (r < 90) return SIZE_VARIANTS[3];
+  if (r < 98) return SIZE_VARIANTS[4];
+  return SIZE_VARIANTS[5];
+}
+function applySizeVariant(poke, variant) {
+  if (!variant || variant.id === 'normal') return;
+  const m = variant.mult;
+  poke.maxHp = Math.round(poke.maxHp * m);
+  poke.hp    = poke.maxHp;
+  poke.atk   = Math.round(poke.atk * m);
+  poke.def   = Math.round(poke.def * m);
+  poke.spd   = Math.round(poke.spd * m);
+  poke.magic = Math.round(poke.magic * m);
+  if (poke.spAtk) poke.spAtk = Math.round(poke.spAtk * m);
+  if (poke.spDef) poke.spDef = Math.round(poke.spDef * m);
+}
+
 const CLASSES = {
   'Évoli':     { id:133, evoId:136, evoName:'Pyroli',   evoLevel:36, sprite:133, type:'Normal',    hp:100, mp:60,  atk:14, def:11, spd:14, magic:12, move:'Morsure',      mMove:'Vive-Attaque', moveElem:'Normal',    mMoveElem:'Normal',    moveUses:6,  mMoveUses:4,  items:[{n:'Potion',img:'potion',q:2}], animType:'normal' },
   'Carapuce':  { id:7,   evoId:8,   evoName:'Carabaffe',evoLevel:16, sprite:7,   type:'Eau',       hp:115, mp:55,  atk:11, def:18, spd:8,  magic:10, move:'Pistolet-O',   mMove:'Écume',        moveElem:'Eau',       mMoveElem:'Eau',       moveUses:6,  mMoveUses:4,  items:[{n:'Potion',img:'potion',q:2}], animType:'water' },
@@ -109,6 +140,15 @@ const SHOP_ITEMS = [
   { id:'potion',       name:'Potion',       desc:'Restaure 30 PV',         price:300,  heal:30,        img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/potion.png',     type:'heal' },
   { id:'superpotion',  name:'Super Potion', desc:'Restaure 60 PV',         price:700,  heal:60,        img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/super-potion.png',type:'heal' },
   { id:'hyperpotion',  name:'Hyper Potion', desc:'Restaure 120 PV',        price:1200, heal:120,       img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/hyper-potion.png',type:'heal' },
+  { id:'shiny-gem',    name:'Gemme Éclat',  desc:'Rend un Pokémon Shiny !',price:5000, img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/shiny-stone.png',  type:'special' },
+  { id:'orb-bird',    name:'Orbe Oiseau',   desc:'Invoque Artikodin, Électhor ou Sulfura !',price:3000, img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/fire-stone.png',   type:'special' },
+  { id:'orb-beast',   name:'Orbe Bête',     desc:'Invoque Entei, Suicune ou Raikou !',      price:3000, img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/thunder-stone.png', type:'special' },
+  { id:'orb-golem',   name:'Orbe Golem',    desc:'Invoque Registeel, Regirock ou Regice !', price:3000, img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/water-stone.png',   type:'special' },
+  { id:'orb-dragon',  name:'Orbe Dragon',   desc:'Invoque Latios, Latias ou Rayquaza !',    price:4000, img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/dragon-scale.png',  type:'special' },
+  { id:'orb-space',   name:'Orbe Espace',   desc:'Invoque Dialga, Palkia ou Giratina !',    price:4000, img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/dawn-stone.png',    type:'special' },
+  { id:'orb-mega',    name:'Orbe Méga',     desc:'Invoque Méwtwo, Kyogre ou Groudon !',     price:6000, img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/dusk-stone.png',    type:'special' },
+  { id:'orb-ancient', name:'Orbe Ancestral',desc:'Invoque Necrozma, Lunala ou Solgaleo !',  price:5000, img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/sun-stone.png',     type:'special' },
+  { id:'orb-ultra',   name:'Orbe Ultime',   desc:'Invoque Zacian, Zamazenta ou Calyrex !',  price:8000, img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/oval-stone.png',    type:'special' },
 ];
 
 const ITEM_DISPLAY = {
@@ -120,6 +160,15 @@ const ITEM_DISPLAY = {
   hyperball:   { name:'Hyper Ball',   img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/ultra-ball.png' },
   masterball:  { name:'Master Ball',  img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/master-ball.png' },
   ct:          { name:'CT Mystère',   img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/tm-normal.png' },
+  'shiny-gem':  { name:'Gemme Éclat',  img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/shiny-stone.png' },
+  'orb-bird':   { name:'Orbe Oiseau',  img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/fire-stone.png' },
+  'orb-beast':  { name:'Orbe Bête',    img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/thunder-stone.png' },
+  'orb-golem':  { name:'Orbe Golem',   img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/water-stone.png' },
+  'orb-dragon': { name:'Orbe Dragon',  img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/dragon-scale.png' },
+  'orb-space':  { name:'Orbe Espace',  img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/dawn-stone.png' },
+  'orb-mega':   { name:'Orbe Méga',    img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/dusk-stone.png' },
+  'orb-ancient':{ name:'Orbe Ancestral',img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/sun-stone.png' },
+  'orb-ultra':  { name:'Orbe Ultime',  img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/oval-stone.png' },
 };
 
 // ══════════════════════════════════════════
@@ -1028,6 +1077,7 @@ function showScreen(id) {
   else if (id==='breeding') { document.getElementById('screen-breeding').classList.add('active'); renderBreedingScreen(); }
   else if (id==='achievements') { document.getElementById('screen-achievements').classList.add('active'); renderAchievements(); }
   else if (id==='forge')        { document.getElementById('screen-forge').classList.add('active'); renderForge(); }
+  else if (id==='trial')        { document.getElementById('screen-trial').classList.add('active'); }
   currentScreen = id;
 }
 
@@ -1233,6 +1283,9 @@ function addCapturedToRoster(capturedData) {
     isShiny: capturedData.isShiny || false,
   };
   if (newPoke.isShiny) applyShinyBoost(newPoke);
+  const sv = rollSizeVariant();
+  newPoke.sizeVariant = sv.id;
+  applySizeVariant(newPoke, sv);
 
   // ── NO DUPLICATE: chercher si cette espèce existe déjà dans roster + box ──
   const allPokes = [...player.roster, ...player.box];
@@ -1679,8 +1732,9 @@ function startBattle(enemyData) {
   document.getElementById('btn-magic').innerHTML = `✨ ${player.mMove} <span class="atk-elem-badge elem-${player.mMoveElem||player.type}">${player.mMoveElem||player.type}</span>`;
   updateBattleHp(); disableBattleButtons(false);
   const shinyBadge = enemy.isShiny ? ' ✨' : '';
-  document.getElementById('b-enemy-name').textContent = enemy.name + shinyBadge;
-  (_hud('battle-log')).textContent = `${enemy.isShiny ? '✨ OH ! Un Pokémon SHINY apparaît ! ' : '⚡ Un '}${enemy.name} (${enemy.type}) sauvage apparaît !${matchupHint}`;
+  const legendBadge = enemy.isLegendary ? ' ⭐' : '';
+  document.getElementById('b-enemy-name').textContent = enemy.name + shinyBadge + legendBadge;
+  (_hud('battle-log')).textContent = `${enemy.isLegendary ? '⭐ UN LÉGENDAIRE ! ' : enemy.isShiny ? '✨ OH ! Un Pokémon SHINY apparaît ! ' : '⚡ Un '}${enemy.name} (${enemy.type}) ${enemy.isLegendary ? 'vous défie !' : 'sauvage apparaît !'}${matchupHint}`;
   document.getElementById('catch-display').classList.remove('active');
   battleBusy = false;
   // Reset tour flag unless set by startTourFloor
@@ -2364,38 +2418,101 @@ function closeEvo() {
 }
 
 // ══════════════════════════════════════════
-// INVENTORY
+// SPECIAL ITEMS — Gemme Éclat & Orbes Trial
 // ══════════════════════════════════════════
-function switchInvTab(tab) {
-  document.querySelectorAll('.inv-tab').forEach(t=>t.classList.remove('active'));
-  document.getElementById('inv-panel-stats').style.display='none';
-  document.getElementById('inv-panel-bag').style.display='none';
-  if (tab==='stats') {
-    document.querySelector('.inv-tab:nth-child(1)').classList.add('active');
-    document.getElementById('inv-panel-stats').style.display='block';
-  } else {
-    document.querySelector('.inv-tab:nth-child(2)').classList.add('active');
-    document.getElementById('inv-panel-bag').style.display='block';
-  }
+function useBagSpecial(itemId) {
+  if (itemId === 'shiny-gem') useShinyGem();
+  else if (itemId.startsWith('orb-')) useOrb(itemId);
 }
 
+function useShinyGem() {
+  if (!player || (player.bag['shiny-gem']||0) < 1) return;
+  const roster = player.roster || [];
+  if (roster.length === 0) { notify('Aucun Pokémon dans l\'équipe !'); return; }
+  const nonShiny = roster.filter(p => !p.isShiny);
+  if (nonShiny.length === 0) { notify('Tous vos Pokémon sont déjà Shiny !'); return; }
+
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center';
+  const items = nonShiny.map(p => {
+    const sid = p.currentSpriteId || p.spriteId;
+    return `<div onclick="_applyGemToIdx(${roster.indexOf(p)},this)" style="cursor:pointer;background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.15);border-radius:12px;padding:.7rem;display:flex;align-items:center;gap:.6rem;transition:border-color .2s" onmouseover="this.style.borderColor='#ffd700'" onmouseout="this.style.borderColor='rgba(255,255,255,.15)'">
+      <img src="${SPRITE_FRONT(sid)}" style="width:52px;height:52px;image-rendering:pixelated"/>
+      <div>
+        <div style="font-family:'Press Start 2P',monospace;font-size:.45rem;color:#ffd700">${p.currentName||p.name}</div>
+        <div style="font-family:'Press Start 2P',monospace;font-size:.32rem;color:rgba(255,255,255,.5)">Niv.${p.level} · ${p.type}</div>
+      </div>
+    </div>`;
+  }).join('');
+  modal.innerHTML = `<div style="background:rgba(10,10,30,.98);border:3px solid #ffd700;border-radius:16px;padding:1.5rem;width:min(360px,94vw);max-height:85vh;overflow-y:auto">
+    <div style="font-family:'Press Start 2P',monospace;font-size:.6rem;color:#ffd700;text-align:center;margin-bottom:1rem">✨ GEMME ÉCLAT<br><span style="font-size:.38rem;color:rgba(255,255,255,.5)">Choisissez un Pokémon</span></div>
+    <div style="display:flex;flex-direction:column;gap:.5rem">${items}</div>
+    <button onclick="this.closest('div[style*=fixed]').remove()" style="margin-top:.8rem;width:100%;padding:.5rem;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:8px;color:#fff;cursor:pointer;font-family:'Press Start 2P',monospace;font-size:.38rem">✗ Annuler</button>
+  </div>`;
+  document.body.appendChild(modal);
+  window._applyGemToIdx = (idx, el) => {
+    const p = player.roster[idx];
+    if (!p || p.isShiny) return;
+    p.isShiny = true;
+    applyShinyBoost(p);
+    player.shinyCount = (player.shinyCount||0) + 1;
+    player.bag['shiny-gem']--;
+    modal.remove();
+    notify(`✨ ${p.currentName||p.name} est maintenant SHINY !`);
+    saveGame();
+    renderInventory();
+  };
+}
+
+// ── TRIAL MODE — Orbes légendaires ──
+const ORB_POOLS = {
+  'orb-bird':    [{id:144,n:'Artikodin',t:'Glace/Vol'},{id:145,n:'Électhor',t:'Électrik/Vol'},{id:146,n:'Sulfura',t:'Feu/Vol'}],
+  'orb-beast':   [{id:243,n:'Raikou',t:'Électrik'},{id:244,n:'Entei',t:'Feu'},{id:245,n:'Suicune',t:'Eau'}],
+  'orb-golem':   [{id:377,n:'Regirock',t:'Roche'},{id:378,n:'Regice',t:'Glace'},{id:379,n:'Registeel',t:'Acier'}],
+  'orb-dragon':  [{id:380,n:'Latias',t:'Dragon/Psy'},{id:381,n:'Latios',t:'Dragon/Psy'},{id:384,n:'Rayquaza',t:'Dragon/Vol'}],
+  'orb-space':   [{id:483,n:'Dialga',t:'Acier/Dragon'},{id:484,n:'Palkia',t:'Eau/Dragon'},{id:487,n:'Giratina',t:'Spectre/Dragon'}],
+  'orb-mega':    [{id:150,n:'Mewtwo',t:'Psy'},{id:382,n:'Kyogre',t:'Eau'},{id:383,n:'Groudon',t:'Sol'}],
+  'orb-ancient': [{id:800,n:'Necrozma',t:'Psy'},{id:792,n:'Lunala',t:'Psy/Spectre'},{id:791,n:'Solgaleo',t:'Acier/Psy'}],
+  'orb-ultra':   [{id:888,n:'Zacian',t:'Fée'},{id:889,n:'Zamazenta',t:'Combat'},{id:898,n:'Calyrex',t:'Psy/Glace'}],
+};
+
+function useOrb(orbId) {
+  if (!player || (player.bag[orbId]||0) < 1) return;
+  const pool = ORB_POOLS[orbId];
+  if (!pool) return;
+  const pick = pool[Math.floor(Math.random()*pool.length)];
+  player.bag[orbId]--;
+  notify(`⚡ L'orbe résonne… ${pick.n} apparaît !`);
+  saveGame();
+  renderInventory();
+  // Build legendary enemy and start battle
+  const legendLvl = Math.max(50, (player.trainerLevel||1) * 5);
+  const legendScale = 1 + legendLvl * 0.12;
+  const legendEnemy = {
+    name: pick.n,
+    id: pick.id,
+    type: pick.t.includes('/') ? pick.t.split('/')[0] : pick.t,
+    dualType: pick.t,
+    hp: Math.round(120 * legendScale),
+    maxHp: Math.round(120 * legendScale),
+    atk: Math.round(28 * legendScale),
+    def: Math.round(22 * legendScale),
+    spd: Math.round(100 * legendScale * 0.4),
+    magic: Math.round(25 * legendScale),
+    level: legendLvl,
+    xp: 300,
+    gold: 500,
+    isLegendary: true,
+    capturable: true,
+  };
+  setTimeout(() => startBattle(legendEnemy), 600);
+}
+
+// ══════════════════════════════════════════
+// INVENTORY
+// ══════════════════════════════════════════
 function renderInventory() {
   if (!player) return;
-  // STATS
-  const stats = document.getElementById('stat-list');
-  stats.innerHTML=[
-    ['Pokémon',player.currentName],['Type',player.type||'—'],
-    ['Niveau',player.level],['PV',`${Math.ceil(player.hp)} / ${player.maxHp}`],
-    ['XP',`${player.xp} / ${player.xpNext}`],
-    ['Attaque',player.atk],['Défense',player.def],
-    ['Capacité Spé.',player.magic],['Vitesse',player.spd],
-    [`${player.move||'Attaque'} (${player.moveElem||player.type})`,`${player.moveUses||0}/${player.moveUsesMax||6} util.`],
-    [`${player.mMove||'Capacité'} (${player.mMoveElem||player.type})`,`${player.mMoveUses||0}/${player.mMoveUsesMax||4} util.`],
-    ['Zone actuelle', ZONES[player.currentZone]?.name || player.currentZone],
-    ['Victoires zone', `${(player.zoneKills||{})[player.currentZone]||0}/15`],
-    ['Pokédollars',player.gold],
-  ].map(([k,v])=>`<div class="stat-row"><span>${k}</span><span>${v}</span></div>`).join('');
-
   // BAG
   const grid = document.getElementById('item-grid');
   const allItems = [];
@@ -2413,12 +2530,16 @@ function renderInventory() {
   });
   // Starting items
   if (player.items) player.items.forEach(i=>{ if (i.q>0) allItems.push({key:i.img, qty:i.q, customName:i.n}); });
+  // Special items (shiny-gem, orbs)
+  const specialKeys = ['shiny-gem','orb-bird','orb-beast','orb-golem','orb-dragon','orb-space','orb-mega','orb-ancient','orb-ultra'];
+  specialKeys.forEach(k=>{ if ((player.bag[k]||0)>0) allItems.push({key:k, qty:player.bag[k], usable:true}); });
 
   if (allItems.length===0) { grid.innerHTML='<div style="color:rgba(255,255,255,.4);font-size:.8rem">Sac vide…</div>'; return; }
 
-  grid.innerHTML = allItems.map(({key,qty,customName,customImg})=>{
+  grid.innerHTML = allItems.map(({key,qty,customName,customImg,usable})=>{
     const d = ITEM_DISPLAY[key]||{ name:customName||key, img:customImg||'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/potion.png' };
-    return `<div class="item-card"><img src="${customImg||d.img}" alt="${d.name}"/><div class="item-card-name">${customName||d.name}</div><div class="item-card-qty">x${qty}</div></div>`;
+    const useBtn = usable ? `<button onclick="useBagSpecial('${key}')" style="font-size:.35rem;padding:.2rem .5rem;margin-top:.2rem;background:var(--yellow);color:#000;border:none;border-radius:4px;cursor:pointer;font-family:'Press Start 2P',monospace">UTILISER</button>` : '';
+    return `<div class="item-card" style="flex-direction:column;align-items:center;gap:.2rem"><img src="${customImg||d.img}" alt="${d.name}"/><div class="item-card-name">${customName||d.name}</div><div class="item-card-qty">x${qty}</div>${useBtn}</div>`;
   }).join('');
 }
 
@@ -2481,7 +2602,7 @@ function renderTeam() {
         <img class="team-row-img" src="${imgSrc}" alt="${p.currentName||p.name}" style="${p.isShiny?'filter:drop-shadow(0 0 5px #ffd700)':''}"/>
         <div class="team-row-info">
           <div class="team-row-name">${p.currentName||p.name}${p.isShiny?' ✨':''}</div>
-          <div style="font-family:'Press Start 2P',monospace;font-size:.3rem;color:rgba(255,255,255,.5);line-height:1.7">Niv.${p.level} · ${typeBadges}${p.heldItem && HELD_ITEMS[p.heldItem] ? ` · ${HELD_ITEMS[p.heldItem].icon}` : ''}</div>
+          <div style="font-family:'Press Start 2P',monospace;font-size:.3rem;color:rgba(255,255,255,.5);line-height:1.7">Niv.${p.level} · ${typeBadges}${p.heldItem && HELD_ITEMS[p.heldItem] ? ` · ${HELD_ITEMS[p.heldItem].icon}` : ''}${p.sizeVariant && p.sizeVariant!=='normal' ? ` · <span style="color:${(SIZE_VARIANTS.find(sv=>sv.id===p.sizeVariant)||{}).color||'#fff'}">${(SIZE_VARIANTS.find(sv=>sv.id===p.sizeVariant)||{}).emoji||''} ${p.sizeVariant}</span>` : ''}</div>
           <div class="team-row-hp-bar"><div class="team-row-hp-fill" style="width:${hpPct}%;background:${hpColor}"></div></div>
           <div style="font-size:.55rem;color:rgba(255,255,255,.45);margin-top:.1rem">${Math.ceil(p.hp)}/${p.maxHp} PV</div>
         </div>
@@ -2749,6 +2870,8 @@ function buyItem(itemId) {
   if (item.type==='ball') {
     player.balls[itemId] = (player.balls[itemId]||0)+1;
   } else if (item.type==='heal') {
+    player.bag[itemId] = (player.bag[itemId]||0)+1;
+  } else if (item.type==='special') {
     player.bag[itemId] = (player.bag[itemId]||0)+1;
   }
   document.getElementById('shop-gold').textContent = player.gold;
@@ -5211,6 +5334,59 @@ const TOUR_FLOOR_ENEMIES = floor => {
 };
 
 const TOUR_RARE_ITEMS = ['super-bonbon','ceinture-choix','lentille-choix','bandeau-choix','reste','ecaille-mentale','amulette-or','pepite'];
+
+// ══════════════════════════════════════════
+// TRIAL MODE SCREEN
+// ══════════════════════════════════════════
+function renderTrialScreen() {
+  const el = document.getElementById('trial-content');
+  if (!el || !player) return;
+  const orbItems = [
+    {id:'orb-bird',   name:'Orbe Oiseau',   legendaries:'Artikodin · Électhor · Sulfura',  price:3000},
+    {id:'orb-beast',  name:'Orbe Bête',     legendaries:'Raikou · Entei · Suicune',        price:3000},
+    {id:'orb-golem',  name:'Orbe Golem',    legendaries:'Regirock · Regice · Registeel',   price:3000},
+    {id:'orb-dragon', name:'Orbe Dragon',   legendaries:'Latias · Latios · Rayquaza',      price:4000},
+    {id:'orb-space',  name:'Orbe Espace',   legendaries:'Dialga · Palkia · Giratina',      price:4000},
+    {id:'orb-mega',   name:'Orbe Méga',     legendaries:'Mewtwo · Kyogre · Groudon',       price:6000},
+    {id:'orb-ancient',name:'Orbe Ancestral',legendaries:'Solgaleo · Lunala · Necrozma',    price:5000},
+    {id:'orb-ultra',  name:'Orbe Ultime',   legendaries:'Zacian · Zamazenta · Calyrex',    price:8000},
+  ];
+  const ownedOrbs = orbItems.filter(o => (player.bag[o.id]||0) > 0);
+  const orbCards = orbItems.map(o => {
+    const qty = player.bag[o.id]||0;
+    const d = ITEM_DISPLAY[o.id]||{};
+    return `<div style="background:rgba(168,85,247,.08);border:2px solid rgba(168,85,247,${qty>0?'.5':'.15'});border-radius:12px;padding:.8rem;display:flex;align-items:center;gap:.7rem">
+      <img src="${d.img||''}" style="width:40px;height:40px;image-rendering:pixelated"/>
+      <div style="flex:1">
+        <div style="font-family:'Press Start 2P',monospace;font-size:.42rem;color:${qty>0?'#a855f7':'rgba(255,255,255,.5)'}">${o.name} ${qty>0?`<span style="color:#ffd700">×${qty}</span>`:''}</div>
+        <div style="font-size:.6rem;color:rgba(255,255,255,.4);margin-top:.2rem">${o.legendaries}</div>
+      </div>
+      ${qty>0 ? `<button onclick="useOrb('${o.id}')" style="font-family:'Press Start 2P',monospace;font-size:.35rem;padding:.4rem .7rem;background:linear-gradient(180deg,#a855f7,#7c3aed);color:#fff;border:none;border-radius:8px;cursor:pointer">⚡ INVOQUER</button>` : `<div style="font-family:'Press Start 2P',monospace;font-size:.28rem;color:rgba(255,255,255,.25)">₽${o.price}\n(Shop)</div>`}
+    </div>`;
+  }).join('');
+  el.innerHTML = `
+    <div style="text-align:center;margin-bottom:1.2rem">
+      <div style="font-family:'Press Start 2P',monospace;font-size:.75rem;color:#a855f7;text-shadow:2px 2px 0 #000">⚡ MODE TRIAL</div>
+      <div style="font-family:'Press Start 2P',monospace;font-size:.38rem;color:rgba(255,255,255,.5);margin-top:.5rem">Utilisez des Orbes pour invoquer des Légendaires</div>
+    </div>
+    <div style="font-family:'Press Start 2P',monospace;font-size:.4rem;color:rgba(255,255,255,.4);margin-bottom:.5rem">📦 Orbes disponibles : ${ownedOrbs.length > 0 ? ownedOrbs.map(o=>`${o.name} ×${player.bag[o.id]}`).join(', ') : 'Aucun — achetez-en au Shop !'}</div>
+    <div style="display:flex;flex-direction:column;gap:.5rem;margin-bottom:1rem">${orbCards}</div>
+    <div style="font-family:'Press Start 2P',monospace;font-size:.33rem;color:rgba(255,255,255,.3);text-align:center;margin-bottom:.5rem">Les Légendaires capturés rejoignent votre équipe avec leurs stats épiques.</div>
+    <button class="btn red" onclick="showScreen('game')" style="width:100%">↩ RETOUR</button>`;
+}
+
+// Override showScreen 'trial' to also render
+const _origShowScreen = showScreen;
+// Patch renderTrialScreen into screen activation
+document.addEventListener('DOMContentLoaded', () => {
+  const trialEl = document.getElementById('screen-trial');
+  if (trialEl) {
+    const obs = new MutationObserver(() => {
+      if (trialEl.classList.contains('active')) renderTrialScreen();
+    });
+    obs.observe(trialEl, { attributes: true, attributeFilter: ['class'] });
+  }
+});
 
 function showTourMode() {
   if (!player) return;
