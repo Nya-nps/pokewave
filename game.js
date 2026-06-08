@@ -2088,12 +2088,21 @@ function setBattleTurn(turn) {
               : `💀 ${player.currentName} est K.O. ! Choisissez un autre Pokémon !`;
             // Auto-battle : switch automatiquement vers le prochain pokemon vivant
             if (autoBattleOn) {
-              switchToRosterPoke(aliveIdx, true);
-              (_hud('battle-log')).textContent = `💀 K.O. ! 🤖 Auto-switch → ${player.currentName} !`;
-              setBattleTurn('player');
-              if (autoBattleTimer) clearTimeout(autoBattleTimer);
-              autoBattleTimer = setTimeout(runAutoAction, 800);
+              const switched = switchToRosterPoke(aliveIdx, true);
+              if (switched) {
+                battleBusy = false; // libère le verrou bloqué par la mort en contre-attaque
+                (_hud('battle-log')).textContent = `💀 K.O. ! 🤖 Auto-switch → ${player.currentName} !`;
+                setBattleTurn('player');
+                if (autoBattleTimer) clearTimeout(autoBattleTimer);
+                autoBattleTimer = setTimeout(runAutoAction, 800);
+              } else {
+                // Le switch a échoué (tous K.O. ?) — laisser le gestionnaire de défaite prendre le relais
+                battleBusy = false;
+                showScreen('game'); updateHUD();
+                setMessage(`${player.currentName} s'est évanoui… Tous vos Pokémon sont K.O.`);
+              }
             } else {
+              battleBusy = false; // libère aussi pour le menu de sélection manuel
               openSwitchMenu(true);
             }
           }, 1500);
