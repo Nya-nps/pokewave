@@ -726,12 +726,22 @@ window.setBattleTurn = function(turn) {
               ? `💀 K.O. dans la Tour ! Choisissez un remplaçant !`
               : `💀 ${player.currentName} K.O. ! Choisissez un autre Pokémon !`;
             if (autoBattleOn) {
-              switchToRosterPoke(aliveIdx, true);
-              document.getElementById('battle-log').textContent = `💀 K.O. ! 🤖 Auto-switch → ${player.currentName} !`;
-              setBattleTurn('player');
-              if (autoBattleTimer) clearTimeout(autoBattleTimer);
-              autoBattleTimer = setTimeout(runAutoAction, 800);
-            } else { openSwitchMenu(true); }
+              const switched = switchToRosterPoke(aliveIdx, true);
+              if (switched) {
+                battleBusy = false; // libère le verrou bloqué par la mort en contre-attaque
+                document.getElementById('battle-log').textContent = `💀 K.O. ! 🤖 Auto-switch → ${player.currentName} !`;
+                setBattleTurn('player');
+                if (autoBattleTimer) clearTimeout(autoBattleTimer);
+                autoBattleTimer = setTimeout(runAutoAction, 800);
+              } else {
+                battleBusy = false;
+                showScreen('game'); updateHUD();
+                setMessage(`${player.currentName} s'est évanoui… Tous vos Pokémon sont K.O.`);
+              }
+            } else {
+              battleBusy = false; // libère aussi pour le menu de sélection manuel
+              openSwitchMenu(true);
+            }
           }, 1500);
         } else {
           setTimeout(()=>{
@@ -749,6 +759,10 @@ window.setBattleTurn = function(turn) {
             } else if (player._tourBattle) {
               player._tourBattle = false; tourState = null; player.tourFloor = 0;
               showScreen('game'); updateHUD(); notify('💀 Défaite dans la Tour !');
+            } else if (player._gymBattle) {
+              player._gymBattle = null;
+              showScreen('game'); updateHUD(); notify('💀 Défaite au Gym !');
+              setMessage('💀 Votre Pokémon s\'est évanoui… Retentez le défi du Gym !');
             } else {
               showScreen('game'); updateHUD();
               setMessage(`${player.currentName} s'est évanoui…`);
@@ -905,7 +919,8 @@ function updateTimeHUD() {
   else                  el.textContent = '☀️ Jour';
 }
 
-setInterval(updateTimeHUD, 60000);
+if (window._timeHUDInterval) clearInterval(window._timeHUDInterval);
+window._timeHUDInterval = setInterval(updateTimeHUD, 60000);
 setTimeout(updateTimeHUD, 1000);
 
 // ──────────────────────────────────────────────────────────────

@@ -915,3 +915,61 @@ input, select, textarea { font-size: 16px !important; }
   #pokedex-grid { grid-template-columns: repeat(3, 1fr) !important; }
   .bar-wrap { width: clamp(80px, 35vw, 150px) !important; }
 }
+
+/* ══════════════════════════════════════
+   ZONE PICKER MODAL
+   ══════════════════════════════════════ */
+#zone-picker-panel {
+  background: linear-gradient(160deg,#0d1117,#101824);
+  border: 2px solid rgba(255,214,10,.35);
+  border-radius: 16px;
+  padding: 1.4rem 1.2rem 1rem;
+  width: min(460px, 92vw);
+  max-height: 82vh;
+  display: flex;
+  flex-direction: column;
+  gap: .7rem;
+  box-shadow: 0 0 60px rgba(0,0,0,.8), 0 0 30px rgba(255,214,10,.08);
+}
+.zone-choice-item {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .55rem .75rem;
+  border-radius: 9px;
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.09);
+  cursor: pointer;
+  font-family: 'Press Start 2P', monospace;
+  font-size: .42rem;
+  color: rgba(255,255,255,.82);
+}
+.zone-choice-item:hover { background: rgba(255,214,10,.11); border-color: rgba(255,214,10,.3); }
+.zone-choice-item.zc-selected {
+  border-color: #ffd60a;
+  background: rgba(255,214,10,.14);
+  color: #ffd60a;
+}
+.zone-choice-item.zc-locked {
+  opacity: .38;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.zone-choice-item .zc-icon { font-size: .75rem; flex-shrink: 0; }
+.zone-choice-item .zc-name { flex: 1; }
+.zone-choice-item .zc-badge { font-size: .6rem; }
+
+/* ── Shiny encounter flash animation ── */
+@keyframes shinyFlash {
+  0%   { opacity: 0; transform: scale(0.6); }
+  15%  { opacity: 1; transform: scale(1.15); }
+  40%  { opacity: .9; }
+  100% { opacity: 0; transform: scale(1.4); }
+}
+@keyframes shinySprite {
+  0%,100% { filter: drop-shadow(0 0 0px gold); }
+  25%  { filter: drop-shadow(0 0 18px gold) drop-shadow(0 0 36px #fffbe0) brightness(1.6); }
+  50%  { filter: drop-shadow(0 0 8px gold); }
+  75%  { filter: drop-shadow(0 0 22px #fff176) brightness(1.4); }
+}
+.shiny-anim { animation: shinySprite 1.2s ease-in-out; }

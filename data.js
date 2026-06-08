@@ -1577,8 +1577,11 @@ Object.assign(LEVEL_UP_MOVES, {
       const scale = getWaveEnemyScale();
       const { wave } = getWaveState();
       const bossesBeaten = player.lastBossWave || 0;
-      const zoneIdx = Math.min(bossesBeaten, ZONE_ORDER.length - 1);
-      const zoneId  = ZONE_ORDER[zoneIdx];
+      const autoIdx  = Math.min(bossesBeaten, ZONE_ORDER.length - 1);
+      const selId    = player.selectedExploreZone;
+      const selIdx   = selId ? ZONE_ORDER.indexOf(selId) : -1;
+      const zoneId   = (selId && (selIdx === -1 || selIdx <= bossesBeaten))
+        ? selId : ZONE_ORDER[autoIdx];
       const zone    = ZONES[zoneId];
       const pool    = zone?.pokemon || [];
 
@@ -1588,10 +1591,11 @@ Object.assign(LEVEL_UP_MOVES, {
         : (ALL_POKEMON[Math.floor(Math.random() * ALL_POKEMON.length)].id);
       const pData = ALL_POKEMON_MAP.get(pokeId) || ALL_POKEMON[Math.floor(Math.random()*ALL_POKEMON.length)];
 
-      const baseLv    = Math.max(1, Math.floor((player.level||1) * 0.8 + wave * 1.5));
-      const enemyLevel = baseLv + Math.floor(Math.random() * 4);
-      const lvlScale  = scale * (1 + enemyLevel * 0.12);
-      const baseSpd   = ALL_SPD[pData.id] || 50;
+      // Tranche de niveau fixe par zone — plus de scaling niveau joueur
+      const zoneLvRange = ZONE_LEVELS[zoneId] || [1, 8];
+      const enemyLevel  = zoneLvRange[0] + Math.floor(Math.random() * (zoneLvRange[1] - zoneLvRange[0] + 1));
+      const lvlScale    = 1 + enemyLevel * 0.12;
+      const baseSpd     = ALL_SPD[pData.id] || 50;
       const e = {
         name: pData.n, id: pData.id, level: enemyLevel,
         hp:   Math.round(pData.hp  * lvlScale),

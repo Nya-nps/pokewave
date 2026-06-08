@@ -625,47 +625,57 @@ function typeToAnim(type) {
   return map[type] || 'normal';
 }
 
-// Niveau min/max par zone
+// Niveau min/max par zone (progression ZONE_ORDER + zones annexes)
+// Chaque zone a une tranche de niveau fixe — le niveau ennemi est tiré aléatoirement dans cet intervalle.
+// Niveaux fixes par zone — plafond porté à 500 (contenu end-game)
 const ZONE_LEVELS = {
-  'bourg-palette':  [2,5],
-  'route-1':        [3,6],
-  'jadielle':       [4,7],
-  'route-2':        [5,9],
-  'foret-jade':     [6,10],
-  'argenta':        [8,13],
-  'route-3':        [9,14],
-  'mt-lune':        [10,16],
-  'brindibourg':    [13,18],
-  'route-4':        [14,19],
-  'route-24':       [14,18],
-  'route-25':       [13,17],
-  'safrania':       [18,25],
-  'route-5':        [15,20],
-  'route-6':        [16,21],
-  'cramois-ile':    [20,28],
-  'route-7':        [18,24],
-  'lavanville':     [20,26],
-  'route-8':        [18,24],
-  'route-12':       [22,28],
-  'azuria':         [20,27],
-  'grotte-azuria':  [19,25],
-  'route-9':        [20,26],
-  'route-10':       [21,27],
-  'carmin-sur-mer': [25,32],
-  'route-11':       [23,29],
-  'route-21':       [25,33],
-  'parmanie':       [28,36],
-  'route-13':       [26,32],
-  'route-14':       [27,33],
-  'route-15':       [25,31],
-  'celadopole':     [22,29],
-  'route-16':       [20,26],
-  'route-19':       [28,35],
-  'route-20':       [29,37],
-  'iles-ecume':     [35,45],
-  'route-22':       [32,40],
-  'ligue-pokemon':  [50,70],
-  'jadielle-nord':  [6,11],
+  // ── Zones de progression principale (ZONE_ORDER — 20 zones, Niv.1→500) ──
+  'bourg-palette':  [1,   12],
+  'route-3':        [8,   22],
+  'foret-jade':     [15,  35],
+  'mt-lune':        [28,  52],
+  'argenta':        [44,  70],
+  'brindibourg':    [60,  90],
+  'route-5-6':      [78,  112],
+  'celadopole':     [98,  138],
+  'route-9-10':     [122, 168],
+  'tour-pokemon':   [150, 198],
+  'lavanville':     [180, 235],
+  'grotte-azuria':  [215, 272],
+  'safrania':       [252, 315],
+  'route-13-15':    [292, 360],
+  'parmanie':       [335, 405],
+  'safari-zone':    [380, 455],
+  'carmin-sur-mer': [415, 472],
+  'route-19-20':    [440, 485],
+  'iles-ecume':     [458, 495],
+  'ligue-pokemon':  [470, 500],
+  // ── Zones annexes (proportionnelles aux zones principales adjacentes) ──
+  'route-1':        [3,   10],
+  'jadielle':       [5,   14],
+  'route-2':        [6,   18],
+  'route-4':        [32,  58],
+  'route-24':       [30,  55],
+  'route-25':       [28,  52],
+  'route-5':        [48,  78],
+  'route-6':        [52,  85],
+  'cramois-ile':    [72,  108],
+  'route-7':        [62,  95],
+  'route-8':        [62,  95],
+  'route-12':       [78,  115],
+  'azuria':         [68,  105],
+  'route-9':        [85,  125],
+  'route-10':       [88,  130],
+  'route-11':       [72,  108],
+  'route-21':       [115, 158],
+  'route-13':       [108, 148],
+  'route-14':       [115, 158],
+  'route-15':       [105, 145],
+  'route-16':       [72,  108],
+  'route-19':       [175, 240],
+  'route-20':       [182, 250],
+  'route-22':       [145, 198],
+  'jadielle-nord':  [8,   22],
 };
 
 // Vitesse originale Gen 1 par pokémon
@@ -1091,6 +1101,13 @@ let currentScreen = 'title';
 // ══════════════════════════════════════════
 function showScreen(id) {
   if (id !== 'map' && mapAnimFrame){ cancelAnimationFrame(mapAnimFrame); mapAnimFrame=null; }
+  // ── Ferme tous les menus flottants pour éviter qu'ils restent bloqués ──
+  ['side-menu-overlay','catch-menu','zone-picker-overlay','pre-battle-menu'].forEach(ovId => {
+    const el = document.getElementById(ovId);
+    if (el) el.style.display = 'none';
+  });
+  pendingEnemyData = null;
+  if (id !== 'battle') battleBusy = false;
   document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); if(s.id==='screen-map') s.style.display='none'; });
   document.getElementById('hud').classList.remove('visible');
   document.body.className = '';
@@ -1384,20 +1401,37 @@ function updateHUD() {
 function _doUpdateHUD() {
   _hudPending = false;
   if (!player) return;
+  // En écran battle, seul updateBattleHp est utile — skip le HUD de jeu
+  if (currentScreen === 'battle') return;
   _hud('player-name-hud').textContent = `${player.currentName} de ${player.name} ✦ Niv.${player.level}`;
   _hud('gold-val').textContent = player.gold;
   setBar('bar-hp','val-hp', player.hp, player.maxHp);
   setBar('bar-xp','val-xp', player.xp, player.xpNext);
   updateHUDTrainer();
+  // Bouton REPOS : affiche % PV et streak
+  const restBtn = document.getElementById('btn-rest-dynamic');
+  if (restBtn) {
+    const hpPct = player.maxHp > 0 ? Math.round((player.hp / player.maxHp) * 100) : 100;
+    const streak = player._winStreak || 0;
+    restBtn.textContent = streak >= 5
+      ? `🏥 REPOS (${hpPct}%) 🔥×${streak}`
+      : `🏥 REPOS (${hpPct}%)`;
+    restBtn.style.background = hpPct < 30
+      ? 'linear-gradient(180deg,#e63946,#a01e27)'
+      : hpPct < 60
+        ? 'linear-gradient(180deg,#f4a261,#e76f51)'
+        : 'linear-gradient(180deg,#2dc653,#1a8035)';
+  }
   // Tour button in dropdown
   const tourBtn = _hud('btn-tour-drop');
   if (tourBtn) tourBtn.style.display = (player.trainerLevel||1) >= 10 ? 'block' : 'none';
-  // Attack uses display
+  // Attack uses display — rebuild innerHTML seulement si le contenu a changé
   const atkDisp = _hud('atk-uses-display');
   if (atkDisp) {
     const t1 = player.moveElem || player.type;
     const t2 = player.mMoveElem || player.type;
-    atkDisp.innerHTML = `<span class="atk-use-label">${player.move||'Atk'}</span><span class="atk-elem-badge elem-${t1}" style="font-size:.28rem;padding:.1rem .3rem">${t1}</span><span style="width:.5rem;display:inline-block"></span><span class="atk-use-label">${player.mMove||'Magie'}</span><span class="atk-elem-badge elem-${t2}" style="font-size:.28rem;padding:.1rem .3rem">${t2}</span>`;
+    const newAtkHtml = `<span class="atk-use-label">${player.move||'Atk'}</span><span class="atk-elem-badge elem-${t1}" style="font-size:.28rem;padding:.1rem .3rem">${t1}</span><span style="width:.5rem;display:inline-block"></span><span class="atk-use-label">${player.mMove||'Magie'}</span><span class="atk-elem-badge elem-${t2}" style="font-size:.28rem;padding:.1rem .3rem">${t2}</span>`;
+    if (atkDisp._cachedHtml !== newAtkHtml) { atkDisp.innerHTML = newAtkHtml; atkDisp._cachedHtml = newAtkHtml; }
   }
 }
 function setBar(barId, valId, cur, max) {
@@ -1460,6 +1494,86 @@ function toggleDropdown() {
 }
 
 // ══════════════════════════════════════════
+// ZONE PICKER
+// ══════════════════════════════════════════
+function openZonePicker() {
+  if (!player) return;
+  const overlay = document.getElementById('zone-picker-overlay');
+  if (!overlay) return;
+
+  const bossesBeaten = player.lastBossWave || 0;
+  const selectedId   = player.selectedExploreZone || null;
+  const autoIdx      = Math.min(bossesBeaten, ZONE_ORDER.length - 1);
+  const autoId       = ZONE_ORDER[autoIdx];
+
+  // Active-label
+  const lbl = document.getElementById('zone-picker-active-label');
+  if (lbl) {
+    const activeName = selectedId
+      ? (ZONES[selectedId]?.name || selectedId)
+      : `🔄 Auto — ${ZONES[autoId]?.name || autoId}`;
+    lbl.textContent = `Zone active : ${activeName}`;
+  }
+
+  // Build zone list
+  const list = document.getElementById('zone-picker-list');
+  if (list) {
+    list.innerHTML = '';
+    const ICONS = { foret:'🌲', grotte:'⛰', route:'🛤', water:'🌊', elite:'🏆', cave:'⛰' };
+    ZONE_ORDER.forEach((zoneId, idx) => {
+      const zone = ZONES[zoneId];
+      if (!zone) return;
+      const unlocked   = idx <= bossesBeaten;
+      const isSelected = zoneId === selectedId;
+      const icon = ICONS[zone.type] || '🏙';
+      const el = document.createElement('div');
+      el.className = 'zone-choice-item'
+        + (isSelected ? ' zc-selected' : '')
+        + (!unlocked   ? ' zc-locked'   : '');
+      el.innerHTML =
+        `<span class="zc-icon">${icon}</span>` +
+        `<span class="zc-name">${zone.name}</span>` +
+        (isSelected   ? '<span class="zc-badge">✔</span>'  : '') +
+        (!unlocked    ? '<span class="zc-badge">🔒</span>' : '');
+      if (unlocked) el.onclick = () => selectExploreZone(zoneId);
+      list.appendChild(el);
+    });
+  }
+
+  overlay.style.display = 'flex';
+}
+
+function closeZonePicker() {
+  const overlay = document.getElementById('zone-picker-overlay');
+  if (overlay) overlay.style.display = 'none';
+}
+
+function selectExploreZone(id) {
+  if (!player) return;
+  player.selectedExploreZone = id || null;
+  // persist
+  _silentSave();
+  const name = id ? (ZONES[id]?.name || id) : '🔄 Progression auto';
+  notify(`🗺 Zone : ${name}`);
+  setMessage(`🗺 Zone d'exploration : ${name}`);
+  closeZonePicker();
+  _updateZonePickerBtn();
+  updateKillHUD();
+}
+
+function _updateZonePickerBtn() {
+  const el = document.getElementById('hud-zone-name');
+  if (!el || !player) return;
+  const bossesBeaten = player.lastBossWave || 0;
+  const selId = player.selectedExploreZone;
+  const autoIdx = Math.min(bossesBeaten, ZONE_ORDER.length - 1);
+  const autoId  = ZONE_ORDER[autoIdx];
+  el.textContent = selId
+    ? (ZONES[selId]?.name || selId)
+    : `Auto: ${ZONES[autoId]?.name || autoId}`;
+}
+
+// ══════════════════════════════════════════
 // WAVE / BOSS SYSTEM
 // ══════════════════════════════════════════
 const KILLS_PER_WAVE = 10;
@@ -1489,15 +1603,23 @@ function updateKillHUD() {
   const bb = _hud('btn-boss');
   if (wl) {
     const bossesBeaten = player.lastBossWave || 0;
-    const zoneIdx = Math.min(bossesBeaten, ZONE_ORDER.length - 1);
-    const zoneName = ZONES[ZONE_ORDER[zoneIdx]]?.name || '';
+    const autoIdx  = Math.min(bossesBeaten, ZONE_ORDER.length - 1);
+    const selId    = player.selectedExploreZone;
+    const selIdx   = selId ? ZONE_ORDER.indexOf(selId) : -1;
+    const activeId = (selId && (selIdx === -1 || selIdx <= bossesBeaten))
+      ? selId : ZONE_ORDER[autoIdx];
+    const zoneName = ZONES[activeId]?.name || '';
     wl.textContent = bossReady ? '💀 BOSS !' : `🌊 ${zoneName}`;
     wl.title = bossReady ? 'Boss disponible !' : `Vague ${wave} — ${zoneName}`;
   }
+  _updateZonePickerBtn();
   if (kl) kl.textContent = bossReady ? 'Prêt !' : `${display}/${KILLS_PER_WAVE}`;
   if (bf) bf.style.width = `${Math.min(100,(display/KILLS_PER_WAVE)*100)}%`;
   if (dl) dl.textContent = `×${diffMult}`;
   if (bb) bb.style.display = bossReady ? 'inline-block' : 'none';
+  // Bouton Replay Boss — visible si au moins 1 boss a été battu
+  const brp = _hud('btn-boss-replay');
+  if (brp) brp.style.display = (player.lastBossWave||0) >= 1 ? 'inline-block' : 'none';
 }
 
 function recordKill() {
@@ -1513,27 +1635,76 @@ function recordKill() {
   }
 }
 
+// ── Table de niveaux fixes des Boss par vague ──────────────────
+// Le niveau est FIXE (indépendant du niveau du joueur).
+// Les stats sont boostées via un multiplicateur croissant par vague.
+//
+//  Vague │ Niveau │ Mult stats │ Récompense XP │ Récompense Or
+//  ──────┼────────┼────────────┼───────────────┼──────────────
+//    1   │   10   │   ×1.80   │     300 XP    │    500 ₽
+//    5   │   30   │   ×2.60   │   1 500 XP    │  2 500 ₽
+//   10   │   55   │   ×3.60   │   3 000 XP    │  5 000 ₽
+//   20   │  100   │   ×5.60   │   6 000 XP    │ 10 000 ₽
+// ──────────────────────────────────────────────────────────────
+function _bossFixedLevel(wave) {
+  // Paliers fixes : vague 1→10, 2→15, 3→20 … plafonné à 100
+  return Math.min(100, 5 + wave * 5);
+}
+function _bossStatMult(wave) {
+  // Vague 1 : ×1.8 (intro abordable)
+  // Vague 2+ : palier plus dur — ×2.2 puis +0.30 par vague (max ×10.0)
+  if (wave <= 1) return 1.8;
+  return Math.min(10.0, 2.2 + (wave - 2) * 0.30);
+}
+
 function generateBossEnemy() {
   if (!player) return null;
   const { wave } = getWaveState();
-  const bossLevel = Math.max(5, Math.min(100, wave * 5 + (player.level||1)));
+  const bossLevel = _bossFixedLevel(wave);
+  const sc        = _bossStatMult(wave);
+
   const BOSS_POOL = [
-    {id:6,n:'Dracaufeu',t:'Feu'},{id:9,n:'Tortank',t:'Eau'},{id:3,n:'Florizarre',t:'Plante'},
-    {id:130,n:'Léviator',t:'Eau'},{id:131,n:'Lokhlass',t:'Glace'},{id:143,n:'Ronflex',t:'Normal'},
-    {id:149,n:'Dracolosse',t:'Dragon'},{id:142,n:'Ptéra',t:'Vol'},{id:59,n:'Arcanin',t:'Feu'},
-    {id:65,n:'Alakazam',t:'Psy'},{id:68,n:'Mackogneur',t:'Combat'},{id:94,n:'Ectoplasma',t:'Spectre'},
-    {id:144,n:'Artikodin',t:'Glace'},{id:145,n:'Électhor',t:'Électrik'},{id:146,n:'Sulfura',t:'Feu'},
-    {id:150,n:'Mewtwo',t:'Psy'},{id:151,n:'Mew',t:'Psy'},
+    {id:6,  n:'Dracaufeu',  t:'Feu'    },
+    {id:9,  n:'Tortank',    t:'Eau'    },
+    {id:3,  n:'Florizarre', t:'Plante' },
+    {id:130,n:'Léviator',   t:'Eau'    },
+    {id:131,n:'Lokhlass',   t:'Glace'  },
+    {id:143,n:'Ronflex',    t:'Normal' },
+    {id:149,n:'Dracolosse', t:'Dragon' },
+    {id:142,n:'Ptéra',      t:'Vol'    },
+    {id:59, n:'Arcanin',    t:'Feu'    },
+    {id:65, n:'Alakazam',   t:'Psy'    },
+    {id:68, n:'Mackogneur', t:'Combat' },
+    {id:94, n:'Ectoplasma', t:'Spectre'},
+    {id:144,n:'Artikodin',  t:'Glace'  },
+    {id:145,n:'Électhor',   t:'Électrik'},
+    {id:146,n:'Sulfura',    t:'Feu'    },
+    {id:150,n:'Mewtwo',     t:'Psy'    },
+    {id:151,n:'Mew',        t:'Psy'    },
   ];
-  const b = BOSS_POOL[(wave-1) % BOSS_POOL.length];
-  const pData = GEN1.find(p=>p.id===b.id);
-  const sc = 1 + bossLevel * 0.15;
+  const b     = BOSS_POOL[(wave - 1) % BOSS_POOL.length];
+  const pData = (typeof ALL_POKEMON !== 'undefined' ? ALL_POKEMON : GEN1).find(p => p.id === b.id);
+
+  // Stats fixes × multiplicateur de vague — PAS de scaling joueur
+  const baseHp  = pData?.hp  || 80;
+  const baseAtk = pData?.atk || 12;
+  const baseDef = pData?.def || 8;
+  const hp  = Math.round(baseHp  * sc * 1.4); // +40% PV bonus boss
+  const atk = Math.round(baseAtk * sc);
+  const def = Math.round(baseDef * sc * 0.9);
+  const spd = Math.round(60 * (1 + wave * 0.03));
+
+  // Récompenses fixes (ne dépendent pas du niveau du joueur)
+  const xpReward   = Math.round(200 + wave * 150);
+  const goldReward = Math.round(300 + wave * 100);
+
   return {
-    name:`⭐ ${b.n} (Boss)`, id:b.id, level:bossLevel,
-    hp:Math.round((pData?.hp||80)*sc*1.3), maxHp:Math.round((pData?.hp||80)*sc*1.3),
-    atk:Math.round((pData?.atk||12)*sc*1.0), def:Math.round((pData?.def||8)*sc*0.9),
-    spd:Math.round(50*(1+bossLevel*0.01)), type:b.t,
-    xp:bossLevel*20, gold:bossLevel*15, isBoss:true, isShiny:false,
+    name: `⭐ ${b.n} (Boss V.${wave})`,
+    id: b.id, level: bossLevel,
+    hp, maxHp: hp, atk, def, spd, type: b.t,
+    xp: xpReward, gold: goldReward,
+    isBoss: true, isShiny: false,
+    _bossWave: wave, _statMult: sc,   // debug info
   };
 }
 
@@ -1543,9 +1714,75 @@ function challengeBoss() {
   if (!bossReady) { notify('Pas encore prêt !'); return; }
   const boss = generateBossEnemy();
   if (!boss) return;
-  notify(`💀 Boss Vague ${wave} — ${boss.name} !`);
-  setMessage(`💀 Boss Vague ${wave} : ${boss.name} Niv.${boss.level} apparaît !`);
+  const multLabel = boss._statMult ? `×${boss._statMult.toFixed(1)} stats` : '';
+  notify(`💀 Boss V.${wave} — Niv.${boss.level} ${multLabel}`);
+  setMessage(`💀 Boss Vague ${wave} : ${boss.name} Niv.${boss.level} surgit ! Stats boostées ${multLabel} — +${boss.xp} XP / +${boss.gold}₽`);
   player._bossBattle = { wave };
+  startBattle(boss);
+}
+
+// ── Replay Boss ──────────────────────────
+function openBossReplayMenu() {
+  if (!player) return;
+  const maxWave = player.lastBossWave || 0;
+  if (maxWave < 1) { notify('Aucun boss battu encore !'); return; }
+  const list = document.getElementById('boss-replay-list');
+  if (list) {
+    const BOSS_POOL = [
+      {id:6,n:'Dracaufeu'},{id:9,n:'Tortank'},{id:3,n:'Florizarre'},{id:130,n:'Léviator'},
+      {id:131,n:'Lokhlass'},{id:143,n:'Ronflex'},{id:149,n:'Dracolosse'},{id:142,n:'Ptéra'},
+      {id:59,n:'Arcanin'},{id:65,n:'Alakazam'},{id:68,n:'Mackogneur'},{id:94,n:'Ectoplasma'},
+      {id:144,n:'Artikodin'},{id:145,n:'Électhor'},{id:146,n:'Sulfura'},{id:150,n:'Mewtwo'},{id:151,n:'Mew'},
+    ];
+    list.innerHTML = '';
+    for (let w = 1; w <= maxWave; w++) {
+      const b = BOSS_POOL[(w-1) % BOSS_POOL.length];
+      const lv = _bossFixedLevel(w);
+      const sc = _bossStatMult(w);
+      const el = document.createElement('div');
+      el.style.cssText = 'display:flex;align-items:center;gap:.6rem;padding:.45rem .6rem;background:rgba(255,255,255,.04);border:1px solid rgba(255,100,50,.25);border-radius:8px;cursor:pointer;font-family:\'Press Start 2P\',monospace;font-size:.34rem;color:rgba(255,255,255,.8)';
+      el.innerHTML = `<img src="${SPRITE_FRONT(b.id)}" style="width:36px;height:36px;image-rendering:pixelated"/><span style="flex:1">V.${w} — ${b.n} Niv.${lv}</span><span style="color:#ff8055">×${sc.toFixed(1)} stats</span>`;
+      el.onmouseenter = () => { el.style.background='rgba(255,100,50,.12)'; el.style.borderColor='rgba(255,100,50,.6)'; };
+      el.onmouseleave = () => { el.style.background='rgba(255,255,255,.04)'; el.style.borderColor='rgba(255,100,50,.25)'; };
+      el.onclick = () => { closeBossReplayMenu(); replayBoss(w); };
+      list.appendChild(el);
+    }
+  }
+  document.getElementById('boss-replay-overlay').style.display = 'flex';
+}
+function closeBossReplayMenu() {
+  document.getElementById('boss-replay-overlay').style.display = 'none';
+}
+function replayBoss(wave) {
+  if (!player) return;
+  // Générer le boss de la vague demandée (niveau et stats fixes)
+  const bossLevel = _bossFixedLevel(wave);
+  const sc        = _bossStatMult(wave);
+  const BOSS_POOL = [
+    {id:6,n:'Dracaufeu',t:'Feu'},{id:9,n:'Tortank',t:'Eau'},{id:3,n:'Florizarre',t:'Plante'},
+    {id:130,n:'Léviator',t:'Eau'},{id:131,n:'Lokhlass',t:'Glace'},{id:143,n:'Ronflex',t:'Normal'},
+    {id:149,n:'Dracolosse',t:'Dragon'},{id:142,n:'Ptéra',t:'Vol'},{id:59,n:'Arcanin',t:'Feu'},
+    {id:65,n:'Alakazam',t:'Psy'},{id:68,n:'Mackogneur',t:'Combat'},{id:94,n:'Ectoplasma',t:'Spectre'},
+    {id:144,n:'Artikodin',t:'Glace'},{id:145,n:'Électhor',t:'Électrik'},{id:146,n:'Sulfura',t:'Feu'},
+    {id:150,n:'Mewtwo',t:'Psy'},{id:151,n:'Mew',t:'Psy'},
+  ];
+  const b = BOSS_POOL[(wave-1) % BOSS_POOL.length];
+  const pData = (typeof ALL_POKEMON!=='undefined' ? ALL_POKEMON : GEN1).find(p => p.id === b.id);
+  const hp  = Math.round((pData?.hp||80)  * sc * 1.4);
+  const atk = Math.round((pData?.atk||12) * sc);
+  const def = Math.round((pData?.def||8)  * sc * 0.9);
+  const spd = Math.round(60 * (1 + wave * 0.03));
+  const boss = {
+    name: `🔁 ${b.n} (Boss V.${wave})`,
+    id: b.id, level: bossLevel,
+    hp, maxHp: hp, atk, def, spd, type: b.t,
+    xp: 0, gold: 0, // Pas de récompenses en replay
+    isBoss: true, isShiny: false,
+    _bossWave: wave, _statMult: sc,
+  };
+  notify(`🔁 Replay Boss V.${wave} — Niv.${bossLevel} ×${sc.toFixed(1)} stats`);
+  setMessage(`🔁 Entraînement — Boss Vague ${wave} : ${boss.name} Niv.${bossLevel} ! Aucune récompense.`);
+  player._bossBattle = { wave, isReplay: true };
   startBattle(boss);
 }
 
@@ -1576,10 +1813,11 @@ function doExplore() {
       : _allPoke[Math.floor(Math.random() * _allPoke.length)].id;
     const pData   = (_pokeMap?.get(pokeId)) || _allPoke.find(p => p.id === pokeId) || _allPoke[Math.floor(Math.random()*_allPoke.length)];
 
-    const baseLv    = Math.max(1, Math.floor((player.level||1) * 0.8 + wave * 1.5));
-    const enemyLevel = baseLv + Math.floor(Math.random() * 4);
-    const lvlScale  = scale * (1 + enemyLevel * 0.12);
-    const baseSpd   = _allSpdT[pData.id] || 50;
+    // Tranche de niveau fixe par zone (plus de scaling sur le niveau du joueur)
+    const zoneLvRange = ZONE_LEVELS[zoneId] || [1, 8];
+    const enemyLevel  = zoneLvRange[0] + Math.floor(Math.random() * (zoneLvRange[1] - zoneLvRange[0] + 1));
+    const lvlScale    = 1 + enemyLevel * 0.12;
+    const baseSpd     = _allSpdT[pData.id] || 50;
     const e = {
       name: pData.n, id: pData.id, level: enemyLevel,
       hp:   Math.round(pData.hp  * lvlScale),
@@ -1618,27 +1856,29 @@ function doRest() {
     return;
   }
   lastRestTime = now;
-  const hpPct = 0.35, mpPct = 0.40;
-  const hpG = Math.floor(player.maxHp * hpPct);
-  const mpG = Math.floor(player.maxMp * mpPct);
-  player.hp = Math.min(player.maxHp, player.hp + hpG);
-  player.mp = Math.min(player.maxMp, player.mp + mpG);
-  // Recharge toutes les utilisations d'attaques
-  player.moveUses = player.moveUsesMax || 6;
+  player._winStreak = 0; // le repos réinitialise le streak
+  // Soin complet : le Centre Pokémon restaure 100 % des PV et PP
+  player.hp = player.maxHp;
+  player.mp = player.maxMp;
+  player.moveUses  = player.moveUsesMax  || 6;
   player.mMoveUses = player.mMoveUsesMax || 4;
-  // Heal all roster pokemon too
+  // Soin de toute l'équipe — préserve l'ordre de passage (activeRosterIdx)
   if (player.roster) {
+    const savedIdx = player.activeRosterIdx || 0; // mémoriser le slot actif
     player.roster.forEach(p => {
-      p.hp = Math.min(p.maxHp, p.hp + Math.floor(p.maxHp * hpPct));
-      p.mp = Math.min(p.maxMp || 50, (p.mp||0) + Math.floor((p.maxMp||50) * mpPct));
-      p.moveUses = p.moveUsesMax || 6;
+      p.hp = p.maxHp;
+      p.mp = p.maxMp || 50;
+      p.moveUses  = p.moveUsesMax  || 6;
       p.mMoveUses = p.mMoveUsesMax || 4;
     });
-    syncActiveFromPlayer(); syncPlayerFromActive();
+    // Écrire player → roster[savedIdx], puis relire pour rester cohérent
+    syncActiveFromPlayer();
+    player.activeRosterIdx = savedIdx; // s'assurer que l'idx n'a pas dévié
+    syncPlayerFromActive();
   }
   updateHUD();
-  setMessage(`🏥 ${player.currentName} se repose au Centre Pokémon. +${Math.round(hpPct*100)}% PV (+${hpG}). Attaques rechargées !`);
-  notify('Repos ! ⏳30s');
+  setMessage(`🏥 ${player.currentName} est soigné à 100 % au Centre Pokémon ! PV et attaques entièrement restaurés.`);
+  notify('🏥 Soin complet ! ⏳30s');
   // Countdown display on button
   const btn = document.querySelector('#action-btns .btn.green');
   if (btn) {
@@ -1704,8 +1944,17 @@ function getAttackType(pokemonType) { return pokemonType; }
 let pendingEnemyData = null;
 
 function showPreBattleMenu(enemyData) {
-  // Sync le pokémon actif avant le combat (respecte activeRosterIdx choisi depuis l'écran Équipe)
   if (player && player.roster && player.roster.length > 0) {
+    // Conserver l'ordre de passage : si le slot actif est K.O. (hp <= 0),
+    // trouver automatiquement le premier Pokémon vivant sans perturber l'ordre voulu.
+    const activeIdx = player.activeRosterIdx || 0;
+    const activePoke = player.roster[activeIdx];
+    if (!activePoke || activePoke.hp <= 0) {
+      const aliveIdx = player.roster.findIndex(p => p.hp > 0);
+      if (aliveIdx >= 0) {
+        player.activeRosterIdx = aliveIdx;
+      }
+    }
     syncPlayerFromActive();
   }
   startBattle(enemyData);
@@ -1768,11 +2017,14 @@ function startBattle(enemyData) {
   if (hisMult >= 2)  matchupHint += ` ❗ Ennemi super efficace !`;
   document.getElementById('player-battle-img').src = playerShiny ? SPRITE_SHINY(player.currentSpriteId) : SPRITE_FRONT(player.currentSpriteId);
   document.getElementById('enemy-battle-img').src = enemy.isShiny ? SPRITE_SHINY(enemy.id) : SPRITE_FRONT(enemy.id);
-  document.getElementById('btn-attack').innerHTML = `⚔ ${player.move} <span class="atk-elem-badge elem-${player.moveElem||player.type}">${player.moveElem||player.type}</span>`;
-  document.getElementById('btn-magic').innerHTML = `✨ ${player.mMove} <span class="atk-elem-badge elem-${player.mMoveElem||player.type}">${player.mMoveElem||player.type}</span>`;
+  const _ba = _hud('btn-attack'); const _bm = _hud('btn-magic');
+  const _ah = `⚔ ${player.move} <span class="atk-elem-badge elem-${player.moveElem||player.type}">${player.moveElem||player.type}</span>`;
+  const _mh = `✨ ${player.mMove} <span class="atk-elem-badge elem-${player.mMoveElem||player.type}">${player.mMoveElem||player.type}</span>`;
+  if (_ba) { _ba.innerHTML = _ah; _ba._cachedHtml = _ah; }
+  if (_bm) { _bm.innerHTML = _mh; _bm._cachedHtml = _mh; }
   updateBattleHp(); disableBattleButtons(false);
   // Désactiver la capture uniquement pendant les modes spéciaux (Tour, World Boss, Trial, Dresseurs)
-  const _isCaptureBlocked = !!(enemy.isWorldBoss || enemy.isTrainerBattle || player._tourBattle || player._worldBossBattle || player._trialBattle);
+  const _isCaptureBlocked = !!(enemy.isWorldBoss || enemy.isBoss || enemy.isTrainerBattle || player._bossBattle || player._tourBattle || player._worldBossBattle || player._trialBattle || player._gymBattle);
   const btnCatch = document.getElementById('btn-catch-battle');
   if (btnCatch) { btnCatch.style.display = _isCaptureBlocked ? 'none' : ''; }
   const shinyBadge = enemy.isShiny ? ' ✨' : '';
@@ -1793,12 +2045,22 @@ function startBattle(enemyData) {
   // Pokédex : seule la capture débloque l'entrée (pas la rencontre)
   // → markDexSeen est appelé uniquement dans addCapturedToRoster
 
-  // Si FARM AUTO actif → activer auto-combat automatiquement
-  if (farmAutoOn) {
+  // Shiny rencontré : animation + pause farm auto obligatoire
+  if (enemy.isShiny) {
+    triggerShinyEncounterEffect();
+    if (farmAutoOn) {
+      // Stopper le farm auto pour que le joueur puisse décider de capturer
+      farmAutoOn = false;
+      if (farmAutoTimer) { clearTimeout(farmAutoTimer); farmAutoTimer = null; }
+      const faBtn = document.getElementById('btn-farm-auto');
+      if (faBtn) { faBtn.style.background='linear-gradient(180deg,#888,#555)'; faBtn.style.boxShadow='0 4px 0 #222'; faBtn.textContent='🤖 AUTO'; }
+      notify('✨ SHINY ! 🛑 Farm Auto pausé — prends ta décision !');
+    }
+    // On ne lance PAS l'auto-combat sur un shiny — combat manuel uniquement
+  } else if (farmAutoOn) {
     autoBattleOn = true;
     const abBtn = document.getElementById('btn-auto');
     if (abBtn) { abBtn.style.background='linear-gradient(180deg,#2dc653,#1a8035)'; abBtn.style.boxShadow='0 4px 0 #0c4019'; abBtn.textContent='🤖 AUTO ON'; }
-    // Lancer le premier coup auto après un délai pour laisser le combat s'initialiser
     if (autoBattleTimer) clearTimeout(autoBattleTimer);
     autoBattleTimer = setTimeout(runAutoAction, 1200);
   }
@@ -1819,12 +2081,12 @@ function updateBattleHp() {
   const pPct = Math.max(0,(player.hp/player.maxHp)*100);
   const ePct = Math.max(0,(enemy.hp/enemy.maxHp)*100);
   const barColor = pct => pct > 50 ? 'linear-gradient(90deg,#2dc653,#06d6a0)' : pct > 20 ? 'linear-gradient(90deg,#ffd60a,#ff9a3c)' : 'linear-gradient(90deg,#e63946,#ff6b9d)';
-  const pBar = document.getElementById('b-hp-player');
-  const eBar = document.getElementById('b-hp-enemy');
+  const pBar = _hud('b-hp-player');
+  const eBar = _hud('b-hp-enemy');
   pBar.style.width = pPct+'%'; pBar.style.background = barColor(pPct);
   eBar.style.width = ePct+'%'; eBar.style.background = barColor(ePct);
-  document.getElementById('b-hp-player-text').textContent = `${Math.ceil(player.hp)} / ${player.maxHp}`;
-  document.getElementById('b-hp-enemy-text').textContent = `${Math.ceil(enemy.hp)} / ${enemy.maxHp}`;
+  _hud('b-hp-player-text').textContent = `${Math.ceil(player.hp)} / ${player.maxHp}`;
+  _hud('b-hp-enemy-text').textContent = `${Math.ceil(enemy.hp)} / ${enemy.maxHp}`;
 }
 
 // ══════════════════════════════════════════
@@ -1875,9 +2137,9 @@ function getGoldMultiplier() {
   return (p && p.heldItem === 'amulette-or') ? 1.3 : 1.0;
 }
 function xpForLevel(n) {
-  // Courbe "Medium Fast" Pokémon officielle, facteur ×4 pour l'équilibre du jeu
-  // n→n+1: 4*(3n²+3n+1)  →  lv10=1324, lv30=11164, lv50=30604, lv100=121204
-  return Math.floor(4 * (3*n*n + 3*n + 1));
+  // Courbe quadratique — plafond porté à 500
+  // lv10≈993  lv50≈22953  lv100≈90903  lv200≈361803  lv300≈812703  lv500≈2254503
+  return Math.floor(3 * (3*n*n + 3*n + 1));
 }
 let battleTurn = 'player'; // 'player' or 'enemy'
 let battleBusy = false;
@@ -1921,12 +2183,21 @@ function setBattleTurn(turn) {
               : `💀 ${player.currentName} est K.O. ! Choisissez un autre Pokémon !`;
             // Auto-battle : switch automatiquement vers le prochain pokemon vivant
             if (autoBattleOn) {
-              switchToRosterPoke(aliveIdx, true);
-              (_hud('battle-log')).textContent = `💀 K.O. ! 🤖 Auto-switch → ${player.currentName} !`;
-              setBattleTurn('player');
-              if (autoBattleTimer) clearTimeout(autoBattleTimer);
-              autoBattleTimer = setTimeout(runAutoAction, 800);
+              const switched = switchToRosterPoke(aliveIdx, true);
+              if (switched) {
+                battleBusy = false; // libère le verrou bloqué par la mort en contre-attaque
+                (_hud('battle-log')).textContent = `💀 K.O. ! 🤖 Auto-switch → ${player.currentName} !`;
+                setBattleTurn('player');
+                if (autoBattleTimer) clearTimeout(autoBattleTimer);
+                autoBattleTimer = setTimeout(runAutoAction, 800);
+              } else {
+                // Le switch a échoué (tous K.O. ?) — laisser le gestionnaire de défaite prendre le relais
+                battleBusy = false;
+                showScreen('game'); updateHUD();
+                setMessage(`${player.currentName} s'est évanoui… Tous vos Pokémon sont K.O.`);
+              }
             } else {
+              battleBusy = false; // libère aussi pour le menu de sélection manuel
               openSwitchMenu(true);
             }
           }, 1500);
@@ -1961,10 +2232,16 @@ function setBattleTurn(turn) {
               showScreen('game'); updateHUD();
               notify('💀 Défaite dans la Tour — retour à l\'Étage 1 !');
               setMessage('💀 Votre Pokémon s\'est évanoui dans la Tour… Vous repartez de l\'Étage 1 !');
+            } else if (player._gymBattle) {
+              player._gymBattle = null;
+              showScreen('game'); updateHUD();
+              notify('💀 Défaite au Gym !');
+              setMessage('💀 Votre Pokémon s\'est évanoui… Retentez le défi du Gym !');
             } else {
               showScreen('game'); updateHUD();
               setMessage(`${player.currentName} s'est évanoui… Vous vous réveillez.`);
             }
+            player._winStreak = 0; // réinitialise le streak en cas de défaite
             // Farm auto continue si actif — reprend l'exploration automatiquement
             if (farmAutoOn) {
               if (farmAutoTimer) clearTimeout(farmAutoTimer);
@@ -2030,7 +2307,15 @@ function scheduleFarmExplore() {
     if (currentScreen === 'battle') { scheduleFarmExplore(); return; }
     // Si on n'est pas sur l'écran de jeu, stop
     if (currentScreen !== 'game') { scheduleFarmExplore(); return; }
-    // Auto-repos si PV < 30%
+    // Conserver l'ordre de passage : si le slot actif est K.O., corriger avant de vérifier les PV
+    if (player.roster && player.roster.length > 0) {
+      const curIdx = player.activeRosterIdx || 0;
+      if ((player.roster[curIdx]?.hp || 0) <= 0) {
+        const aliveIdx = player.roster.findIndex(p => p.hp > 0);
+        if (aliveIdx >= 0) { player.activeRosterIdx = aliveIdx; syncPlayerFromActive(); }
+      }
+    }
+    // Auto-repos si PV < 30% (basé sur le Pokémon actif, maintenant corrigé)
     const hpPct = player.hp / player.maxHp;
     if (hpPct < 0.30) {
       const now = Date.now();
@@ -2081,9 +2366,9 @@ function runAutoAction() {
   // Arrêter si auto désactivé ou combat terminé
   if (!autoBattleOn || !enemy || !player || currentScreen !== 'battle') return;
 
-  // Attendre si c'est le tour ennemi ou occupé
+  // Attendre si c'est le tour ennemi ou occupé (polling allongé pour réduire la charge CPU)
   if (battleTurn !== 'player' || battleBusy) {
-    autoBattleTimer = setTimeout(runAutoAction, 300);
+    autoBattleTimer = setTimeout(runAutoAction, 500);
     return;
   }
 
@@ -2176,12 +2461,28 @@ function battleAction(action) {
     // Bonus badge : +50% par badge (cumulatif, max ×5 avec 8 badges)
     const badgeCount  = (player.badges||[]).length;
     const badgeBonus  = 1 + badgeCount * 0.5;
+    // Streak de victoires consécutives (réinitialisé à la défaite ou au repos)
+    player._winStreak = (player._winStreak||0) + 1;
+    const streakBonus = player._bossBattle ? 1.0 : Math.min(2.0, 1 + Math.floor(player._winStreak / 5) * 0.1);
     const baseXP      = enemy.xp || 10;
     const xpG         = Math.round(baseXP * 3 * lvRatio * badgeBonus);
-    const goldG       = Math.round((enemy.gold * 0.5 + Math.floor(Math.random()*5)) * getGoldMultiplier());
+    const goldG       = Math.round((enemy.gold * 0.5 + Math.floor(Math.random()*5)) * getGoldMultiplier() * streakBonus);
     player.xp+=xpG; player.gold+=goldG;
-    // XP pour tout le roster (50% au bench)
-    if (player.roster) player.roster.forEach((p,i)=>{ if(i!==(player.activeRosterIdx||0) && p.hp>0){ p.xp=(p.xp||0)+Math.floor(xpG*0.5); } });
+    if (player._winStreak > 0 && player._winStreak % 5 === 0 && !player._bossBattle)
+      notify(`🔥 Streak ×${player._winStreak} — bonus or ×${streakBonus.toFixed(1)} !`);
+    // XP pour tout le roster (50% au bench) + level-up silencieux
+    if (player.roster) {
+      const leveledNames = [];
+      player.roster.forEach((p,i)=>{
+        if(i!==(player.activeRosterIdx||0) && p.hp>0){
+          p.xp=(p.xp||0)+Math.floor(xpG*0.5);
+          if (checkRosterLevelUp(p)) leveledNames.push(`${p.currentName||p.name} Niv.${p.level}`);
+        }
+      });
+      // Une seule notif groupée si plusieurs level-ups (évite le spam)
+      if (leveledNames.length === 1) notify(`⬆ ${leveledNames[0]} ! (banc)`);
+      else if (leveledNames.length > 1) notify(`⬆ ${leveledNames.length} Pokémon ont monté de niveau ! (banc)`);
+    }
     // Compteur kills par zone
     if (!player.zoneKills) player.zoneKills = {};
     const curZ = player.currentZone || 'bourg-palette';
@@ -2201,6 +2502,9 @@ function battleAction(action) {
     if (enemy.type) awardShardOnKill(enemy.type);
     // Random event trigger
     triggerRandomEvent();
+    // Auto-save silencieux toutes les 5 victoires
+    _autoSaveKillCounter = (_autoSaveKillCounter||0) + 1;
+    if (_autoSaveKillCounter % 5 === 0) _silentSave();
 
     // Record kill for wave system
     if (!player._bossBattle) recordKill();
@@ -2216,18 +2520,31 @@ function battleAction(action) {
     // Boss battle victory
     if (player._bossBattle) {
       const bossWave = (player._bossBattle && player._bossBattle.wave) ? player._bossBattle.wave : getWaveState().wave;
+      const wasReplay = !!player._bossBattle.isReplay;
       player._bossBattle = null;
-      if (!player.lastBossWave || player.lastBossWave < bossWave) player.lastBossWave = bossWave;
-      if (!player.totalKills) player.totalKills = bossWave * KILLS_PER_WAVE;
+      if (!wasReplay) {
+        // Boss classique : avancer lastBossWave et réinitialiser le compteur de kills
+        // (empêche l'enchaînement immédiat de plusieurs boss)
+        if (!player.lastBossWave || player.lastBossWave < bossWave) player.lastBossWave = bossWave;
+        // Forcer totalKills à bossWave × 10 pour repartir de 0/10
+        player.totalKills = bossWave * KILLS_PER_WAVE;
+      }
       updateKillHUD();
-      const bonusGold = Math.round(200 * bossWave);
-      player.gold += bonusGold;
-      updateHUD();
-      notify(`🏆 Boss Vague ${bossWave} vaincu ! +${bonusGold}₽`);
-      setMessage(`🏆 Boss vaincu ! Vague ${bossWave+1} commence — difficulté +15% ! +${bonusGold}₽`);
-      updateGlobalStats('boss_kills');
-      gainSkillPoints(3 + bossWave);
-      checkAchievements();
+      if (wasReplay) {
+        updateHUD();
+        notify(`🔁 Boss Vague ${bossWave} rejoué — entraînement accompli !`);
+        setMessage(`🔁 Boss Vague ${bossWave} rejoué — aucune récompense (entraînement pur).`);
+      } else {
+        const bonusGold = Math.round(200 * bossWave);
+        player.gold += bonusGold;
+        updateHUD();
+        notify(`🏆 Boss Vague ${bossWave} vaincu ! +${bonusGold}₽`);
+        setMessage(`🏆 Boss vaincu ! Vague ${bossWave+1} commence — difficulté +15% ! +${bonusGold}₽`);
+        updateGlobalStats('boss_kills');
+        gainSkillPoints(3 + bossWave);
+        checkAchievements();
+        _silentSave();
+      }
       setTimeout(()=>{ stopAutoBattle(); disableBattleButtons(false); syncActiveFromPlayer(); showScreen('game'); updateHUD(); updateKillHUD(); }, 1800);
       return;
     }
@@ -2285,9 +2602,12 @@ function battleAction(action) {
   // Determine turn order by speed
   (_hud('battle-log')).textContent=log;
   updateBattleHp(); updateHUD();
-  // Refresh attack use counts on buttons
-  document.getElementById('btn-attack').innerHTML = `⚔ ${player.move} <span class="atk-elem-badge elem-${player.moveElem||player.type}">${player.moveElem||player.type}</span>`;
-  document.getElementById('btn-magic').innerHTML  = `✨ ${player.mMove} <span class="atk-elem-badge elem-${player.mMoveElem||player.type}">${player.mMoveElem||player.type}</span>`;
+  // Refresh attack buttons — seulement si le contenu a réellement changé
+  const _btnAtk = _hud('btn-attack'); const _btnMag = _hud('btn-magic');
+  const _atkH = `⚔ ${player.move} <span class="atk-elem-badge elem-${player.moveElem||player.type}">${player.moveElem||player.type}</span>`;
+  const _magH = `✨ ${player.mMove} <span class="atk-elem-badge elem-${player.mMoveElem||player.type}">${player.mMoveElem||player.type}</span>`;
+  if (_btnAtk && _btnAtk._cachedHtml !== _atkH) { _btnAtk.innerHTML = _atkH; _btnAtk._cachedHtml = _atkH; }
+  if (_btnMag && _btnMag._cachedHtml !== _magH) { _btnMag.innerHTML = _magH; _btnMag._cachedHtml = _magH; }
 
   // Player attacked — now check if enemy is faster for next turn or just pass to enemy
   battleBusy = true;
@@ -2344,6 +2664,10 @@ function disableBattleButtons(dis){
 // ── CATCH MENU ──
 function openCatchMenu() {
   if (!player||!enemy) return;
+  if (enemy.isBoss || player._bossBattle || player._worldBossBattle) {
+    notify('⛔ Les Boss ne peuvent pas être capturés !');
+    return;
+  }
   const list = document.getElementById('catch-ball-list');
   list.innerHTML = '';
   const ballTypes = ['pokeball','superball','hyperball','masterball'];
@@ -2360,13 +2684,20 @@ function openCatchMenu() {
     list.appendChild(div);
   });
   if (!hasBalls) { list.innerHTML='<div style="font-family:\'Press Start 2P\',monospace;font-size:.5rem;color:rgba(255,255,255,.6);text-align:center;padding:1rem">Aucune Poké Ball !</div>'; }
+  battleBusy = true; // bloque l'auto-combat pendant le menu de capture
   document.getElementById('catch-menu').style.display='flex';
 }
-function closeCatchMenu(){ document.getElementById('catch-menu').style.display='none'; }
+function closeCatchMenu(){
+  document.getElementById('catch-menu').style.display='none';
+  // Libère le verrou uniquement si le combat est encore actif (pas déjà résolu)
+  if (enemy && player && player.hp > 0) battleBusy = false;
+}
 
 function throwBall(ballId) {
+  if (!enemy || !player) { document.getElementById('catch-menu').style.display='none'; battleBusy=false; return; }
   closeCatchMenu();
-  if (!player.balls[ballId]||player.balls[ballId]<=0){ notify('Plus de '+ballId+' !'); return; }
+  battleBusy = true; // re-verrouille jusqu'à la fin de l'animation de la ball
+  if (!player.balls[ballId]||player.balls[ballId]<=0){ notify('Plus de '+ballId+' !'); battleBusy=false; return; }
   player.balls[ballId]--;
   const item = SHOP_ITEMS.find(i=>i.id===ballId);
   const ballImg = item ? item.img : '';
@@ -2442,6 +2773,46 @@ function throwBall(ballId) {
 // ══════════════════════════════════════════
 // LEVEL UP + EVOLUTION
 // ══════════════════════════════════════════
+
+// Level-up silencieux pour les Pokémon en banc (ils gagnent 50% d'XP)
+// Retourne true si au moins un niveau a été gagné (pour notifications groupées)
+function checkRosterLevelUp(p) {
+  if (!p || !p.level) return false;
+  if (!p.xpNext) p.xpNext = xpForLevel(p.level);
+  let leveled = false;
+  while ((p.xp||0) >= p.xpNext) {
+    p.xp -= p.xpNext;
+    p.level++;
+    p.xpNext = xpForLevel(p.level);
+    p.maxHp  = (p.maxHp||50) + 14;
+    p.hp     = Math.min(p.maxHp, (p.hp||0) + 14);
+    p.maxMp  = (p.maxMp||50) + 8;
+    p.mp     = Math.min(p.maxMp, (p.mp||0) + 8);
+    p.atk    = (p.atk||0) + 3;
+    p.def    = (p.def||0) + 2;
+    p.magic  = (p.magic||0) + 2;
+    p.spd    = (p.spd||0) + 1;
+    if (p.spAtk !== undefined) p.spAtk += 2;
+    if (p.spDef !== undefined) p.spDef += 1;
+    leveled = true;
+  }
+  if (leveled) {
+    // Vérifier les évolutions pour ce Pokémon en banc (silencieux)
+    let chain = EVO_CHAINS[p.currentSpriteId || p.spriteId];
+    while (chain && p.level >= chain.level) {
+      p.currentSpriteId = chain.next;
+      p.currentName     = chain.name;
+      p.maxHp += 20; p.hp = Math.min(p.maxHp, p.hp + 20);
+      p.maxMp  = (p.maxMp||50) + 10; p.mp = Math.min(p.maxMp, p.mp + 10);
+      p.atk += 5; p.def += 4; p.magic += 4;
+      chain = EVO_CHAINS[p.currentSpriteId];
+    }
+    // Pas de notify() ici — évite le spam pendant le farming
+    // La notif groupée est gérée par l'appelant
+  }
+  return leveled;
+}
+
 function checkLevelUp() {
   while (player.xp >= player.xpNext) {
     player.xp -= player.xpNext;
@@ -2457,7 +2828,8 @@ function checkLevelUp() {
     player.moveUses = player.moveUsesMax || 6;
     player.mMoveUses = player.mMoveUsesMax || 4;
     syncActiveFromPlayer();
-    notify(`⬆ ${player.currentName} → Niveau ${player.level} !`);
+    notify(`⬆ Niv.${player.level} ! +14PV +3ATQ +2DEF +2Mag +1Vit`);
+    setMessage(`🌟 ${player.currentName} passe au Niveau ${player.level} ! ❤️+14PV  ⚔️+3ATQ  🛡️+2DEF  ✨+2Mag  ⚡+1Vit`);
     updateGlobalStats('level_ups');
     checkAchievements();
     const lvlMoves = (LEVEL_UP_MOVES[player.type] || LEVEL_UP_MOVES['Normal']).filter(m => m.lv === player.level && MOVES_DB[m.move]);
@@ -2473,6 +2845,32 @@ function checkEvolution() {
   const chain = EVO_CHAINS[player.currentSpriteId];
   if (chain && player.level >= chain.level) {
     triggerEvolution(chain);
+  }
+}
+
+// Appliqué au chargement d'une sauvegarde : si le Pokémon a passé
+// son (ses) seuil(s) d'évolution sans déclencher d'animation, on corrige
+// en silence pour éviter qu'un Salamèche niveau 20 reste Salamèche.
+function checkEvolutionOnLoad() {
+  if (!player) return;
+  let evolved = false;
+  let chain = EVO_CHAINS[player.currentSpriteId];
+  while (chain && player.level >= chain.level) {
+    player.currentSpriteId = chain.next;
+    player.currentName = chain.name;
+    player.maxHp += 20;
+    player.hp = Math.min(player.maxHp, player.hp + 20);
+    player.maxMp = (player.maxMp||60) + 10;
+    player.mp  = Math.min(player.maxMp, (player.mp||0) + 10);
+    player.atk += 5; player.def += 4; player.magic += 4;
+    evolved = true;
+    chain = EVO_CHAINS[player.currentSpriteId]; // check stade suivant
+  }
+  if (evolved) {
+    syncActiveFromPlayer();
+    updateHUD();
+    notify(`🌟 ${player.currentName} — évolution appliquée !`);
+    setMessage(`🌟 ${player.currentName} avait dépassé son niveau d\'évolution ! Évolution appliquée automatiquement.`);
   }
 }
 
@@ -2982,15 +3380,24 @@ function buyCT(ctId) {
 // SAVE / LOAD
 // ══════════════════════════════════════════
 function saveGame() {
+  // Remplacée plus bas par la version double-write (localStorage + IDB) avec signature
   if (!player) return;
-  localStorage.setItem('pokemonRPG_save_v2', JSON.stringify(player));
+  const _s = JSON.stringify(player);
+  localStorage.setItem(SAVE_KEY, _wrapSave(_s));
   notify('Partie sauvegardée !');
   setMessage('💾 Votre aventure a été sauvegardée.');
 }
 function loadGame() {
-  const data = localStorage.getItem('pokemonRPG_save_v2');
-  if (!data){ notify('Aucune sauvegarde !'); return; }
-  player = JSON.parse(data);
+  const _raw = localStorage.getItem(SAVE_KEY);
+  if (!_raw){ notify('Aucune sauvegarde !'); return; }
+  const _uw = _unwrapSave(_raw);
+  if (!_uw) { notify('❌ Aucune sauvegarde valide !'); return; }
+  if (_uw.err === 'tampered') {
+    notify('⛔ Sauvegarde modifiée — chargement refusé !');
+    setMessage('⛔ Signature invalide : la sauvegarde a été modifiée manuellement. Restaurez depuis un fichier .pwsave valide.');
+    return;
+  }
+  player = JSON.parse(_uw.json);
   if (!player.balls)        player.balls        = { pokeball:3 };
   if (!player.bag)          player.bag          = { potion:2 };
   if (!player.ctBag)        player.ctBag        = {};
@@ -3043,8 +3450,13 @@ function loadGame() {
   if (player.mMoveUsesMax === undefined){ player.mMoveUsesMax=4; player.mMoveUses=4; }
   if (!player.moveElem)     player.moveElem     = player.type;
   if (!player.mMoveElem)    player.mMoveElem    = player.type;
+  // Rattrapage niveau pour les Pokémon du banc (XP accumulés sans level-up)
+  (player.roster||[]).forEach((p,i)=>{ if(i!==(player.activeRosterIdx||0)) checkRosterLevelUp(p); });
+  (player.box||[]).forEach(p=>checkRosterLevelUp(p));
   // Sync active roster pokemon to player
   if (player.roster.length > 0) syncPlayerFromActive();
+  // Rattraper les évolutions manquées (Pokémon déjà au-delà du niveau d'évolution)
+  checkEvolutionOnLoad();
   if (!player.dexSeen) { player.dexSeen = []; initDexFromRoster(); }
   showScreen('game'); updateHUD(); updateKillHUD();
   showZone(ZONES[player.currentZone]?.name || 'PokéQuest');
@@ -3064,6 +3476,43 @@ const SAVE_VERSION = '2.1';
 const SAVE_KEY = 'pokemonRPG_save_v2';
 const IDB_DB = 'pokewaveDB';
 const IDB_STORE = 'saves';
+
+// ── Anti-cheat : signature HMAC-like ──
+function _computeSig(str) {
+  // Clé secrète obfusquée (ne pas modifier — casse les signatures)
+  const _k = [80,75,87,86,95,78,48,67,104,51,65,116,95,50,53,56,75,89];
+  const k = _k.map(c => String.fromCharCode(c)).join('');
+  const src = k + str.length + str + k.split('').reverse().join('');
+  let a = 0x6d2b1e4f, b = 0xf3a70c89;
+  for (let i = 0; i < src.length; i++) {
+    const c = src.charCodeAt(i);
+    a = Math.imul(a ^ c, 0x9e3779b9) >>> 0;
+    b = Math.imul(b ^ c, 0x517cc1b7) >>> 0;
+    a = ((a << 13) | (a >>> 19)) >>> 0;
+    b = ((b <<  7) | (b >>> 25)) >>> 0;
+  }
+  a = (a ^ b ^ (a >>> 16)) >>> 0;
+  b = (b ^ a ^ (b >>> 13)) >>> 0;
+  return a.toString(16).padStart(8,'0') + b.toString(16).padStart(8,'0');
+}
+// Emballe le JSON joueur pour stockage signé
+function _wrapSave(playerJson) {
+  return JSON.stringify({ _pw: SAVE_VERSION, sig: _computeSig(playerJson), d: playerJson });
+}
+// Déballe et vérifie — retourne {json} | {json, legacy:true} | {err:'tampered'} | null
+function _unwrapSave(raw) {
+  if (!raw) return null;
+  try {
+    const w = JSON.parse(raw);
+    if (w._pw && w.d !== undefined) {
+      if (w.sig !== _computeSig(w.d)) return { err: 'tampered' };
+      return { json: w.d };
+    }
+    // Format hérité : JSON joueur direct (re-signé au prochain save)
+    if (w.name) return { json: raw, legacy: true };
+    return null;
+  } catch(_) { return null; }
+}
 
 // ── IndexedDB : double sauvegarde robuste (survive aux purges localStorage) ──
 function _idbSave(data) {
@@ -3097,23 +3546,48 @@ const _origSaveGame = saveGame;
 saveGame = function() {
   if (!player) return;
   const serialized = JSON.stringify(player);
-  localStorage.setItem(SAVE_KEY, serialized);
-  _idbSave(serialized);
+  const wrapped = _wrapSave(serialized);
+  localStorage.setItem(SAVE_KEY, wrapped);
+  _idbSave(wrapped);
   notify('Partie sauvegardée !');
   setMessage('💾 Votre aventure a été sauvegardée.');
 };
 
+// ── Auto-save silencieux (sans notification) ──
+let _autoSaveKillCounter = 0;
+function _silentSave() {
+  if (!player) return;
+  // Utilise requestIdleCallback si disponible pour éviter de bloquer le thread principal
+  const doSave = () => {
+    try {
+      const serialized = JSON.stringify(player);
+      const wrapped = _wrapSave(serialized);
+      localStorage.setItem(SAVE_KEY, wrapped);
+      _idbSave(wrapped);
+    } catch(e) {}
+  };
+  if (window.requestIdleCallback) {
+    requestIdleCallback(doSave, { timeout: 2000 });
+  } else {
+    setTimeout(doSave, 0);
+  }
+}
+// Auto-save toutes les 3 minutes en arrière-plan
+if (window._autoSaveInterval) clearInterval(window._autoSaveInterval);
+window._autoSaveInterval = setInterval(_silentSave, 180000);
+
 // ── Export — télécharge un fichier .pwsave (JSON) ──
 function exportSave() {
-  const raw = localStorage.getItem(SAVE_KEY);
-  if (!raw) { notify('Aucune sauvegarde à exporter !'); return; }
-  const p = JSON.parse(raw);
+  if (!player) { notify('Aucune sauvegarde à exporter !'); return; }
+  const p = player;
+  const pJson = JSON.stringify(p);
   const bundle = {
     _pw_version:     SAVE_VERSION,
     _pw_export_date: new Date().toISOString(),
     _pw_player:      p.name || '?',
     _pw_level:       p.level || 1,
     _pw_kills:       p.totalKills || 0,
+    _pw_sig:         _computeSig(pJson),
     save:            p
   };
   const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: 'application/json' });
@@ -3169,10 +3643,21 @@ function handleSaveFileImport(e) {
     try {
       const text = ev.target.result;
       const parsed = JSON.parse(text);
-      // Supporte les deux formats : bundle {save:...} ou save direct
-      const raw = parsed.save ? JSON.stringify(parsed.save) : text;
-      const preview = parsed.save ? parsed : null;
-      _confirmImport(raw, preview);
+      if (parsed.save && parsed._pw_sig !== undefined) {
+        // Nouveau format signé — vérifie la signature
+        const pJson = JSON.stringify(parsed.save);
+        if (parsed._pw_sig !== _computeSig(pJson)) {
+          notify('⛔ Fichier .pwsave modifié — import refusé !');
+          return;
+        }
+        _confirmImport(pJson, parsed);
+      } else if (parsed.save) {
+        // Ancien bundle sans signature — accepté (compatibilité)
+        _confirmImport(JSON.stringify(parsed.save), parsed);
+      } else {
+        // JSON joueur direct
+        _confirmImport(text, null);
+      }
     } catch(_) {
       notify('❌ Fichier invalide !');
     }
@@ -3181,7 +3666,9 @@ function handleSaveFileImport(e) {
 }
 
 function _confirmImport(raw, preview) {
-  const p = preview?.save || JSON.parse(raw);
+  // raw peut être un JSON joueur direct ou un format enveloppé (_unwrapSave)
+  const _uwC = _unwrapSave(raw);
+  const p = preview?.save || (_uwC && !_uwC.err ? JSON.parse(_uwC.json) : JSON.parse(raw));
   const info = preview
     ? `Dresseur : ${preview._pw_player || p.name} · Niv.${p.level||1} · ${p.totalKills||0} victoires\nExporté le : ${preview._pw_export_date ? new Date(preview._pw_export_date).toLocaleString('fr-FR') : '?'}`
     : `Dresseur : ${p.name||'?'} · Niv.${p.level||1}`;
@@ -3206,10 +3693,26 @@ function _confirmImport(raw, preview) {
 
 function _applyImportedSave(raw, source) {
   try {
-    const p = JSON.parse(raw);
+    // Accepte format enveloppé (code de sauvegarde) ou JSON joueur direct
+    const uw = _unwrapSave(raw);
+    let playerJson;
+    if (uw && !uw.err) {
+      playerJson = uw.json;
+    } else if (uw && uw.err === 'tampered') {
+      notify('⛔ Import refusé : code de sauvegarde modifié !');
+      return;
+    } else {
+      // JSON joueur direct passé par handleSaveFileImport ou code hérité
+      const p = JSON.parse(raw);
+      if (!p || !p.name) throw new Error('no player');
+      playerJson = raw;
+    }
+    const p = JSON.parse(playerJson);
     if (!p || !p.name) throw new Error('no player');
-    localStorage.setItem(SAVE_KEY, JSON.stringify(p));
-    _idbSave(JSON.stringify(p));
+    // Re-signe et stocke
+    const wrapped = _wrapSave(playerJson);
+    localStorage.setItem(SAVE_KEY, wrapped);
+    _idbSave(wrapped);
     notify(`✅ Sauvegarde importée (${source}) — rechargement…`);
     setTimeout(() => { loadGame(); showScreen('game'); }, 800);
   } catch(_) {
@@ -3235,9 +3738,15 @@ function renderSaveManager() {
   let localInfo = '<span style="color:rgba(255,255,255,.4)">Aucune sauvegarde locale</span>';
   if (raw) {
     try {
-      const p = JSON.parse(raw);
-      const date = p._lastSaveDate ? new Date(p._lastSaveDate).toLocaleString('fr-FR') : 'Date inconnue';
-      localInfo = `<b style="color:#ffd700">${p.name||'?'}</b> · Niv.<b>${p.level||1}</b> · ${p.totalKills||0} victoires<br><span style="color:rgba(255,255,255,.4);font-size:.55rem">${date}</span>`;
+      const uw = _unwrapSave(raw);
+      const p = uw && !uw.err ? JSON.parse(uw.json) : null;
+      if (p) {
+        const date = p._lastSaveDate ? new Date(p._lastSaveDate).toLocaleString('fr-FR') : 'Date inconnue';
+        const sigStatus = uw.legacy ? '<span style="color:#ff9a3c"> ⚠ ancien format</span>' : '<span style="color:#2dc653"> ✓ signée</span>';
+        localInfo = `<b style="color:#ffd700">${p.name||'?'}</b> · Niv.<b>${p.level||1}</b> · ${p.totalKills||0} victoires${sigStatus}<br><span style="color:rgba(255,255,255,.4);font-size:.55rem">${date}</span>`;
+      } else if (uw && uw.err === 'tampered') {
+        localInfo = '<span style="color:#ff4d4d">⛔ Sauvegarde corrompue / modifiée</span>';
+      }
     } catch(_) {}
   }
 
@@ -3863,6 +4372,7 @@ function handleGymVictory() {
     notify(`🏅 ${gl.badge} obtenu !`);
     setMessage(`🏆 Vous avez vaincu ${gl.name} ! ${gl.badgeIcon} ${gl.badge} obtenu ! +${gl.reward}₽`);
     setTimeout(() => notify(`🏅 ${(player.badges||[]).length}/9 badges !`), 1500);
+    setTimeout(() => { stopAutoBattle(); syncActiveFromPlayer(); showScreen('game'); updateHUD(); }, 2000);
     return true;
   }
 }
@@ -4070,8 +4580,11 @@ function confirmSwitch(idx) {
     pTypeBadge.textContent = dual;
     pTypeBadge.className = 'poke-type-badge type-'+dual;
   }
-  document.getElementById('btn-attack').innerHTML = `⚔ ${player.move} <span class="atk-elem-badge elem-${player.moveElem||player.type}">${player.moveElem||player.type}</span>`;
-  document.getElementById('btn-magic').innerHTML  = `✨ ${player.mMove} <span class="atk-elem-badge elem-${player.mMoveElem||player.type}">${player.mMoveElem||player.type}</span>`;
+  const _sw_ba = _hud('btn-attack'); const _sw_bm = _hud('btn-magic');
+  const _sw_ah = `⚔ ${player.move} <span class="atk-elem-badge elem-${player.moveElem||player.type}">${player.moveElem||player.type}</span>`;
+  const _sw_mh = `✨ ${player.mMove} <span class="atk-elem-badge elem-${player.mMoveElem||player.type}">${player.mMoveElem||player.type}</span>`;
+  if (_sw_ba) { _sw_ba.innerHTML = _sw_ah; _sw_ba._cachedHtml = _sw_ah; }
+  if (_sw_bm) { _sw_bm.innerHTML = _sw_mh; _sw_bm._cachedHtml = _sw_mh; }
   updateBattleHp(); updateHUD();
   (_hud('battle-log')).textContent = `⇄ Go, ${player.currentName} !`;
 
@@ -4536,7 +5049,7 @@ function challengeWorldBoss() {
   const lv = player.level || 1;
   const scale = 1 + lv * 0.06;
   const b = WORLD_BOSS_POOL[Math.floor(Math.random() * WORLD_BOSS_POOL.length)];
-  const level = Math.max(80, Math.min(100, lv + 55));
+  const level = Math.max(80, Math.min(450, lv + 55));
   const boss = {
     name:`🌍 ${b.n}`, id:b.id, level,
     hp:Math.round(b.hp*scale), maxHp:Math.round(b.hp*scale),
@@ -4787,27 +5300,27 @@ function awardShardOnKill(enemyType) {
 // ══════════════════════════════════════════
 const SKILL_TREE = {
   // Colonne Combat
-  'atk-boost-1':   { name:'Attaque +',      desc:'+5% ATK équipe',    cost:500,  req:[],                    row:0, col:0, apply:()=>{ applySkillToTeam(p=>{ p.atk=Math.round(p.atk*1.05); }); } },
-  'atk-boost-2':   { name:'Attaque ++',     desc:'+10% ATK équipe',   cost:1500, req:['atk-boost-1'],       row:1, col:0, apply:()=>{ applySkillToTeam(p=>{ p.atk=Math.round(p.atk*1.10); }); } },
-  'atk-boost-3':   { name:'Attaque MAX',    desc:'+20% ATK équipe',   cost:4000, req:['atk-boost-2'],       row:2, col:0, apply:()=>{ applySkillToTeam(p=>{ p.atk=Math.round(p.atk*1.20); }); } },
-  'def-boost-1':   { name:'Défense +',      desc:'+5% DEF équipe',    cost:500,  req:[],                    row:0, col:1, apply:()=>{ applySkillToTeam(p=>{ p.def=Math.round(p.def*1.05); }); } },
-  'def-boost-2':   { name:'Défense ++',     desc:'+10% DEF équipe',   cost:1500, req:['def-boost-1'],       row:1, col:1, apply:()=>{ applySkillToTeam(p=>{ p.def=Math.round(p.def*1.10); }); } },
-  'hp-boost-1':    { name:'Vitalité +',     desc:'+10% PV équipe',    cost:800,  req:[],                    row:0, col:2, apply:()=>{ applySkillToTeam(p=>{ p.maxHp=Math.round(p.maxHp*1.10);p.hp=p.maxHp; }); } },
-  'hp-boost-2':    { name:'Vitalité ++',    desc:'+20% PV équipe',    cost:2000, req:['hp-boost-1'],        row:1, col:2, apply:()=>{ applySkillToTeam(p=>{ p.maxHp=Math.round(p.maxHp*1.20);p.hp=p.maxHp; }); } },
+  'atk-boost-1':   { name:'Attaque +',      desc:'+5% ATK équipe',    cost:100,  req:[],                    row:0, col:0, apply:()=>{ applySkillToTeam(p=>{ p.atk=Math.round(p.atk*1.05); }); } },
+  'atk-boost-2':   { name:'Attaque ++',     desc:'+10% ATK équipe',   cost:300,  req:['atk-boost-1'],       row:1, col:0, apply:()=>{ applySkillToTeam(p=>{ p.atk=Math.round(p.atk*1.10); }); } },
+  'atk-boost-3':   { name:'Attaque MAX',    desc:'+20% ATK équipe',   cost:800,  req:['atk-boost-2'],       row:2, col:0, apply:()=>{ applySkillToTeam(p=>{ p.atk=Math.round(p.atk*1.20); }); } },
+  'def-boost-1':   { name:'Défense +',      desc:'+5% DEF équipe',    cost:100,  req:[],                    row:0, col:1, apply:()=>{ applySkillToTeam(p=>{ p.def=Math.round(p.def*1.05); }); } },
+  'def-boost-2':   { name:'Défense ++',     desc:'+10% DEF équipe',   cost:300,  req:['def-boost-1'],       row:1, col:1, apply:()=>{ applySkillToTeam(p=>{ p.def=Math.round(p.def*1.10); }); } },
+  'hp-boost-1':    { name:'Vitalité +',     desc:'+10% PV équipe',    cost:150,  req:[],                    row:0, col:2, apply:()=>{ applySkillToTeam(p=>{ p.maxHp=Math.round(p.maxHp*1.10);p.hp=p.maxHp; }); } },
+  'hp-boost-2':    { name:'Vitalité ++',    desc:'+20% PV équipe',    cost:400,  req:['hp-boost-1'],        row:1, col:2, apply:()=>{ applySkillToTeam(p=>{ p.maxHp=Math.round(p.maxHp*1.20);p.hp=p.maxHp; }); } },
   // Colonne Économie
-  'gold-find-1':   { name:'Fortune I',      desc:'+20% or des combats', cost:1000,req:[],                   row:0, col:3, apply:()=>{ player._globalGoldBonus=(player._globalGoldBonus||0)+0.20; } },
-  'gold-find-2':   { name:'Fortune II',     desc:'+40% or des combats', cost:3000,req:['gold-find-1'],      row:1, col:3, apply:()=>{ player._globalGoldBonus=(player._globalGoldBonus||0)+0.40; } },
-  'xp-boost-1':    { name:'Étude I',        desc:'+20% XP de combat',   cost:1000,req:[],                   row:0, col:4, apply:()=>{ player._globalXPBonus=(player._globalXPBonus||0)+0.20; } },
-  'xp-boost-2':    { name:'Étude II',       desc:'+40% XP de combat',   cost:3000,req:['xp-boost-1'],       row:1, col:4, apply:()=>{ player._globalXPBonus=(player._globalXPBonus||0)+0.40; } },
-  'passive-inc-1': { name:'Rentier I',      desc:'+5₽/s passif',        cost:2000,req:['gold-find-1'],      row:2, col:3, apply:()=>{ player._passiveIncome=(player._passiveIncome||0)+5; } },
-  'passive-inc-2': { name:'Rentier II',     desc:'+15₽/s passif',       cost:6000,req:['passive-inc-1'],    row:3, col:3, apply:()=>{ player._passiveIncome=(player._passiveIncome||0)+15; } },
+  'gold-find-1':   { name:'Fortune I',      desc:'+20% or des combats', cost:200, req:[],                   row:0, col:3, apply:()=>{ player._globalGoldBonus=(player._globalGoldBonus||0)+0.20; } },
+  'gold-find-2':   { name:'Fortune II',     desc:'+40% or des combats', cost:600, req:['gold-find-1'],      row:1, col:3, apply:()=>{ player._globalGoldBonus=(player._globalGoldBonus||0)+0.40; } },
+  'xp-boost-1':    { name:'Étude I',        desc:'+20% XP de combat',   cost:200, req:[],                   row:0, col:4, apply:()=>{ player._globalXPBonus=(player._globalXPBonus||0)+0.20; } },
+  'xp-boost-2':    { name:'Étude II',       desc:'+40% XP de combat',   cost:600, req:['xp-boost-1'],       row:1, col:4, apply:()=>{ player._globalXPBonus=(player._globalXPBonus||0)+0.40; } },
+  'passive-inc-1': { name:'Rentier I',      desc:'+5₽/s passif',        cost:400, req:['gold-find-1'],      row:2, col:3, apply:()=>{ player._passiveIncome=(player._passiveIncome||0)+5; } },
+  'passive-inc-2': { name:'Rentier II',     desc:'+15₽/s passif',       cost:1200,req:['passive-inc-1'],    row:3, col:3, apply:()=>{ player._passiveIncome=(player._passiveIncome||0)+15; } },
   // Colonne Capture
-  'catch-rate-1':  { name:'Pisteur I',      desc:'+10% taux capture',   cost:800, req:[],                   row:0, col:5, apply:()=>{ player._catchBonus=(player._catchBonus||0)+0.10; } },
-  'catch-rate-2':  { name:'Pisteur II',     desc:'+20% taux capture',   cost:2500,req:['catch-rate-1'],     row:1, col:5, apply:()=>{ player._catchBonus=(player._catchBonus||0)+0.20; } },
-  'shiny-luck-1':  { name:'Shiny Luck I',   desc:'Shiny ×2',            cost:5000,req:['catch-rate-1'],     row:2, col:5, apply:()=>{ player._shinyLuckMult=(player._shinyLuckMult||1)*2; } },
-  'shiny-luck-2':  { name:'Shiny Luck II',  desc:'Shiny ×4',            cost:15000,req:['shiny-luck-1'],    row:3, col:5, apply:()=>{ player._shinyLuckMult=(player._shinyLuckMult||1)*4; } },
+  'catch-rate-1':  { name:'Pisteur I',      desc:'+10% taux capture',   cost:150, req:[],                   row:0, col:5, apply:()=>{ player._catchBonus=(player._catchBonus||0)+0.10; } },
+  'catch-rate-2':  { name:'Pisteur II',     desc:'+20% taux capture',   cost:500, req:['catch-rate-1'],     row:1, col:5, apply:()=>{ player._catchBonus=(player._catchBonus||0)+0.20; } },
+  'shiny-luck-1':  { name:'Shiny Luck I',   desc:'Shiny ×2',            cost:1000,req:['catch-rate-1'],     row:2, col:5, apply:()=>{ player._shinyLuckMult=(player._shinyLuckMult||1)*2; } },
+  'shiny-luck-2':  { name:'Shiny Luck II',  desc:'Shiny ×4',            cost:3000,req:['shiny-luck-1'],     row:3, col:5, apply:()=>{ player._shinyLuckMult=(player._shinyLuckMult||1)*4; } },
   // Centre
-  'all-boost':     { name:'MAÎTRISE',       desc:'+15% tout',           cost:20000,req:['atk-boost-2','xp-boost-2','catch-rate-2'], row:3,col:2,
+  'all-boost':     { name:'MAÎTRISE',       desc:'+15% tout',           cost:4000, req:['atk-boost-2','xp-boost-2','catch-rate-2'], row:3,col:2,
     apply:()=>{ applySkillToTeam(p=>{p.atk=Math.round(p.atk*1.15);p.def=Math.round(p.def*1.15);p.maxHp=Math.round(p.maxHp*1.15);p.hp=p.maxHp;});
                 player._globalGoldBonus=(player._globalGoldBonus||0)+0.15;
                 player._globalXPBonus=(player._globalXPBonus||0)+0.15; } },
@@ -5370,7 +5883,10 @@ const ACHIEVEMENTS = [
   { id:'lv-10',         title:'Apprenti',         desc:'Atteindre le niveau 10',     icon:'⬆️',  condition:p=>(p.level||1)>=10,            reward:{gold:200} },
   { id:'lv-30',         title:'Confirmé',         desc:'Atteindre le niveau 30',     icon:'⬆️',  condition:p=>(p.level||1)>=30,            reward:{gold:1000, candy:2} },
   { id:'lv-50',         title:'Expert',           desc:'Atteindre le niveau 50',     icon:'⬆️',  condition:p=>(p.level||1)>=50,            reward:{gold:3000, tokens:3} },
-  { id:'lv-100',        title:'Maître',           desc:'Atteindre le niveau 100',    icon:'👑',  condition:p=>(p.level||1)>=100,           reward:{gold:10000, tokens:10, candy:10} },
+  { id:'lv-100',        title:'Maître',           desc:'Atteindre le niveau 100',    icon:'👑',  condition:p=>(p.level||1)>=100,           reward:{gold:10000,  tokens:10, candy:10} },
+  { id:'lv-200',        title:'Champion',         desc:'Atteindre le niveau 200',    icon:'🔥',  condition:p=>(p.level||1)>=200,           reward:{gold:50000,  tokens:25, candy:20} },
+  { id:'lv-300',        title:'Élite',            desc:'Atteindre le niveau 300',    icon:'💎',  condition:p=>(p.level||1)>=300,           reward:{gold:150000, tokens:50, candy:35} },
+  { id:'lv-500',        title:'Transcendant',     desc:'Atteindre le niveau 500',    icon:'🌌',  condition:p=>(p.level||1)>=500,           reward:{gold:500000, tokens:150,candy:100} },
   // Tour
   { id:'tour-10',       title:'Grimpeur',         desc:'Atteindre l\'étage 10',      icon:'🏔️',  condition:p=>(p.tourFloor||0)>=10,        reward:{gold:1000, tokens:2} },
   { id:'tour-25',       title:'Alpiniste',        desc:'Atteindre l\'étage 25',      icon:'🗻',  condition:p=>(p.tourFloor||0)>=25,        reward:{gold:3000, tokens:3, candy:3} },
@@ -5812,7 +6328,7 @@ const TOUR_FLOOR_ENEMIES = floor => {
   const spd = GEN1_SPD[pData.id] || 50;
   return {
     name: pData.n, id: pData.id,
-    level: Math.max(1, Math.min(100, floor * 3 + Math.floor(Math.random() * 5))),
+    level: Math.max(1, Math.min(500, floor * 3 + Math.floor(Math.random() * 5))),
     hp: Math.round(pData.hp * scale), maxHp: Math.round(pData.hp * scale),
     atk: Math.round(pData.atk * scale), def: Math.round(pData.def * scale) || 1,
     spd: Math.round(spd * scale), xp: 0, gold: 0, type: pData.t,
@@ -5826,72 +6342,78 @@ const TOUR_RARE_ITEMS = ['super-bonbon','ceinture-choix','lentille-choix','bande
 // TRIAL MODE SCREEN
 // ══════════════════════════════════════════
 // ── TRIAL : pool de défis légendaires disponibles ──
+// ── TRIAL : contenu END-GAME — stats fixes, pas de scaling trainer ──
+// Formule dégâts : max(1, enemy.atk + rand(5) - player.def/2)
+// Joueur Niv.100 attendu : HP≈1450, ATK≈310, DEF≈210 (def/2≈105)
+// Tier 1 : accessible Niv.70+ · Tier 5 : mur absolu Niv.100+ build optimal
 const TRIAL_CHALLENGES = [
-  // Tier 1 — 20 PT
-  {id:144,n:'Artikodin',  t:'Glace/Vol',     tp:20, hp:120,atk:25,def:22},
-  {id:145,n:'Électhor',   t:'Électrik/Vol',  tp:20, hp:115,atk:28,def:18},
-  {id:146,n:'Sulfura',    t:'Feu/Vol',       tp:20, hp:110,atk:26,def:20},
-  {id:243,n:'Raikou',     t:'Électrik',      tp:20, hp:115,atk:24,def:20},
-  {id:244,n:'Entei',      t:'Feu',           tp:20, hp:130,atk:28,def:18},
-  {id:245,n:'Suicune',    t:'Eau',           tp:20, hp:125,atk:22,def:28},
-  {id:377,n:'Regirock',   t:'Roche',         tp:20, hp:110,atk:22,def:34},
-  {id:378,n:'Regice',     t:'Glace',         tp:20, hp:110,atk:20,def:34},
-  {id:379,n:'Registeel',  t:'Acier',         tp:20, hp:110,atk:21,def:35},
-  // Tier 2 — 30 PT
-  {id:380,n:'Latias',     t:'Dragon/Psy',    tp:30, hp:130,atk:24,def:24},
-  {id:381,n:'Latios',     t:'Dragon/Psy',    tp:30, hp:120,atk:28,def:22},
-  {id:384,n:'Rayquaza',   t:'Dragon/Vol',    tp:30, hp:140,atk:35,def:22},
-  {id:480,n:'Uxie',       t:'Psy',           tp:30, hp:115,atk:18,def:30},
-  {id:481,n:'Mesprit',    t:'Psy',           tp:30, hp:125,atk:24,def:24},
-  {id:482,n:'Azelf',      t:'Psy',           tp:30, hp:110,atk:30,def:20},
-  {id:483,n:'Dialga',     t:'Acier/Dragon',  tp:35, hp:150,atk:32,def:28},
-  {id:484,n:'Palkia',     t:'Eau/Dragon',    tp:35, hp:140,atk:34,def:24},
-  {id:487,n:'Giratina',   t:'Spectre/Dragon',tp:35, hp:160,atk:30,def:28},
-  // Tier 3 — 45 PT
-  {id:638,n:'Cobalion',   t:'Acier/Combat',  tp:45, hp:135,atk:28,def:30},
-  {id:639,n:'Terrakion',  t:'Roche/Combat',  tp:45, hp:130,atk:34,def:26},
-  {id:640,n:'Virizion',   t:'Plante/Combat', tp:45, hp:125,atk:26,def:30},
-  {id:641,n:'Boréas',     t:'Vol',           tp:45, hp:130,atk:32,def:24},
-  {id:642,n:'Démiolos',   t:'Électrik/Vol',  tp:45, hp:130,atk:35,def:22},
-  {id:716,n:'Xerneas',    t:'Fée',           tp:50, hp:155,atk:30,def:26},
-  {id:717,n:'Yveltal',    t:'Ténèbres/Vol',  tp:50, hp:150,atk:34,def:24},
-  {id:718,n:'Zygarde',    t:'Dragon/Sol',    tp:50, hp:165,atk:28,def:28},
-  // Tier 4 — 65 PT
-  {id:150,n:'Mewtwo',     t:'Psy',           tp:65, hp:180,atk:40,def:26},
-  {id:382,n:'Kyogre',     t:'Eau',           tp:65, hp:175,atk:38,def:28},
-  {id:383,n:'Groudon',    t:'Sol',           tp:65, hp:175,atk:40,def:32},
-  {id:791,n:'Solgaleo',   t:'Acier/Psy',     tp:65, hp:165,atk:38,def:30},
-  {id:792,n:'Lunala',     t:'Psy/Spectre',   tp:65, hp:160,atk:36,def:26},
-  {id:800,n:'Necrozma',   t:'Psy',           tp:65, hp:155,atk:38,def:28},
-  // Tier 5 — 85 PT
-  {id:888,n:'Zacian',     t:'Fée',           tp:85, hp:175,atk:48,def:30},
-  {id:889,n:'Zamazenta',  t:'Combat',        tp:85, hp:180,atk:42,def:40},
-  {id:1007,n:'Koraidon',  t:'Combat/Dragon', tp:85, hp:185,atk:46,def:34},
-  {id:1008,n:'Miraidon',  t:'Électrik/Dragon',tp:85, hp:180,atk:42,def:32},
+  // ── Tier 1 — 50 PT · Niv. 72 · "Légendaires régionaux" ──
+  {id:144, n:'Artikodin',  t:'Glace/Vol',      lv:72,  tp:50,  hp:1380, atk:440, def:110, spd:220, magic:400},
+  {id:145, n:'Électhor',   t:'Électrik/Vol',   lv:72,  tp:50,  hp:1300, atk:460, def:100, spd:235, magic:420},
+  {id:146, n:'Sulfura',    t:'Feu/Vol',        lv:72,  tp:50,  hp:1280, atk:455, def:105, spd:225, magic:415},
+  {id:243, n:'Raikou',     t:'Électrik',       lv:72,  tp:50,  hp:1350, atk:440, def:108, spd:240, magic:400},
+  {id:244, n:'Entei',      t:'Feu',            lv:72,  tp:50,  hp:1480, atk:460, def:102, spd:210, magic:420},
+  {id:245, n:'Suicune',    t:'Eau',            lv:72,  tp:50,  hp:1420, atk:420, def:132, spd:200, magic:382},
+  {id:377, n:'Regirock',   t:'Roche',          lv:72,  tp:50,  hp:1300, atk:415, def:155, spd:172, magic:378},
+  {id:378, n:'Regice',     t:'Glace',          lv:72,  tp:50,  hp:1300, atk:400, def:158, spd:175, magic:365},
+  {id:379, n:'Registeel',  t:'Acier',          lv:72,  tp:50,  hp:1300, atk:408, def:162, spd:175, magic:372},
+  // ── Tier 2 — 90 PT · Niv. 95 · "Duo légendaires + Création" ──
+  {id:380, n:'Latias',     t:'Dragon/Psy',     lv:95,  tp:90,  hp:2200, atk:545, def:158, spd:285, magic:500},
+  {id:381, n:'Latios',     t:'Dragon/Psy',     lv:95,  tp:90,  hp:2100, atk:575, def:148, spd:298, magic:525},
+  {id:384, n:'Rayquaza',   t:'Dragon/Vol',     lv:95,  tp:90,  hp:2380, atk:595, def:142, spd:290, magic:545},
+  {id:480, n:'Uxie',       t:'Psy',            lv:95,  tp:90,  hp:2050, atk:512, def:175, spd:262, magic:472},
+  {id:481, n:'Mesprit',    t:'Psy',            lv:95,  tp:90,  hp:2150, atk:548, def:160, spd:270, magic:502},
+  {id:482, n:'Azelf',      t:'Psy',            lv:95,  tp:90,  hp:2000, atk:582, def:145, spd:295, magic:535},
+  {id:483, n:'Dialga',     t:'Acier/Dragon',   lv:95,  tp:90,  hp:2520, atk:562, def:188, spd:252, magic:515},
+  {id:484, n:'Palkia',     t:'Eau/Dragon',     lv:95,  tp:90,  hp:2420, atk:582, def:168, spd:268, magic:535},
+  {id:487, n:'Giratina',   t:'Spectre/Dragon', lv:95,  tp:90,  hp:2680, atk:558, def:192, spd:245, magic:510},
+  // ── Tier 3 — 140 PT · Niv. 120 · "Épées / Forces de la Nature / Vie-Mort" ──
+  {id:638, n:'Cobalion',   t:'Acier/Combat',   lv:120, tp:140, hp:3400, atk:725, def:218, spd:342, magic:665},
+  {id:639, n:'Terrakion',  t:'Roche/Combat',   lv:120, tp:140, hp:3300, atk:765, def:208, spd:332, magic:700},
+  {id:640, n:'Virizion',   t:'Plante/Combat',  lv:120, tp:140, hp:3200, atk:710, def:222, spd:348, magic:650},
+  {id:641, n:'Boréas',     t:'Vol',            lv:120, tp:140, hp:3380, atk:745, def:202, spd:362, magic:682},
+  {id:642, n:'Démiolos',   t:'Électrik/Vol',   lv:120, tp:140, hp:3400, atk:758, def:198, spd:372, magic:695},
+  {id:716, n:'Xerneas',    t:'Fée',            lv:120, tp:140, hp:3620, atk:718, def:225, spd:328, magic:658},
+  {id:717, n:'Yveltal',    t:'Ténèbres/Vol',   lv:120, tp:140, hp:3560, atk:748, def:212, spd:338, magic:685},
+  {id:718, n:'Zygarde',    t:'Dragon/Sol',     lv:120, tp:140, hp:3780, atk:702, def:232, spd:320, magic:642},
+  // ── Tier 4 — 200 PT · Niv. 148 · "Dieu-Pokémon" ──
+  {id:150, n:'Mewtwo',     t:'Psy',            lv:148, tp:200, hp:5800, atk:1005,def:272, spd:455, magic:925},
+  {id:382, n:'Kyogre',     t:'Eau',            lv:148, tp:200, hp:5650, atk:985, def:288, spd:422, magic:905},
+  {id:383, n:'Groudon',    t:'Sol',            lv:148, tp:200, hp:5750, atk:1015,def:305, spd:418, magic:930},
+  {id:791, n:'Solgaleo',   t:'Acier/Psy',      lv:148, tp:200, hp:5520, atk:975, def:295, spd:434, magic:895},
+  {id:792, n:'Lunala',     t:'Psy/Spectre',    lv:148, tp:200, hp:5420, atk:965, def:280, spd:442, magic:885},
+  {id:800, n:'Necrozma',   t:'Psy',            lv:148, tp:200, hp:5320, atk:995, def:285, spd:438, magic:915},
+  // ── Tier 5 — 300 PT · Niv. 178 · "Mur absolu — contenu END-GAME" ──
+  {id:888, n:'Zacian',     t:'Fée',            lv:178, tp:300, hp:9600,  atk:1385,def:405, spd:565, magic:1275},
+  {id:889, n:'Zamazenta',  t:'Combat',         lv:178, tp:300, hp:10200, atk:1325,def:445, spd:528, magic:1215},
+  {id:1007,n:'Koraidon',   t:'Combat/Dragon',  lv:178, tp:300, hp:10800, atk:1405,def:425, spd:555, magic:1285},
+  {id:1008,n:'Miraidon',   t:'Électrik/Dragon',lv:178, tp:300, hp:10200, atk:1365,def:415, spd:560, magic:1255},
 ];
 
 // 5 défis aléatoires, régénérés à chaque ouverture du Trial
 let _trialChallengePool = [];
 function _refreshTrialPool() {
   const shuffled = [...TRIAL_CHALLENGES].sort(()=>Math.random()-.5);
-  // 2 tier1, 2 tier2/3, 1 tier4/5
-  const t1 = shuffled.filter(c=>c.tp<=20).slice(0,2);
-  const t2 = shuffled.filter(c=>c.tp>=30&&c.tp<=50).slice(0,2);
-  const t3 = shuffled.filter(c=>c.tp>=65).slice(0,1);
-  _trialChallengePool = [...t1,...t2,...t3].sort(()=>Math.random()-.5);
+  // 1 par tier pour une difficulté graduée : de l'accessible au mur absolu
+  const t1 = shuffled.filter(c=>c.tp===50).slice(0,1);
+  const t2 = shuffled.filter(c=>c.tp===90).slice(0,1);
+  const t3 = shuffled.filter(c=>c.tp===140).slice(0,1);
+  const t4 = shuffled.filter(c=>c.tp===200).slice(0,1);
+  const t5 = shuffled.filter(c=>c.tp===300).slice(0,1);
+  _trialChallengePool = [...t1,...t2,...t3,...t4,...t5];
 }
 
-// Trial Shop catalog
+// Trial Shop catalog — prix calibrés sur les nouveaux PT (Tier5 = 300 PT/victoire)
 const TRIAL_SHOP = [
-  {id:'orb-bird',    name:'Orbe Oiseau',    legendaries:'Artikodin · Électhor · Sulfura',   cost:100, img:ITEM_DISPLAY['orb-bird']?.img},
-  {id:'orb-beast',   name:'Orbe Bête',      legendaries:'Raikou · Entei · Suicune',         cost:100, img:ITEM_DISPLAY['orb-beast']?.img},
-  {id:'orb-golem',   name:'Orbe Golem',     legendaries:'Regirock · Regice · Registeel',    cost:100, img:ITEM_DISPLAY['orb-golem']?.img},
-  {id:'orb-dragon',  name:'Orbe Dragon',    legendaries:'Latias · Latios · Rayquaza',       cost:160, img:ITEM_DISPLAY['orb-dragon']?.img},
-  {id:'orb-space',   name:'Orbe Espace',    legendaries:'Dialga · Palkia · Giratina',       cost:200, img:ITEM_DISPLAY['orb-space']?.img},
-  {id:'orb-mega',    name:'Orbe Méga',      legendaries:'Mewtwo · Kyogre · Groudon',        cost:450, img:ITEM_DISPLAY['orb-mega']?.img},
-  {id:'orb-ancient', name:'Orbe Ancestral', legendaries:'Solgaleo · Lunala · Necrozma',     cost:320, img:ITEM_DISPLAY['orb-ancient']?.img},
-  {id:'orb-ultra',   name:'Orbe Ultime',    legendaries:'Zacian · Zamazenta · Koraidon...',  cost:650, img:ITEM_DISPLAY['orb-ultra']?.img},
-  {id:'shiny-gem',   name:'Gemme Éclat',    legendaries:'Rend un Pokémon Shiny (+15% stats)',cost:900, img:ITEM_DISPLAY['shiny-gem']?.img},
+  {id:'orb-bird',    name:'Orbe Oiseau',    legendaries:'Artikodin · Électhor · Sulfura',    cost:160,  img:ITEM_DISPLAY['orb-bird']?.img},
+  {id:'orb-beast',   name:'Orbe Bête',      legendaries:'Raikou · Entei · Suicune',          cost:160,  img:ITEM_DISPLAY['orb-beast']?.img},
+  {id:'orb-golem',   name:'Orbe Golem',     legendaries:'Regirock · Regice · Registeel',     cost:160,  img:ITEM_DISPLAY['orb-golem']?.img},
+  {id:'orb-dragon',  name:'Orbe Dragon',    legendaries:'Latias · Latios · Rayquaza',        cost:280,  img:ITEM_DISPLAY['orb-dragon']?.img},
+  {id:'orb-space',   name:'Orbe Espace',    legendaries:'Dialga · Palkia · Giratina',        cost:380,  img:ITEM_DISPLAY['orb-space']?.img},
+  {id:'orb-ancient', name:'Orbe Ancestral', legendaries:'Solgaleo · Lunala · Necrozma',      cost:600,  img:ITEM_DISPLAY['orb-ancient']?.img},
+  {id:'orb-mega',    name:'Orbe Méga',      legendaries:'Mewtwo · Kyogre · Groudon',         cost:900,  img:ITEM_DISPLAY['orb-mega']?.img},
+  {id:'orb-ultra',   name:'Orbe Ultime',    legendaries:'Zacian · Zamazenta · Koraidon...',   cost:1500, img:ITEM_DISPLAY['orb-ultra']?.img},
+  {id:'shiny-gem',   name:'Gemme Éclat',    legendaries:'Rend un Pokémon Shiny (+15% stats)', cost:2500, img:ITEM_DISPLAY['shiny-gem']?.img},
 ];
 
 function buyTrialItem(itemId) {
@@ -5913,17 +6435,16 @@ function startTrialChallenge(idx) {
   if (!player.roster || player.roster.filter(p=>p.hp>0).length===0) {
     notify('Tous vos Pokémon sont K.O. !'); return;
   }
-  const trLvl = Math.max(40, (player.trainerLevel||1) * 4 + 30);
-  const sc = 1 + trLvl * 0.12;
+  // Stats FIXES — contenu end-game, pas de scaling joueur
   const trialEnemy = {
     name: c.n, id: c.id,
     type: c.t.includes('/') ? c.t.split('/')[0] : c.t,
     dualType: c.t,
-    hp: Math.round(c.hp * sc), maxHp: Math.round(c.hp * sc),
-    atk: Math.round(c.atk * sc), def: Math.round(c.def * sc),
-    spd: Math.round(90 * sc * 0.35),
-    magic: Math.round(c.atk * sc * 0.85),
-    level: trLvl, xp: 0, gold: 0,
+    hp: c.hp, maxHp: c.hp,
+    atk: c.atk, def: c.def,
+    spd: c.spd,
+    magic: c.magic,
+    level: c.lv, xp: 0, gold: 0,
     isLegendary: true, isTrainerBattle: true,
   };
   player._trialBattle = true;
@@ -5943,16 +6464,20 @@ function renderTrialScreen() {
   // Challenges section
   const challengeCards = _trialChallengePool.map((c, i) => {
     const sid = c.id;
-    const tier = c.tp <= 20 ? 1 : c.tp <= 35 ? 2 : c.tp <= 50 ? 3 : c.tp <= 65 ? 4 : 5;
-    const tierColor = ['','#7bc8f6','#a8e6cf','#ffd166','#ff9a3c','#e63946'][tier];
-    return `<div style="background:rgba(168,85,247,.07);border:2px solid rgba(168,85,247,.25);border-radius:12px;padding:.7rem;display:flex;align-items:center;gap:.7rem">
-      <img src="${SPRITE_FRONT(sid)}" style="width:52px;height:52px;image-rendering:pixelated;filter:drop-shadow(0 0 6px ${tierColor}40)"/>
+    const tier = c.tp<=50 ? 1 : c.tp<=90 ? 2 : c.tp<=140 ? 3 : c.tp<=200 ? 4 : 5;
+    const tierColor  = ['','#7bc8f6','#a8e6cf','#ffd166','#ff9a3c','#e63946'][tier];
+    const tierLabel  = ['','ACCESSIBLE','INTERMÉDIAIRE','DIFFICILE','TRÈS DIFFICILE','END-GAME ⚠'][tier];
+    const tierBg     = ['','rgba(123,200,246,.08)','rgba(168,230,207,.08)','rgba(255,209,102,.08)','rgba(255,154,60,.10)','rgba(230,57,70,.12)'][tier];
+    const tierBorder = ['','rgba(123,200,246,.3)','rgba(168,230,207,.3)','rgba(255,209,102,.35)','rgba(255,154,60,.4)','rgba(230,57,70,.55)'][tier];
+    return `<div style="background:${tierBg};border:2px solid ${tierBorder};border-radius:12px;padding:.7rem;display:flex;align-items:center;gap:.7rem">
+      <img src="${SPRITE_FRONT(sid)}" style="width:52px;height:52px;image-rendering:pixelated;filter:drop-shadow(0 0 8px ${tierColor}60)"/>
       <div style="flex:1">
         <div style="font-family:'Press Start 2P',monospace;font-size:.42rem;color:#ffd700">${c.n}</div>
-        <div style="font-family:'Press Start 2P',monospace;font-size:.3rem;color:rgba(255,255,255,.5);margin-top:.15rem">${c.t} · Tier ${tier}</div>
-        <div style="font-family:'Press Start 2P',monospace;font-size:.32rem;color:${tierColor};margin-top:.1rem">+${c.tp} PT en cas de victoire</div>
+        <div style="font-family:'Press Start 2P',monospace;font-size:.28rem;color:rgba(255,255,255,.45);margin-top:.12rem">${c.t} · Niv.<b>${c.lv}</b></div>
+        <div style="font-family:'Press Start 2P',monospace;font-size:.28rem;color:${tierColor};margin-top:.08rem">${tierLabel}</div>
+        <div style="font-family:'Press Start 2P',monospace;font-size:.32rem;color:#a855f7;margin-top:.1rem">+${c.tp} PT</div>
       </div>
-      <button onclick="startTrialChallenge(${i})" style="font-family:'Press Start 2P',monospace;font-size:.32rem;padding:.4rem .6rem;background:linear-gradient(180deg,#a855f7,#7c3aed);color:#fff;border:none;border-radius:8px;cursor:pointer;white-space:nowrap">⚡ DÉFIER</button>
+      <button onclick="startTrialChallenge(${i})" style="font-family:'Press Start 2P',monospace;font-size:.32rem;padding:.4rem .6rem;background:linear-gradient(180deg,${tierColor},${tierBorder.replace('rgba','rgb').replace(/,[\d.]+\)/,')')});color:#000;border:none;border-radius:8px;cursor:pointer;white-space:nowrap;font-weight:bold">⚡ DÉFIER</button>
     </div>`;
   }).join('');
 
@@ -5988,7 +6513,8 @@ function renderTrialScreen() {
     </div>
 
     <div style="font-family:'Press Start 2P',monospace;font-size:.4rem;color:#a855f7;margin-bottom:.4rem">⚔ DÉFIS DISPONIBLES</div>
-    <div style="font-family:'Press Start 2P',monospace;font-size:.3rem;color:rgba(255,255,255,.35);margin-bottom:.5rem">Victoire = PT · Défaite = 0 PT · Pas de capture possible</div>
+    <div style="font-family:'Press Start 2P',monospace;font-size:.28rem;color:rgba(255,154,60,.8);margin-bottom:.2rem">⚠ Contenu END-GAME — Niv.100+ recommandé pour Tier 3+</div>
+    <div style="font-family:'Press Start 2P',monospace;font-size:.28rem;color:rgba(255,255,255,.3);margin-bottom:.5rem">Victoire = PT · Défaite = 0 PT · Stats fixes · Pas de capture</div>
     <div style="display:flex;flex-direction:column;gap:.4rem;margin-bottom:1rem">${challengeCards}</div>
     <button onclick="_refreshTrialPool();renderTrialScreen()" style="width:100%;margin-bottom:1rem;padding:.45rem;background:rgba(168,85,247,.15);border:1px solid rgba(168,85,247,.3);border-radius:8px;color:#a855f7;cursor:pointer;font-family:'Press Start 2P',monospace;font-size:.35rem">🔄 Nouveaux défis</button>
 
@@ -6128,3 +6654,81 @@ const _origBattleVictory = null; // handled inline via player._tourBattle flag
 // HELD ITEM: Restes — regen in battle
 // ══════════════════════════════════════════
 // Applied in setBattleTurn (player turn start)
+// ══════════════════════════════════════════
+// ZONE PICKER — click outside to close
+// ══════════════════════════════════════════
+document.addEventListener('click', function(e) {
+  const overlay = document.getElementById('zone-picker-overlay');
+  if (!overlay || overlay.style.display === 'none') return;
+  if (e.target === overlay) closeZonePicker();
+}, { passive: true });
+
+// ══════════════════════════════════════════
+// SHINY ENCOUNTER EFFECT
+// ══════════════════════════════════════════
+function triggerShinyEncounterEffect() {
+  // Flash lumineux plein écran
+  const overlay = document.getElementById('shiny-flash-overlay');
+  if (overlay) {
+    overlay.style.display = 'block';
+    // Relancer l'animation à chaque rencontre
+    overlay.style.animation = 'none';
+    void overlay.offsetWidth; // reflow pour reset l'animation
+    overlay.style.animation = 'shinyFlash 1.5s ease-out forwards';
+    setTimeout(() => { overlay.style.display = 'none'; }, 1600);
+  }
+  // Animation scintillante sur le sprite ennemi
+  const sprite = document.getElementById('enemy-battle-img');
+  if (sprite) {
+    sprite.classList.remove('shiny-anim');
+    void sprite.offsetWidth;
+    sprite.classList.add('shiny-anim');
+    setTimeout(() => sprite.classList.remove('shiny-anim'), 1300);
+  }
+  // Message et notification
+  notify('✨ OH ! Un Pokémon SHINY apparaît !!!');
+  setMessage('✨✨ SHINY ! Un Pokémon aux couleurs uniques vous défie — capturez-le ! ✨✨');
+}
+
+// ══════════════════════════════════════════
+// RACCOURCIS CLAVIER (QoL)
+// ══════════════════════════════════════════
+document.addEventListener('keydown', function(e) {
+  // Ne pas interférer si l'utilisateur tape dans un champ texte
+  if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+  const key = e.key;
+
+  // ── Écran de jeu ──
+  if (currentScreen === 'game') {
+    if (key === ' ' || key === 'Enter') { e.preventDefault(); doExplore(); }
+    else if (key === 'r' || key === 'R') { doRest(); }
+    else if (key === 'i' || key === 'I') { showScreen('inventory'); }
+    else if (key === 'm' || key === 'M') { showMap(); }
+    else if (key === 't' || key === 'T') { showTeam(); }
+  }
+  // ── Écran de combat ──
+  else if (currentScreen === 'battle') {
+    if ((key === 'a' || key === 'A') && !battleBusy) {
+      const btnAtk = document.getElementById('btn-attack');
+      if (btnAtk && !btnAtk.disabled) btnAtk.click();
+    } else if ((key === 's' || key === 'S') && !battleBusy) {
+      const btnMag = document.getElementById('btn-magic');
+      if (btnMag && !btnMag.disabled) btnMag.click();
+    } else if (key === 'f' || key === 'F') {
+      const btnFlee = document.getElementById('btn-flee');
+      if (btnFlee && !btnFlee.disabled) btnFlee.click();
+    }
+  }
+  // ── Retour (Échap) ──
+  if (key === 'Escape') {
+    const overlay = document.getElementById('zone-picker-overlay');
+    if (overlay && overlay.style.display !== 'none') { closeZonePicker(); return; }
+    const sideMenu = document.getElementById('side-menu-overlay');
+    if (sideMenu && sideMenu.style.display !== 'none') { toggleDropdown(); return; }
+    const catchMenu = document.getElementById('catch-menu');
+    if (catchMenu && catchMenu.style.display !== 'none') { closeCatchMenu(); return; }
+    if (currentScreen !== 'game' && currentScreen !== 'title' && currentScreen !== 'menu' && currentScreen !== 'battle') {
+      showScreen('game');
+    }
+  }
+});

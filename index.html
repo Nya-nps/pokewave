@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <title>PokéQuest — Île des Dragons Célestes</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="style.css?v=4"/>
+<link rel="stylesheet" href="style.css?v=6"/>
 <link rel="stylesheet" href="theme.css?v=3"/>
 </head>
 <body class="menu">
@@ -169,15 +169,21 @@
   </div>
   <div id="zone-label"></div>
   <div id="hud-bottom">
+    <!-- Quest HUD retiré -->
     <div id="message-box">Bienvenue, Dresseur…</div>
     <div id="action-btns">
       <!-- Boutons principaux -->
-      <button class="btn" onclick="doExplore()" id="btn-explore">⚔ EXPLORER</button>
-      <button class="btn green" onclick="doRest()">🏥 REPOS</button>
+      <div style="display:flex;flex-direction:column;align-items:stretch;gap:.18rem">
+        <button class="btn" onclick="doExplore()" id="btn-explore">⚔ EXPLORER</button>
+        <button id="btn-zone-picker" onclick="openZonePicker()" style="font-family:'Press Start 2P',monospace;font-size:.32rem;padding:.28rem .5rem;background:linear-gradient(180deg,#1a3a5c,#0a2040);color:rgba(255,255,255,.75);border:none;border-radius:6px;box-shadow:0 2px 0 #041020;cursor:pointer;letter-spacing:.02em">🗺 <span id="hud-zone-name">Zone auto</span></button>
+      </div>
+      <button class="btn green" id="btn-rest-dynamic" onclick="doRest()">🏥 REPOS</button>
       <button class="btn" id="btn-farm-auto" onclick="toggleFarmAuto()" style="background:linear-gradient(180deg,#888,#555);box-shadow:0 4px 0 #222">🤖 AUTO</button>
       <button class="btn purple" onclick="showTeam()">👥 ÉQUIPE</button>
       <!-- Bouton BOSS — apparaît quand 10 kills atteints -->
       <button class="btn" id="btn-boss" onclick="challengeBoss()" style="display:none;background:linear-gradient(180deg,#e63946,#a01e27);box-shadow:0 4px 0 #500f13">💀 BOSS</button>
+      <!-- Bouton Replay Boss — apparaît quand au moins 1 boss battu -->
+      <button class="btn" id="btn-boss-replay" onclick="openBossReplayMenu()" style="display:none;background:linear-gradient(180deg,#ff6b35,#c0392b);box-shadow:0 4px 0 #6e1e0e;font-size:.3rem">🔁 BOSS</button>
       <button class="btn" id="btn-world-boss" onclick="challengeWorldBoss()" style="background:linear-gradient(180deg,#9b27af,#5c0072);box-shadow:0 4px 0 #2e0038;animation:bossPulse 1.5s ease-in-out infinite">🌍 WORLD BOSS</button>
       <!-- Menu déroulant panneau latéral -->
       <div style="position:relative;display:inline-block">
@@ -556,8 +562,36 @@
   </div>
 </div>
 
-<script src="game.js?v=9"></script>
-<script src="data.js?v=4"></script>
-<script src="mechanics.js?v=2"></script>
+<!-- ══ ZONE PICKER MODAL ══ -->
+<div id="zone-picker-overlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.88);align-items:center;justify-content:center">
+  <div id="zone-picker-panel">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem">
+      <span style="font-family:'Press Start 2P',monospace;font-size:.6rem;color:#ffd60a">🗺 Zones d'Exploration</span>
+      <button onclick="closeZonePicker()" style="font-family:'Press Start 2P',monospace;font-size:.6rem;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;padding:.3rem .7rem;border-radius:6px;cursor:pointer">✕</button>
+    </div>
+    <div id="zone-picker-active-label" style="font-family:'Press Start 2P',monospace;font-size:.38rem;color:rgba(255,255,255,.55);padding:.35rem .6rem;background:rgba(255,255,255,.05);border-radius:6px;border:1px solid rgba(255,255,255,.1)">Zone active : —</div>
+    <div id="zone-picker-list" style="overflow-y:auto;display:flex;flex-direction:column;gap:.35rem;max-height:55vh"></div>
+    <button onclick="selectExploreZone(null)" style="font-family:'Press Start 2P',monospace;font-size:.38rem;padding:.45rem .7rem;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.7);border-radius:8px;cursor:pointer;width:100%;margin-top:.2rem">🔄 Progression automatique</button>
+  </div>
+</div>
+
+<!-- Boss Replay Modal -->
+<div id="boss-replay-overlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.9);align-items:center;justify-content:center">
+  <div style="background:#1a1a2e;border:2px solid #e63946;border-radius:14px;padding:1.2rem 1rem;width:min(340px,92vw);display:flex;flex-direction:column;gap:.7rem">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <span style="font-family:'Press Start 2P',monospace;font-size:.55rem;color:#e63946">🔁 Rejouer un Boss</span>
+      <button onclick="closeBossReplayMenu()" style="font-family:'Press Start 2P',monospace;font-size:.6rem;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;padding:.3rem .7rem;border-radius:6px;cursor:pointer">✕</button>
+    </div>
+    <div style="font-family:'Press Start 2P',monospace;font-size:.32rem;color:rgba(255,255,255,.45)">Aucune récompense XP/Or — entraînement pur</div>
+    <div id="boss-replay-list" style="overflow-y:auto;display:flex;flex-direction:column;gap:.35rem;max-height:55vh"></div>
+  </div>
+</div>
+
+<!-- Animation Shiny Encounter -->
+<div id="shiny-flash-overlay" style="display:none;position:fixed;inset:0;z-index:8888;pointer-events:none;background:radial-gradient(ellipse at center,rgba(255,215,0,.85),rgba(255,150,0,.4),transparent 70%);animation:shinyFlash 1.5s ease-out forwards"></div>
+
+<script src="game.js?v=21"></script>
+<script src="data.js?v=6"></script>
+<script src="mechanics.js?v=4"></script>
 </body>
 </html>
