@@ -137,9 +137,9 @@ const SHOP_ITEMS = [
   { id:'superball',    name:'Super Ball',   desc:'Taux de capture: 1.5×',  price:600,  catchRate:1.5,  img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/great-ball.png',  type:'ball' },
   { id:'hyperball',    name:'Hyper Ball',   desc:'Taux de capture: 2×',    price:1200, catchRate:2,    img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/ultra-ball.png',  type:'ball' },
   { id:'masterball',   name:'Master Ball',  desc:'Capture garantie !',     price:150000,catchRate:999,  img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/master-ball.png', type:'ball' },
-  { id:'potion',       name:'Potion',       desc:'Restaure 30 PV',         price:300,  heal:30,        img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/potion.png',     type:'heal' },
-  { id:'superpotion',  name:'Super Potion', desc:'Restaure 60 PV',         price:700,  heal:60,        img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/super-potion.png',type:'heal' },
-  { id:'hyperpotion',  name:'Hyper Potion', desc:'Restaure 120 PV',        price:1200, heal:120,       img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/hyper-potion.png',type:'heal' },
+  { id:'potion',       name:'Potion',       desc:'Restaure 50 PV',         price:200,  heal:50,        img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/potion.png',     type:'heal' },
+  { id:'superpotion',  name:'Super Potion', desc:'Restaure 120 PV',        price:500,  heal:120,       img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/super-potion.png',type:'heal' },
+  { id:'hyperpotion',  name:'Hyper Potion', desc:'Restaure 250 PV',        price:900,  heal:250,       img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/hyper-potion.png',type:'heal' },
 ];
 
 // Taux de capture officiel Pokémon (1-255). 255 = très commun, 3 = légendaire.
@@ -1814,7 +1814,7 @@ function doExplore() {
     // Tranche de niveau fixe par zone (plus de scaling sur le niveau du joueur)
     const zoneLvRange = ZONE_LEVELS[zoneId] || [1, 8];
     const enemyLevel  = zoneLvRange[0] + Math.floor(Math.random() * (zoneLvRange[1] - zoneLvRange[0] + 1));
-    const lvlScale    = 1 + enemyLevel * 0.12;
+    const lvlScale    = 1 + enemyLevel * 0.15;
     const baseSpd     = _allSpdT[pData.id] || 50;
     const e = {
       name: pData.n, id: pData.id, level: enemyLevel,
@@ -2409,9 +2409,9 @@ function battleAction(action) {
     const totalPotions = (player.bag.potion||0)+(player.bag.superpotion||0)+(player.bag.hyperpotion||0);
     if (totalPotions>0) {
       let heal=0, used='';
-      if (player.bag.hyperpotion>0){ heal=120; player.bag.hyperpotion--; used='Hyper Potion'; }
-      else if (player.bag.superpotion>0){ heal=60; player.bag.superpotion--; used='Super Potion'; }
-      else { heal=30; player.bag.potion--; used='Potion'; }
+      if (player.bag.hyperpotion>0){ heal=250; player.bag.hyperpotion--; used='Hyper Potion'; }
+      else if (player.bag.superpotion>0){ heal=120; player.bag.superpotion--; used='Super Potion'; }
+      else { heal=50; player.bag.potion--; used='Potion'; }
       player.hp = Math.min(player.maxHp, player.hp+heal);
       log=`🧪 ${used} utilisée sur ${player.currentName} ! +${heal} PV. `;
     } else { log='🧪 Plus de Potions ! '; (_hud('battle-log')).textContent=log; return; }
@@ -2816,9 +2816,9 @@ function checkLevelUp() {
     // Courbe adoucie : +20% par niveau au lieu de +45%
     // Au niveau 50 ça fait ~3800 XP au lieu de ~380000 XP
     player.xpNext = xpForLevel(player.level);
-    player.maxHp += 14; player.hp = player.maxHp;
+    player.maxHp += 10; player.hp = player.maxHp;
     player.maxMp += 8;  player.mp = player.maxMp;
-    player.atk+=3; player.def+=2; player.magic+=2; player.spd+=1;
+    player.atk+=3; player.def+=1; player.magic+=2; player.spd+=1;
     if (player.spAtk !== undefined) player.spAtk += 2;
     if (player.spDef !== undefined) player.spDef += 2;
     player.moveUses = player.moveUsesMax || 6;

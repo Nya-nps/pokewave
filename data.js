@@ -1594,7 +1594,7 @@ Object.assign(LEVEL_UP_MOVES, {
       // Tranche de niveau fixe par zone — plus de scaling niveau joueur
       const zoneLvRange = ZONE_LEVELS[zoneId] || [1, 8];
       const enemyLevel  = zoneLvRange[0] + Math.floor(Math.random() * (zoneLvRange[1] - zoneLvRange[0] + 1));
-      const lvlScale    = 1 + enemyLevel * 0.12;
+      const lvlScale    = 1 + enemyLevel * 0.15;
       const baseSpd     = ALL_SPD[pData.id] || 50;
       const e = {
         name: pData.n, id: pData.id, level: enemyLevel,
