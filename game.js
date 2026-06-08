@@ -1551,7 +1551,7 @@ function selectExploreZone(id) {
   if (!player) return;
   player.selectedExploreZone = id || null;
   // persist
-  try { localStorage.setItem('pokemonRPG_save_v2', JSON.stringify(player)); } catch(e){}
+  _silentSave();
   const name = id ? (ZONES[id]?.name || id) : '🔄 Progression auto';
   notify(`🗺 Zone : ${name}`);
   setMessage(`🗺 Zone d'exploration : ${name}`);
@@ -3380,15 +3380,24 @@ function buyCT(ctId) {
 // SAVE / LOAD
 // ══════════════════════════════════════════
 function saveGame() {
+  // Remplacée plus bas par la version double-write (localStorage + IDB) avec signature
   if (!player) return;
-  localStorage.setItem('pokemonRPG_save_v2', JSON.stringify(player));
+  const _s = JSON.stringify(player);
+  localStorage.setItem(SAVE_KEY, _wrapSave(_s));
   notify('Partie sauvegardée !');
   setMessage('💾 Votre aventure a été sauvegardée.');
 }
 function loadGame() {
-  const data = localStorage.getItem('pokemonRPG_save_v2');
-  if (!data){ notify('Aucune sauvegarde !'); return; }
-  player = JSON.parse(data);
+  const _raw = localStorage.getItem(SAVE_KEY);
+  if (!_raw){ notify('Aucune sauvegarde !'); return; }
+  const _uw = _unwrapSave(_raw);
+  if (!_uw) { notify('❌ Aucune sauvegarde valide !'); return; }
+  if (_uw.err === 'tampered') {
+    notify('⛔ Sauvegarde modifiée — chargement refusé !');
+    setMessage('⛔ Signature invalide : la sauvegarde a été modifiée manuellement. Restaurez depuis un fichier .pwsave valide.');
+    return;
+  }
+  player = JSON.parse(_uw.json);
   if (!player.balls)        player.balls        = { pokeball:3 };
   if (!player.bag)          player.bag          = { potion:2 };
   if (!player.ctBag)        player.ctBag        = {};
@@ -3468,6 +3477,43 @@ const SAVE_KEY = 'pokemonRPG_save_v2';
 const IDB_DB = 'pokewaveDB';
 const IDB_STORE = 'saves';
 
+// ── Anti-cheat : signature HMAC-like ──
+function _computeSig(str) {
+  // Clé secrète obfusquée (ne pas modifier — casse les signatures)
+  const _k = [80,75,87,86,95,78,48,67,104,51,65,116,95,50,53,56,75,89];
+  const k = _k.map(c => String.fromCharCode(c)).join('');
+  const src = k + str.length + str + k.split('').reverse().join('');
+  let a = 0x6d2b1e4f, b = 0xf3a70c89;
+  for (let i = 0; i < src.length; i++) {
+    const c = src.charCodeAt(i);
+    a = Math.imul(a ^ c, 0x9e3779b9) >>> 0;
+    b = Math.imul(b ^ c, 0x517cc1b7) >>> 0;
+    a = ((a << 13) | (a >>> 19)) >>> 0;
+    b = ((b <<  7) | (b >>> 25)) >>> 0;
+  }
+  a = (a ^ b ^ (a >>> 16)) >>> 0;
+  b = (b ^ a ^ (b >>> 13)) >>> 0;
+  return a.toString(16).padStart(8,'0') + b.toString(16).padStart(8,'0');
+}
+// Emballe le JSON joueur pour stockage signé
+function _wrapSave(playerJson) {
+  return JSON.stringify({ _pw: SAVE_VERSION, sig: _computeSig(playerJson), d: playerJson });
+}
+// Déballe et vérifie — retourne {json} | {json, legacy:true} | {err:'tampered'} | null
+function _unwrapSave(raw) {
+  if (!raw) return null;
+  try {
+    const w = JSON.parse(raw);
+    if (w._pw && w.d !== undefined) {
+      if (w.sig !== _computeSig(w.d)) return { err: 'tampered' };
+      return { json: w.d };
+    }
+    // Format hérité : JSON joueur direct (re-signé au prochain save)
+    if (w.name) return { json: raw, legacy: true };
+    return null;
+  } catch(_) { return null; }
+}
+
 // ── IndexedDB : double sauvegarde robuste (survive aux purges localStorage) ──
 function _idbSave(data) {
   try {
@@ -3500,8 +3546,9 @@ const _origSaveGame = saveGame;
 saveGame = function() {
   if (!player) return;
   const serialized = JSON.stringify(player);
-  localStorage.setItem(SAVE_KEY, serialized);
-  _idbSave(serialized);
+  const wrapped = _wrapSave(serialized);
+  localStorage.setItem(SAVE_KEY, wrapped);
+  _idbSave(wrapped);
   notify('Partie sauvegardée !');
   setMessage('💾 Votre aventure a été sauvegardée.');
 };
@@ -3514,8 +3561,9 @@ function _silentSave() {
   const doSave = () => {
     try {
       const serialized = JSON.stringify(player);
-      localStorage.setItem(SAVE_KEY, serialized);
-      _idbSave(serialized);
+      const wrapped = _wrapSave(serialized);
+      localStorage.setItem(SAVE_KEY, wrapped);
+      _idbSave(wrapped);
     } catch(e) {}
   };
   if (window.requestIdleCallback) {
@@ -3530,15 +3578,16 @@ window._autoSaveInterval = setInterval(_silentSave, 180000);
 
 // ── Export — télécharge un fichier .pwsave (JSON) ──
 function exportSave() {
-  const raw = localStorage.getItem(SAVE_KEY);
-  if (!raw) { notify('Aucune sauvegarde à exporter !'); return; }
-  const p = JSON.parse(raw);
+  if (!player) { notify('Aucune sauvegarde à exporter !'); return; }
+  const p = player;
+  const pJson = JSON.stringify(p);
   const bundle = {
     _pw_version:     SAVE_VERSION,
     _pw_export_date: new Date().toISOString(),
     _pw_player:      p.name || '?',
     _pw_level:       p.level || 1,
     _pw_kills:       p.totalKills || 0,
+    _pw_sig:         _computeSig(pJson),
     save:            p
   };
   const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: 'application/json' });
@@ -3594,10 +3643,21 @@ function handleSaveFileImport(e) {
     try {
       const text = ev.target.result;
       const parsed = JSON.parse(text);
-      // Supporte les deux formats : bundle {save:...} ou save direct
-      const raw = parsed.save ? JSON.stringify(parsed.save) : text;
-      const preview = parsed.save ? parsed : null;
-      _confirmImport(raw, preview);
+      if (parsed.save && parsed._pw_sig !== undefined) {
+        // Nouveau format signé — vérifie la signature
+        const pJson = JSON.stringify(parsed.save);
+        if (parsed._pw_sig !== _computeSig(pJson)) {
+          notify('⛔ Fichier .pwsave modifié — import refusé !');
+          return;
+        }
+        _confirmImport(pJson, parsed);
+      } else if (parsed.save) {
+        // Ancien bundle sans signature — accepté (compatibilité)
+        _confirmImport(JSON.stringify(parsed.save), parsed);
+      } else {
+        // JSON joueur direct
+        _confirmImport(text, null);
+      }
     } catch(_) {
       notify('❌ Fichier invalide !');
     }
@@ -3606,7 +3666,9 @@ function handleSaveFileImport(e) {
 }
 
 function _confirmImport(raw, preview) {
-  const p = preview?.save || JSON.parse(raw);
+  // raw peut être un JSON joueur direct ou un format enveloppé (_unwrapSave)
+  const _uwC = _unwrapSave(raw);
+  const p = preview?.save || (_uwC && !_uwC.err ? JSON.parse(_uwC.json) : JSON.parse(raw));
   const info = preview
     ? `Dresseur : ${preview._pw_player || p.name} · Niv.${p.level||1} · ${p.totalKills||0} victoires\nExporté le : ${preview._pw_export_date ? new Date(preview._pw_export_date).toLocaleString('fr-FR') : '?'}`
     : `Dresseur : ${p.name||'?'} · Niv.${p.level||1}`;
@@ -3631,10 +3693,26 @@ function _confirmImport(raw, preview) {
 
 function _applyImportedSave(raw, source) {
   try {
-    const p = JSON.parse(raw);
+    // Accepte format enveloppé (code de sauvegarde) ou JSON joueur direct
+    const uw = _unwrapSave(raw);
+    let playerJson;
+    if (uw && !uw.err) {
+      playerJson = uw.json;
+    } else if (uw && uw.err === 'tampered') {
+      notify('⛔ Import refusé : code de sauvegarde modifié !');
+      return;
+    } else {
+      // JSON joueur direct passé par handleSaveFileImport ou code hérité
+      const p = JSON.parse(raw);
+      if (!p || !p.name) throw new Error('no player');
+      playerJson = raw;
+    }
+    const p = JSON.parse(playerJson);
     if (!p || !p.name) throw new Error('no player');
-    localStorage.setItem(SAVE_KEY, JSON.stringify(p));
-    _idbSave(JSON.stringify(p));
+    // Re-signe et stocke
+    const wrapped = _wrapSave(playerJson);
+    localStorage.setItem(SAVE_KEY, wrapped);
+    _idbSave(wrapped);
     notify(`✅ Sauvegarde importée (${source}) — rechargement…`);
     setTimeout(() => { loadGame(); showScreen('game'); }, 800);
   } catch(_) {
@@ -3660,9 +3738,15 @@ function renderSaveManager() {
   let localInfo = '<span style="color:rgba(255,255,255,.4)">Aucune sauvegarde locale</span>';
   if (raw) {
     try {
-      const p = JSON.parse(raw);
-      const date = p._lastSaveDate ? new Date(p._lastSaveDate).toLocaleString('fr-FR') : 'Date inconnue';
-      localInfo = `<b style="color:#ffd700">${p.name||'?'}</b> · Niv.<b>${p.level||1}</b> · ${p.totalKills||0} victoires<br><span style="color:rgba(255,255,255,.4);font-size:.55rem">${date}</span>`;
+      const uw = _unwrapSave(raw);
+      const p = uw && !uw.err ? JSON.parse(uw.json) : null;
+      if (p) {
+        const date = p._lastSaveDate ? new Date(p._lastSaveDate).toLocaleString('fr-FR') : 'Date inconnue';
+        const sigStatus = uw.legacy ? '<span style="color:#ff9a3c"> ⚠ ancien format</span>' : '<span style="color:#2dc653"> ✓ signée</span>';
+        localInfo = `<b style="color:#ffd700">${p.name||'?'}</b> · Niv.<b>${p.level||1}</b> · ${p.totalKills||0} victoires${sigStatus}<br><span style="color:rgba(255,255,255,.4);font-size:.55rem">${date}</span>`;
+      } else if (uw && uw.err === 'tampered') {
+        localInfo = '<span style="color:#ff4d4d">⛔ Sauvegarde corrompue / modifiée</span>';
+      }
     } catch(_) {}
   }
 
