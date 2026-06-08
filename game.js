@@ -140,15 +140,6 @@ const SHOP_ITEMS = [
   { id:'potion',       name:'Potion',       desc:'Restaure 30 PV',         price:300,  heal:30,        img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/potion.png',     type:'heal' },
   { id:'superpotion',  name:'Super Potion', desc:'Restaure 60 PV',         price:700,  heal:60,        img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/super-potion.png',type:'heal' },
   { id:'hyperpotion',  name:'Hyper Potion', desc:'Restaure 120 PV',        price:1200, heal:120,       img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/hyper-potion.png',type:'heal' },
-  { id:'shiny-gem',    name:'Gemme Éclat',  desc:'Rend un Pokémon Shiny !',price:5000, img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/shiny-stone.png',  type:'special' },
-  { id:'orb-bird',    name:'Orbe Oiseau',   desc:'Invoque Artikodin, Électhor ou Sulfura !',price:3000, img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/fire-stone.png',   type:'special' },
-  { id:'orb-beast',   name:'Orbe Bête',     desc:'Invoque Entei, Suicune ou Raikou !',      price:3000, img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/thunder-stone.png', type:'special' },
-  { id:'orb-golem',   name:'Orbe Golem',    desc:'Invoque Registeel, Regirock ou Regice !', price:3000, img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/water-stone.png',   type:'special' },
-  { id:'orb-dragon',  name:'Orbe Dragon',   desc:'Invoque Latios, Latias ou Rayquaza !',    price:4000, img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/dragon-scale.png',  type:'special' },
-  { id:'orb-space',   name:'Orbe Espace',   desc:'Invoque Dialga, Palkia ou Giratina !',    price:4000, img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/dawn-stone.png',    type:'special' },
-  { id:'orb-mega',    name:'Orbe Méga',     desc:'Invoque Méwtwo, Kyogre ou Groudon !',     price:6000, img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/dusk-stone.png',    type:'special' },
-  { id:'orb-ancient', name:'Orbe Ancestral',desc:'Invoque Necrozma, Lunala ou Solgaleo !',  price:5000, img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/sun-stone.png',     type:'special' },
-  { id:'orb-ultra',   name:'Orbe Ultime',   desc:'Invoque Zacian, Zamazenta ou Calyrex !',  price:8000, img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/oval-stone.png',    type:'special' },
 ];
 
 const ITEM_DISPLAY = {
@@ -1145,7 +1136,7 @@ function startGame() {
     trainerLevel: 1,
     trainerXP: 0,
     trainerXPNext: TRAINER_XP_PER_LEVEL(1),
-    tourFloor: 0, totalKills: 0, lastBossWave: 0, talentTokens: 0, lastWorldBoss: 0, shinyEggs: 0, shinyCount: 0, megaCount: 0, worldBossKills: 0, achievements: [], stats: {}, dailyQuests: [], dailyQuestDate: "",
+    tourFloor: 0, totalKills: 0, lastBossWave: 0, talentTokens: 0, lastWorldBoss: 0, shinyEggs: 0, shinyCount: 0, megaCount: 0, worldBossKills: 0, achievements: [], stats: {}, dailyQuests: [], dailyQuestDate: "", trialPoints: 0, trialWins: 0,
   };
   showScreen('game');
   updateHUD();
@@ -1731,6 +1722,10 @@ function startBattle(enemyData) {
   document.getElementById('btn-attack').innerHTML = `⚔ ${player.move} <span class="atk-elem-badge elem-${player.moveElem||player.type}">${player.moveElem||player.type}</span>`;
   document.getElementById('btn-magic').innerHTML = `✨ ${player.mMove} <span class="atk-elem-badge elem-${player.mMoveElem||player.type}">${player.mMoveElem||player.type}</span>`;
   updateBattleHp(); disableBattleButtons(false);
+  // Désactiver le bouton Capture pour les combats boss/tour/world/trial
+  const _isCaptureBlocked = !!(enemy.isBoss || enemy.isWorldBoss || enemy.isTrainerBattle || player._tourBattle || player._worldBossBattle || player._trialBattle);
+  const btnCatch = document.getElementById('btn-catch-battle');
+  if (btnCatch) { btnCatch.style.display = _isCaptureBlocked ? 'none' : ''; }
   const shinyBadge = enemy.isShiny ? ' ✨' : '';
   const legendBadge = enemy.isLegendary ? ' ⭐' : '';
   document.getElementById('b-enemy-name').textContent = enemy.name + shinyBadge + legendBadge;
@@ -1900,6 +1895,11 @@ function setBattleTurn(turn) {
               showScreen('game'); updateHUD();
               notify('💀 Défaite contre le World Boss !');
               setMessage('💀 Vous avez été vaincu par le World Boss… Retentez votre chance !');
+            } else if (player._trialBattle) {
+              player._trialBattle = false;
+              showScreen('game'); updateHUD();
+              notify('💀 Défaite en Trial — aucun PT gagné.');
+              setMessage('💀 Votre Pokémon a été vaincu en Trial. Réessayez !');
             } else if (player._tourBattle) {
               player._tourBattle = false;
               tourState = null;
@@ -2177,6 +2177,20 @@ function battleAction(action) {
 
     // Gym battle chain
     if (player._gymBattle && handleGymVictory()) return;
+
+    // Trial battle victory — award TP, return to trial screen
+    if (player._trialBattle) {
+      const trialTp = player._trialBattle.tp || 20;
+      player._trialBattle = false;
+      player.trialPoints = (player.trialPoints||0) + trialTp;
+      player.trialWins   = (player.trialWins||0) + 1;
+      setTimeout(()=>{
+        stopAutoBattle(); disableBattleButtons(false); syncActiveFromPlayer();
+        notify(`⚡ Victoire Trial ! +${trialTp} PT — Total : ${player.trialPoints} PT`);
+        saveGame(); showScreen('trial'); updateHUD();
+      }, 1800);
+      return;
+    }
 
     // Tour mode: handle floor completion — ONLY if explicitly in a tour battle
     if (player._tourBattle && tourState) {
@@ -2484,7 +2498,6 @@ function useOrb(orbId) {
   player.bag[orbId]--;
   notify(`⚡ L'orbe résonne… ${pick.n} apparaît !`);
   saveGame();
-  renderInventory();
   // Build legendary enemy and start battle
   const legendLvl = Math.max(50, (player.trainerLevel||1) * 5);
   const legendScale = 1 + legendLvl * 0.12;
@@ -2918,7 +2931,9 @@ function loadGame() {
   if (!player.trainerXPNext)player.trainerXPNext= TRAINER_XP_PER_LEVEL(1);
   if (!player.tourFloor)    player.tourFloor    = 0;
   if (!player.totalKills)   player.totalKills   = 0;
-  if (!player.lastBossWave) player.lastBossWave = 0;
+  if (!player.lastBossWave)   player.lastBossWave  = 0;
+  if (!player.trialPoints)    player.trialPoints   = 0;
+  if (!player.trialWins)      player.trialWins     = 0;
   if (!player.roster)       { player.roster = []; player.activeRosterIdx = 0; }
   if (player.roster.length === 0) {
     // Migrate from old save — build roster from player data
@@ -5338,45 +5353,181 @@ const TOUR_RARE_ITEMS = ['super-bonbon','ceinture-choix','lentille-choix','bande
 // ══════════════════════════════════════════
 // TRIAL MODE SCREEN
 // ══════════════════════════════════════════
+// ── TRIAL : pool de défis légendaires disponibles ──
+const TRIAL_CHALLENGES = [
+  // Tier 1 — 20 PT
+  {id:144,n:'Artikodin',  t:'Glace/Vol',     tp:20, hp:120,atk:25,def:22},
+  {id:145,n:'Électhor',   t:'Électrik/Vol',  tp:20, hp:115,atk:28,def:18},
+  {id:146,n:'Sulfura',    t:'Feu/Vol',       tp:20, hp:110,atk:26,def:20},
+  {id:243,n:'Raikou',     t:'Électrik',      tp:20, hp:115,atk:24,def:20},
+  {id:244,n:'Entei',      t:'Feu',           tp:20, hp:130,atk:28,def:18},
+  {id:245,n:'Suicune',    t:'Eau',           tp:20, hp:125,atk:22,def:28},
+  {id:377,n:'Regirock',   t:'Roche',         tp:20, hp:110,atk:22,def:34},
+  {id:378,n:'Regice',     t:'Glace',         tp:20, hp:110,atk:20,def:34},
+  {id:379,n:'Registeel',  t:'Acier',         tp:20, hp:110,atk:21,def:35},
+  // Tier 2 — 30 PT
+  {id:380,n:'Latias',     t:'Dragon/Psy',    tp:30, hp:130,atk:24,def:24},
+  {id:381,n:'Latios',     t:'Dragon/Psy',    tp:30, hp:120,atk:28,def:22},
+  {id:384,n:'Rayquaza',   t:'Dragon/Vol',    tp:30, hp:140,atk:35,def:22},
+  {id:480,n:'Uxie',       t:'Psy',           tp:30, hp:115,atk:18,def:30},
+  {id:481,n:'Mesprit',    t:'Psy',           tp:30, hp:125,atk:24,def:24},
+  {id:482,n:'Azelf',      t:'Psy',           tp:30, hp:110,atk:30,def:20},
+  {id:483,n:'Dialga',     t:'Acier/Dragon',  tp:35, hp:150,atk:32,def:28},
+  {id:484,n:'Palkia',     t:'Eau/Dragon',    tp:35, hp:140,atk:34,def:24},
+  {id:487,n:'Giratina',   t:'Spectre/Dragon',tp:35, hp:160,atk:30,def:28},
+  // Tier 3 — 45 PT
+  {id:638,n:'Cobalion',   t:'Acier/Combat',  tp:45, hp:135,atk:28,def:30},
+  {id:639,n:'Terrakion',  t:'Roche/Combat',  tp:45, hp:130,atk:34,def:26},
+  {id:640,n:'Virizion',   t:'Plante/Combat', tp:45, hp:125,atk:26,def:30},
+  {id:641,n:'Boréas',     t:'Vol',           tp:45, hp:130,atk:32,def:24},
+  {id:642,n:'Démiolos',   t:'Électrik/Vol',  tp:45, hp:130,atk:35,def:22},
+  {id:716,n:'Xerneas',    t:'Fée',           tp:50, hp:155,atk:30,def:26},
+  {id:717,n:'Yveltal',    t:'Ténèbres/Vol',  tp:50, hp:150,atk:34,def:24},
+  {id:718,n:'Zygarde',    t:'Dragon/Sol',    tp:50, hp:165,atk:28,def:28},
+  // Tier 4 — 65 PT
+  {id:150,n:'Mewtwo',     t:'Psy',           tp:65, hp:180,atk:40,def:26},
+  {id:382,n:'Kyogre',     t:'Eau',           tp:65, hp:175,atk:38,def:28},
+  {id:383,n:'Groudon',    t:'Sol',           tp:65, hp:175,atk:40,def:32},
+  {id:791,n:'Solgaleo',   t:'Acier/Psy',     tp:65, hp:165,atk:38,def:30},
+  {id:792,n:'Lunala',     t:'Psy/Spectre',   tp:65, hp:160,atk:36,def:26},
+  {id:800,n:'Necrozma',   t:'Psy',           tp:65, hp:155,atk:38,def:28},
+  // Tier 5 — 85 PT
+  {id:888,n:'Zacian',     t:'Fée',           tp:85, hp:175,atk:48,def:30},
+  {id:889,n:'Zamazenta',  t:'Combat',        tp:85, hp:180,atk:42,def:40},
+  {id:1007,n:'Koraidon',  t:'Combat/Dragon', tp:85, hp:185,atk:46,def:34},
+  {id:1008,n:'Miraidon',  t:'Électrik/Dragon',tp:85, hp:180,atk:42,def:32},
+];
+
+// 5 défis aléatoires, régénérés à chaque ouverture du Trial
+let _trialChallengePool = [];
+function _refreshTrialPool() {
+  const shuffled = [...TRIAL_CHALLENGES].sort(()=>Math.random()-.5);
+  // 2 tier1, 2 tier2/3, 1 tier4/5
+  const t1 = shuffled.filter(c=>c.tp<=20).slice(0,2);
+  const t2 = shuffled.filter(c=>c.tp>=30&&c.tp<=50).slice(0,2);
+  const t3 = shuffled.filter(c=>c.tp>=65).slice(0,1);
+  _trialChallengePool = [...t1,...t2,...t3].sort(()=>Math.random()-.5);
+}
+
+// Trial Shop catalog
+const TRIAL_SHOP = [
+  {id:'orb-bird',    name:'Orbe Oiseau',    legendaries:'Artikodin · Électhor · Sulfura',   cost:100, img:ITEM_DISPLAY['orb-bird']?.img},
+  {id:'orb-beast',   name:'Orbe Bête',      legendaries:'Raikou · Entei · Suicune',         cost:100, img:ITEM_DISPLAY['orb-beast']?.img},
+  {id:'orb-golem',   name:'Orbe Golem',     legendaries:'Regirock · Regice · Registeel',    cost:100, img:ITEM_DISPLAY['orb-golem']?.img},
+  {id:'orb-dragon',  name:'Orbe Dragon',    legendaries:'Latias · Latios · Rayquaza',       cost:160, img:ITEM_DISPLAY['orb-dragon']?.img},
+  {id:'orb-space',   name:'Orbe Espace',    legendaries:'Dialga · Palkia · Giratina',       cost:200, img:ITEM_DISPLAY['orb-space']?.img},
+  {id:'orb-mega',    name:'Orbe Méga',      legendaries:'Mewtwo · Kyogre · Groudon',        cost:450, img:ITEM_DISPLAY['orb-mega']?.img},
+  {id:'orb-ancient', name:'Orbe Ancestral', legendaries:'Solgaleo · Lunala · Necrozma',     cost:320, img:ITEM_DISPLAY['orb-ancient']?.img},
+  {id:'orb-ultra',   name:'Orbe Ultime',    legendaries:'Zacian · Zamazenta · Koraidon...',  cost:650, img:ITEM_DISPLAY['orb-ultra']?.img},
+  {id:'shiny-gem',   name:'Gemme Éclat',    legendaries:'Rend un Pokémon Shiny (+15% stats)',cost:900, img:ITEM_DISPLAY['shiny-gem']?.img},
+];
+
+function buyTrialItem(itemId) {
+  if (!player) return;
+  const item = TRIAL_SHOP.find(i=>i.id===itemId);
+  if (!item) return;
+  if ((player.trialPoints||0) < item.cost) { notify(`Pas assez de PT ! (${item.cost} requis)`); return; }
+  player.trialPoints -= item.cost;
+  player.bag[itemId] = (player.bag[itemId]||0)+1;
+  notify(`✅ ${item.name} obtenu ! (−${item.cost} PT) · Reste : ${player.trialPoints} PT`);
+  saveGame();
+  renderTrialScreen();
+}
+
+function startTrialChallenge(idx) {
+  if (!player) return;
+  const c = _trialChallengePool[idx];
+  if (!c) return;
+  if (!player.roster || player.roster.filter(p=>p.hp>0).length===0) {
+    notify('Tous vos Pokémon sont K.O. !'); return;
+  }
+  const trLvl = Math.max(40, (player.trainerLevel||1) * 4 + 30);
+  const sc = 1 + trLvl * 0.12;
+  const trialEnemy = {
+    name: c.n, id: c.id,
+    type: c.t.includes('/') ? c.t.split('/')[0] : c.t,
+    dualType: c.t,
+    hp: Math.round(c.hp * sc), maxHp: Math.round(c.hp * sc),
+    atk: Math.round(c.atk * sc), def: Math.round(c.def * sc),
+    spd: Math.round(90 * sc * 0.35),
+    magic: Math.round(c.atk * sc * 0.85),
+    level: trLvl, xp: 0, gold: 0,
+    isLegendary: true, isTrainerBattle: true,
+  };
+  player._trialBattle = { tp: c.tp };
+  showScreen('battle');
+  startBattle(trialEnemy);
+}
+
 function renderTrialScreen() {
   const el = document.getElementById('trial-content');
   if (!el || !player) return;
-  const orbItems = [
-    {id:'orb-bird',   name:'Orbe Oiseau',   legendaries:'Artikodin · Électhor · Sulfura',  price:3000},
-    {id:'orb-beast',  name:'Orbe Bête',     legendaries:'Raikou · Entei · Suicune',        price:3000},
-    {id:'orb-golem',  name:'Orbe Golem',    legendaries:'Regirock · Regice · Registeel',   price:3000},
-    {id:'orb-dragon', name:'Orbe Dragon',   legendaries:'Latias · Latios · Rayquaza',      price:4000},
-    {id:'orb-space',  name:'Orbe Espace',   legendaries:'Dialga · Palkia · Giratina',      price:4000},
-    {id:'orb-mega',   name:'Orbe Méga',     legendaries:'Mewtwo · Kyogre · Groudon',       price:6000},
-    {id:'orb-ancient',name:'Orbe Ancestral',legendaries:'Solgaleo · Lunala · Necrozma',    price:5000},
-    {id:'orb-ultra',  name:'Orbe Ultime',   legendaries:'Zacian · Zamazenta · Calyrex',    price:8000},
-  ];
-  const ownedOrbs = orbItems.filter(o => (player.bag[o.id]||0) > 0);
-  const orbCards = orbItems.map(o => {
-    const qty = player.bag[o.id]||0;
-    const d = ITEM_DISPLAY[o.id]||{};
-    return `<div style="background:rgba(168,85,247,.08);border:2px solid rgba(168,85,247,${qty>0?'.5':'.15'});border-radius:12px;padding:.8rem;display:flex;align-items:center;gap:.7rem">
-      <img src="${d.img||''}" style="width:40px;height:40px;image-rendering:pixelated"/>
+  if (_trialChallengePool.length === 0) _refreshTrialPool();
+
+  const pts = player.trialPoints || 0;
+  const wins = player.trialWins || 0;
+
+  // Challenges section
+  const challengeCards = _trialChallengePool.map((c, i) => {
+    const sid = c.id;
+    const tier = c.tp <= 20 ? 1 : c.tp <= 35 ? 2 : c.tp <= 50 ? 3 : c.tp <= 65 ? 4 : 5;
+    const tierColor = ['','#7bc8f6','#a8e6cf','#ffd166','#ff9a3c','#e63946'][tier];
+    return `<div style="background:rgba(168,85,247,.07);border:2px solid rgba(168,85,247,.25);border-radius:12px;padding:.7rem;display:flex;align-items:center;gap:.7rem">
+      <img src="${SPRITE_FRONT(sid)}" style="width:52px;height:52px;image-rendering:pixelated;filter:drop-shadow(0 0 6px ${tierColor}40)"/>
       <div style="flex:1">
-        <div style="font-family:'Press Start 2P',monospace;font-size:.42rem;color:${qty>0?'#a855f7':'rgba(255,255,255,.5)'}">${o.name} ${qty>0?`<span style="color:#ffd700">×${qty}</span>`:''}</div>
-        <div style="font-size:.6rem;color:rgba(255,255,255,.4);margin-top:.2rem">${o.legendaries}</div>
+        <div style="font-family:'Press Start 2P',monospace;font-size:.42rem;color:#ffd700">${c.n}</div>
+        <div style="font-family:'Press Start 2P',monospace;font-size:.3rem;color:rgba(255,255,255,.5);margin-top:.15rem">${c.t} · Tier ${tier}</div>
+        <div style="font-family:'Press Start 2P',monospace;font-size:.32rem;color:${tierColor};margin-top:.1rem">+${c.tp} PT en cas de victoire</div>
       </div>
-      ${qty>0 ? `<button onclick="useOrb('${o.id}')" style="font-family:'Press Start 2P',monospace;font-size:.35rem;padding:.4rem .7rem;background:linear-gradient(180deg,#a855f7,#7c3aed);color:#fff;border:none;border-radius:8px;cursor:pointer">⚡ INVOQUER</button>` : `<div style="font-family:'Press Start 2P',monospace;font-size:.28rem;color:rgba(255,255,255,.25)">₽${o.price}\n(Shop)</div>`}
+      <button onclick="startTrialChallenge(${i})" style="font-family:'Press Start 2P',monospace;font-size:.32rem;padding:.4rem .6rem;background:linear-gradient(180deg,#a855f7,#7c3aed);color:#fff;border:none;border-radius:8px;cursor:pointer;white-space:nowrap">⚡ DÉFIER</button>
     </div>`;
   }).join('');
+
+  // Shop section
+  const shopCards = TRIAL_SHOP.map(item => {
+    const owned = player.bag[item.id]||0;
+    const canBuy = pts >= item.cost;
+    return `<div style="background:rgba(255,215,0,.05);border:2px solid rgba(255,215,0,${canBuy?'.35':'.1'});border-radius:12px;padding:.7rem;display:flex;align-items:center;gap:.6rem">
+      <img src="${item.img||''}" style="width:36px;height:36px;image-rendering:pixelated;opacity:${canBuy?1:.4}"/>
+      <div style="flex:1">
+        <div style="font-family:'Press Start 2P',monospace;font-size:.38rem;color:${canBuy?'#ffd700':'rgba(255,255,255,.35)'}">${item.name}${owned>0?` <span style="color:#a855f7">×${owned}</span>`:''}</div>
+        <div style="font-size:.55rem;color:rgba(255,255,255,.4);margin-top:.15rem">${item.legendaries}</div>
+      </div>
+      <div style="text-align:center;min-width:60px">
+        <div style="font-family:'Press Start 2P',monospace;font-size:.38rem;color:#ffd700">${item.cost} PT</div>
+        <button onclick="buyTrialItem('${item.id}')" ${canBuy?'':'disabled'} style="font-family:'Press Start 2P',monospace;font-size:.28rem;padding:.3rem .5rem;margin-top:.25rem;background:${canBuy?'linear-gradient(180deg,#ffd700,#b8860b)':'rgba(255,255,255,.08)'};color:${canBuy?'#000':'rgba(255,255,255,.3)'};border:none;border-radius:6px;cursor:${canBuy?'pointer':'default'}">ACHETER</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Orbs in bag
+  const orbKeys = ['orb-bird','orb-beast','orb-golem','orb-dragon','orb-space','orb-mega','orb-ancient','orb-ultra'];
+  const ownedOrbsHtml = orbKeys.filter(k=>(player.bag[k]||0)>0)
+    .map(k=>`<span style="background:rgba(168,85,247,.2);border:1px solid rgba(168,85,247,.4);border-radius:6px;padding:.15rem .35rem;font-size:.55rem">${ITEM_DISPLAY[k]?.name||k} ×${player.bag[k]} <button onclick="useOrb('${k}')" style="background:none;border:none;color:#a855f7;cursor:pointer;font-size:.55rem">⚡</button></span>`).join('');
+
   el.innerHTML = `
-    <div style="text-align:center;margin-bottom:1.2rem">
-      <div style="font-family:'Press Start 2P',monospace;font-size:.75rem;color:#a855f7;text-shadow:2px 2px 0 #000">⚡ MODE TRIAL</div>
-      <div style="font-family:'Press Start 2P',monospace;font-size:.38rem;color:rgba(255,255,255,.5);margin-top:.5rem">Utilisez des Orbes pour invoquer des Légendaires</div>
+    <div style="text-align:center;margin-bottom:.8rem">
+      <div style="font-family:'Press Start 2P',monospace;font-size:.7rem;color:#a855f7;text-shadow:2px 2px 0 #000">⚡ MODE TRIAL</div>
+      <div style="display:flex;justify-content:center;gap:1.5rem;margin-top:.5rem">
+        <div style="font-family:'Press Start 2P',monospace;font-size:.4rem;color:#ffd700">🏆 ${pts} PT</div>
+        <div style="font-family:'Press Start 2P',monospace;font-size:.4rem;color:rgba(255,255,255,.5)">⚡ ${wins} victoire${wins!==1?'s':''}</div>
+      </div>
     </div>
-    <div style="font-family:'Press Start 2P',monospace;font-size:.4rem;color:rgba(255,255,255,.4);margin-bottom:.5rem">📦 Orbes disponibles : ${ownedOrbs.length > 0 ? ownedOrbs.map(o=>`${o.name} ×${player.bag[o.id]}`).join(', ') : 'Aucun — achetez-en au Shop !'}</div>
-    <div style="display:flex;flex-direction:column;gap:.5rem;margin-bottom:1rem">${orbCards}</div>
-    <div style="font-family:'Press Start 2P',monospace;font-size:.33rem;color:rgba(255,255,255,.3);text-align:center;margin-bottom:.5rem">Les Légendaires capturés rejoignent votre équipe avec leurs stats épiques.</div>
+
+    <div style="font-family:'Press Start 2P',monospace;font-size:.4rem;color:#a855f7;margin-bottom:.4rem">⚔ DÉFIS DISPONIBLES</div>
+    <div style="font-family:'Press Start 2P',monospace;font-size:.3rem;color:rgba(255,255,255,.35);margin-bottom:.5rem">Victoire = PT · Défaite = 0 PT · Pas de capture possible</div>
+    <div style="display:flex;flex-direction:column;gap:.4rem;margin-bottom:1rem">${challengeCards}</div>
+    <button onclick="_refreshTrialPool();renderTrialScreen()" style="width:100%;margin-bottom:1rem;padding:.45rem;background:rgba(168,85,247,.15);border:1px solid rgba(168,85,247,.3);border-radius:8px;color:#a855f7;cursor:pointer;font-family:'Press Start 2P',monospace;font-size:.35rem">🔄 Nouveaux défis</button>
+
+    ${ownedOrbsHtml ? `<div style="font-family:'Press Start 2P',monospace;font-size:.35rem;color:rgba(255,255,255,.5);margin-bottom:.3rem">📦 Orbes en inventaire (cliquez ⚡ pour invoquer — capture possible) :</div><div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:1rem">${ownedOrbsHtml}</div>` : ''}
+
+    <div style="font-family:'Press Start 2P',monospace;font-size:.4rem;color:#ffd700;margin-bottom:.4rem">🛒 SHOP TRIAL EXCLUSIF</div>
+    <div style="font-family:'Press Start 2P',monospace;font-size:.3rem;color:rgba(255,255,255,.35);margin-bottom:.5rem">Dépensez vos PT pour obtenir des Orbes (invocation + capture) ou la Gemme Éclat</div>
+    <div style="display:flex;flex-direction:column;gap:.4rem;margin-bottom:1rem">${shopCards}</div>
+
     <button class="btn red" onclick="showScreen('game')" style="width:100%">↩ RETOUR</button>`;
 }
 
-// Override showScreen 'trial' to also render
-const _origShowScreen = showScreen;
 // Patch renderTrialScreen into screen activation
 document.addEventListener('DOMContentLoaded', () => {
   const trialEl = document.getElementById('screen-trial');
