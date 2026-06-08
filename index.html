@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <title>PokéQuest — Île des Dragons Célestes</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="style.css?v=4"/>
+<link rel="stylesheet" href="style.css?v=5"/>
 <link rel="stylesheet" href="theme.css?v=3"/>
 </head>
 <body class="menu">
@@ -172,7 +172,10 @@
     <div id="message-box">Bienvenue, Dresseur…</div>
     <div id="action-btns">
       <!-- Boutons principaux -->
-      <button class="btn" onclick="doExplore()" id="btn-explore">⚔ EXPLORER</button>
+      <div style="display:flex;flex-direction:column;align-items:stretch;gap:.18rem">
+        <button class="btn" onclick="doExplore()" id="btn-explore">⚔ EXPLORER</button>
+        <button id="btn-zone-picker" onclick="openZonePicker()" style="font-family:'Press Start 2P',monospace;font-size:.32rem;padding:.28rem .5rem;background:linear-gradient(180deg,#1a3a5c,#0a2040);color:rgba(255,255,255,.75);border:none;border-radius:6px;box-shadow:0 2px 0 #041020;cursor:pointer;letter-spacing:.02em">🗺 <span id="hud-zone-name">Zone auto</span></button>
+      </div>
       <button class="btn green" onclick="doRest()">🏥 REPOS</button>
       <button class="btn" id="btn-farm-auto" onclick="toggleFarmAuto()" style="background:linear-gradient(180deg,#888,#555);box-shadow:0 4px 0 #222">🤖 AUTO</button>
       <button class="btn purple" onclick="showTeam()">👥 ÉQUIPE</button>
@@ -556,8 +559,21 @@
   </div>
 </div>
 
-<script src="game.js?v=10"></script>
-<script src="data.js?v=4"></script>
+<!-- ══ ZONE PICKER MODAL ══ -->
+<div id="zone-picker-overlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.88);align-items:center;justify-content:center">
+  <div id="zone-picker-panel">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem">
+      <span style="font-family:'Press Start 2P',monospace;font-size:.6rem;color:#ffd60a">🗺 Zones d'Exploration</span>
+      <button onclick="closeZonePicker()" style="font-family:'Press Start 2P',monospace;font-size:.6rem;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;padding:.3rem .7rem;border-radius:6px;cursor:pointer">✕</button>
+    </div>
+    <div id="zone-picker-active-label" style="font-family:'Press Start 2P',monospace;font-size:.38rem;color:rgba(255,255,255,.55);padding:.35rem .6rem;background:rgba(255,255,255,.05);border-radius:6px;border:1px solid rgba(255,255,255,.1)">Zone active : —</div>
+    <div id="zone-picker-list" style="overflow-y:auto;display:flex;flex-direction:column;gap:.35rem;max-height:55vh"></div>
+    <button onclick="selectExploreZone(null)" style="font-family:'Press Start 2P',monospace;font-size:.38rem;padding:.45rem .7rem;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.7);border-radius:8px;cursor:pointer;width:100%;margin-top:.2rem">🔄 Progression automatique</button>
+  </div>
+</div>
+
+<script src="game.js?v=11"></script>
+<script src="data.js?v=5"></script>
 <script src="mechanics.js?v=2"></script>
 </body>
 </html>

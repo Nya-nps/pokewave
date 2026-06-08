@@ -1577,8 +1577,11 @@ Object.assign(LEVEL_UP_MOVES, {
       const scale = getWaveEnemyScale();
       const { wave } = getWaveState();
       const bossesBeaten = player.lastBossWave || 0;
-      const zoneIdx = Math.min(bossesBeaten, ZONE_ORDER.length - 1);
-      const zoneId  = ZONE_ORDER[zoneIdx];
+      const autoIdx  = Math.min(bossesBeaten, ZONE_ORDER.length - 1);
+      const selId    = player.selectedExploreZone;
+      const selIdx   = selId ? ZONE_ORDER.indexOf(selId) : -1;
+      const zoneId   = (selId && (selIdx === -1 || selIdx <= bossesBeaten))
+        ? selId : ZONE_ORDER[autoIdx];
       const zone    = ZONES[zoneId];
       const pool    = zone?.pokemon || [];
 

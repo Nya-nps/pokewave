@@ -1460,6 +1460,86 @@ function toggleDropdown() {
 }
 
 // ══════════════════════════════════════════
+// ZONE PICKER
+// ══════════════════════════════════════════
+function openZonePicker() {
+  if (!player) return;
+  const overlay = document.getElementById('zone-picker-overlay');
+  if (!overlay) return;
+
+  const bossesBeaten = player.lastBossWave || 0;
+  const selectedId   = player.selectedExploreZone || null;
+  const autoIdx      = Math.min(bossesBeaten, ZONE_ORDER.length - 1);
+  const autoId       = ZONE_ORDER[autoIdx];
+
+  // Active-label
+  const lbl = document.getElementById('zone-picker-active-label');
+  if (lbl) {
+    const activeName = selectedId
+      ? (ZONES[selectedId]?.name || selectedId)
+      : `🔄 Auto — ${ZONES[autoId]?.name || autoId}`;
+    lbl.textContent = `Zone active : ${activeName}`;
+  }
+
+  // Build zone list
+  const list = document.getElementById('zone-picker-list');
+  if (list) {
+    list.innerHTML = '';
+    const ICONS = { foret:'🌲', grotte:'⛰', route:'🛤', water:'🌊', elite:'🏆', cave:'⛰' };
+    ZONE_ORDER.forEach((zoneId, idx) => {
+      const zone = ZONES[zoneId];
+      if (!zone) return;
+      const unlocked   = idx <= bossesBeaten;
+      const isSelected = zoneId === selectedId;
+      const icon = ICONS[zone.type] || '🏙';
+      const el = document.createElement('div');
+      el.className = 'zone-choice-item'
+        + (isSelected ? ' zc-selected' : '')
+        + (!unlocked   ? ' zc-locked'   : '');
+      el.innerHTML =
+        `<span class="zc-icon">${icon}</span>` +
+        `<span class="zc-name">${zone.name}</span>` +
+        (isSelected   ? '<span class="zc-badge">✔</span>'  : '') +
+        (!unlocked    ? '<span class="zc-badge">🔒</span>' : '');
+      if (unlocked) el.onclick = () => selectExploreZone(zoneId);
+      list.appendChild(el);
+    });
+  }
+
+  overlay.style.display = 'flex';
+}
+
+function closeZonePicker() {
+  const overlay = document.getElementById('zone-picker-overlay');
+  if (overlay) overlay.style.display = 'none';
+}
+
+function selectExploreZone(id) {
+  if (!player) return;
+  player.selectedExploreZone = id || null;
+  // persist
+  try { localStorage.setItem('pokemonRPG_save_v2', JSON.stringify(player)); } catch(e){}
+  const name = id ? (ZONES[id]?.name || id) : '🔄 Progression auto';
+  notify(`🗺 Zone : ${name}`);
+  setMessage(`🗺 Zone d'exploration : ${name}`);
+  closeZonePicker();
+  _updateZonePickerBtn();
+  updateKillHUD();
+}
+
+function _updateZonePickerBtn() {
+  const el = document.getElementById('hud-zone-name');
+  if (!el || !player) return;
+  const bossesBeaten = player.lastBossWave || 0;
+  const selId = player.selectedExploreZone;
+  const autoIdx = Math.min(bossesBeaten, ZONE_ORDER.length - 1);
+  const autoId  = ZONE_ORDER[autoIdx];
+  el.textContent = selId
+    ? (ZONES[selId]?.name || selId)
+    : `Auto: ${ZONES[autoId]?.name || autoId}`;
+}
+
+// ══════════════════════════════════════════
 // WAVE / BOSS SYSTEM
 // ══════════════════════════════════════════
 const KILLS_PER_WAVE = 10;
@@ -1489,11 +1569,16 @@ function updateKillHUD() {
   const bb = _hud('btn-boss');
   if (wl) {
     const bossesBeaten = player.lastBossWave || 0;
-    const zoneIdx = Math.min(bossesBeaten, ZONE_ORDER.length - 1);
-    const zoneName = ZONES[ZONE_ORDER[zoneIdx]]?.name || '';
+    const autoIdx  = Math.min(bossesBeaten, ZONE_ORDER.length - 1);
+    const selId    = player.selectedExploreZone;
+    const selIdx   = selId ? ZONE_ORDER.indexOf(selId) : -1;
+    const activeId = (selId && (selIdx === -1 || selIdx <= bossesBeaten))
+      ? selId : ZONE_ORDER[autoIdx];
+    const zoneName = ZONES[activeId]?.name || '';
     wl.textContent = bossReady ? '💀 BOSS !' : `🌊 ${zoneName}`;
     wl.title = bossReady ? 'Boss disponible !' : `Vague ${wave} — ${zoneName}`;
   }
+  _updateZonePickerBtn();
   if (kl) kl.textContent = bossReady ? 'Prêt !' : `${display}/${KILLS_PER_WAVE}`;
   if (bf) bf.style.width = `${Math.min(100,(display/KILLS_PER_WAVE)*100)}%`;
   if (dl) dl.textContent = `×${diffMult}`;
@@ -6132,3 +6217,11 @@ const _origBattleVictory = null; // handled inline via player._tourBattle flag
 // HELD ITEM: Restes — regen in battle
 // ══════════════════════════════════════════
 // Applied in setBattleTurn (player turn start)
+// ══════════════════════════════════════════
+// ZONE PICKER — click outside to close
+// ══════════════════════════════════════════
+document.addEventListener('click', function(e) {
+  const overlay = document.getElementById('zone-picker-overlay');
+  if (!overlay || overlay.style.display === 'none') return;
+  if (e.target === overlay) closeZonePicker();
+}, { passive: true });
