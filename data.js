@@ -1603,14 +1603,14 @@ Object.assign(LEVEL_UP_MOVES, {
         def:  Math.round((pData.def||5) * lvlScale) || 1,
         spd:  Math.round(baseSpd * (1 + enemyLevel * 0.02)),
         xp:   Math.round((pData.xp||10) * lvlScale),
-        gold: Math.round((pData.g||5)   * lvlScale),
+        gold: Math.round(enemyLevel * 3),
         type: pData.t, isShiny: rollShiny(), maxHp: 0,
       };
       e.maxHp = e.hp;
       if (e.isShiny) { e.hp=Math.round(e.hp*1.15); e.maxHp=e.hp; e.atk=Math.round(e.atk*1.15); e.def=Math.round(e.def*1.15); e.spd=Math.round(e.spd*1.15); }
       showPreBattleMenu(e);
     } else if (roll < 0.68) {
-      const g = Math.floor(Math.random()*25)+8;
+      const g = Math.floor(Math.random()*10)+3;
       player.gold += g; updateHUD();
       setMessage(`✦ Vous trouvez ${g} Pokédollars !`); notify(`+${g} ₽`);
     } else if (roll < 0.78) {

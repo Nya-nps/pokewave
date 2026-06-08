@@ -136,7 +136,7 @@ const SHOP_ITEMS = [
   { id:'pokeball',     name:'Poké Ball',    desc:'Taux de capture: 1×',    price:200,  catchRate:1,    img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png',    type:'ball' },
   { id:'superball',    name:'Super Ball',   desc:'Taux de capture: 1.5×',  price:600,  catchRate:1.5,  img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/great-ball.png',  type:'ball' },
   { id:'hyperball',    name:'Hyper Ball',   desc:'Taux de capture: 2×',    price:1200, catchRate:2,    img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/ultra-ball.png',  type:'ball' },
-  { id:'masterball',   name:'Master Ball',  desc:'Capture garantie !',     price:80000,catchRate:999,  img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/master-ball.png', type:'ball' },
+  { id:'masterball',   name:'Master Ball',  desc:'Capture garantie !',     price:150000,catchRate:999,  img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/master-ball.png', type:'ball' },
   { id:'potion',       name:'Potion',       desc:'Restaure 30 PV',         price:300,  heal:30,        img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/potion.png',     type:'heal' },
   { id:'superpotion',  name:'Super Potion', desc:'Restaure 60 PV',         price:700,  heal:60,        img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/super-potion.png',type:'heal' },
   { id:'hyperpotion',  name:'Hyper Potion', desc:'Restaure 120 PV',        price:1200, heal:120,       img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/hyper-potion.png',type:'heal' },
@@ -625,57 +625,55 @@ function typeToAnim(type) {
   return map[type] || 'normal';
 }
 
-// Niveau min/max par zone (progression ZONE_ORDER + zones annexes)
-// Chaque zone a une tranche de niveau fixe — le niveau ennemi est tiré aléatoirement dans cet intervalle.
-// Niveaux fixes par zone — plafond porté à 500 (contenu end-game)
+// Niveau min/max par zone — plafond à 100, progression douce sur la map
 const ZONE_LEVELS = {
-  // ── Zones de progression principale (ZONE_ORDER — 20 zones, Niv.1→500) ──
-  'bourg-palette':  [1,   12],
-  'route-3':        [8,   22],
-  'foret-jade':     [15,  35],
-  'mt-lune':        [28,  52],
-  'argenta':        [44,  70],
-  'brindibourg':    [60,  90],
-  'route-5-6':      [78,  112],
-  'celadopole':     [98,  138],
-  'route-9-10':     [122, 168],
-  'tour-pokemon':   [150, 198],
-  'lavanville':     [180, 235],
-  'grotte-azuria':  [215, 272],
-  'safrania':       [252, 315],
-  'route-13-15':    [292, 360],
-  'parmanie':       [335, 405],
-  'safari-zone':    [380, 455],
-  'carmin-sur-mer': [415, 472],
-  'route-19-20':    [440, 485],
-  'iles-ecume':     [458, 495],
-  'ligue-pokemon':  [470, 500],
-  // ── Zones annexes (proportionnelles aux zones principales adjacentes) ──
-  'route-1':        [3,   10],
-  'jadielle':       [5,   14],
-  'route-2':        [6,   18],
-  'route-4':        [32,  58],
-  'route-24':       [30,  55],
-  'route-25':       [28,  52],
-  'route-5':        [48,  78],
-  'route-6':        [52,  85],
-  'cramois-ile':    [72,  108],
-  'route-7':        [62,  95],
-  'route-8':        [62,  95],
-  'route-12':       [78,  115],
-  'azuria':         [68,  105],
-  'route-9':        [85,  125],
-  'route-10':       [88,  130],
-  'route-11':       [72,  108],
-  'route-21':       [115, 158],
-  'route-13':       [108, 148],
-  'route-14':       [115, 158],
-  'route-15':       [105, 145],
-  'route-16':       [72,  108],
-  'route-19':       [175, 240],
-  'route-20':       [182, 250],
-  'route-22':       [145, 198],
-  'jadielle-nord':  [8,   22],
+  // ── Zones de progression principale (ZONE_ORDER) ──
+  'bourg-palette':  [1,   10],
+  'route-3':        [8,   18],
+  'foret-jade':     [14,  24],
+  'mt-lune':        [20,  32],
+  'argenta':        [28,  40],
+  'brindibourg':    [36,  48],
+  'route-5-6':      [43,  55],
+  'celadopole':     [50,  62],
+  'route-9-10':     [56,  68],
+  'tour-pokemon':   [62,  74],
+  'lavanville':     [68,  80],
+  'grotte-azuria':  [73,  84],
+  'safrania':       [77,  88],
+  'route-13-15':    [80,  91],
+  'parmanie':       [83,  93],
+  'safari-zone':    [86,  95],
+  'carmin-sur-mer': [88,  97],
+  'route-19-20':    [90,  99],
+  'iles-ecume':     [92, 101],
+  'ligue-pokemon':  [95, 105],
+  // ── Zones annexes ──
+  'route-1':        [2,    8],
+  'jadielle':       [3,   10],
+  'route-2':        [5,   14],
+  'route-4':        [30,  44],
+  'route-24':       [28,  40],
+  'route-25':       [26,  38],
+  'route-5':        [40,  54],
+  'route-6':        [42,  56],
+  'cramois-ile':    [40,  55],
+  'route-7':        [46,  60],
+  'route-8':        [46,  60],
+  'route-12':       [52,  65],
+  'azuria':         [48,  62],
+  'route-9':        [55,  70],
+  'route-10':       [58,  72],
+  'route-11':       [50,  65],
+  'route-21':       [66,  80],
+  'route-13':       [62,  76],
+  'route-14':       [66,  80],
+  'route-15':       [62,  76],
+  'route-16':       [50,  65],
+  'route-19':       [70,  86],
+  'route-20':       [72,  88],
+  'route-22':       [58,  74],
+  'jadielle-nord':  [8,   18],
 };
 
 // Vitesse originale Gen 1 par pokémon
@@ -1825,7 +1823,7 @@ function doExplore() {
       def:  Math.round((pData.def||5) * lvlScale) || 1,
       spd:  Math.round(baseSpd * (1 + enemyLevel * 0.02)),
       xp:   Math.round((pData.xp||10) * lvlScale),
-      gold: Math.round((pData.g||5)   * lvlScale),
+      gold: Math.round(enemyLevel * 3),
       type: pData.t, isShiny: rollShiny(), maxHp: 0,
     };
     e.maxHp = e.hp;
@@ -2466,7 +2464,7 @@ function battleAction(action) {
     const streakBonus = player._bossBattle ? 1.0 : Math.min(2.0, 1 + Math.floor(player._winStreak / 5) * 0.1);
     const baseXP      = enemy.xp || 10;
     const xpG         = Math.round(baseXP * 3 * lvRatio * badgeBonus);
-    const goldG       = Math.round((enemy.gold * 0.5 + Math.floor(Math.random()*5)) * getGoldMultiplier() * streakBonus);
+    const goldG       = Math.round((enemy.gold + Math.floor(Math.random() * Math.max(1, enemy.gold * 0.4))) * getGoldMultiplier() * streakBonus);
     player.xp+=xpG; player.gold+=goldG;
     if (player._winStreak > 0 && player._winStreak % 5 === 0 && !player._bossBattle)
       notify(`🔥 Streak ×${player._winStreak} — bonus or ×${streakBonus.toFixed(1)} !`);
