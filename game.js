@@ -1796,15 +1796,19 @@ function doRest() {
   player.mp = player.maxMp;
   player.moveUses  = player.moveUsesMax  || 6;
   player.mMoveUses = player.mMoveUsesMax || 4;
-  // Soin de toute l'équipe
+  // Soin de toute l'équipe — préserve l'ordre de passage (activeRosterIdx)
   if (player.roster) {
+    const savedIdx = player.activeRosterIdx || 0; // mémoriser le slot actif
     player.roster.forEach(p => {
       p.hp = p.maxHp;
       p.mp = p.maxMp || 50;
       p.moveUses  = p.moveUsesMax  || 6;
       p.mMoveUses = p.mMoveUsesMax || 4;
     });
-    syncActiveFromPlayer(); syncPlayerFromActive();
+    // Écrire player → roster[savedIdx], puis relire pour rester cohérent
+    syncActiveFromPlayer();
+    player.activeRosterIdx = savedIdx; // s'assurer que l'idx n'a pas dévié
+    syncPlayerFromActive();
   }
   updateHUD();
   setMessage(`🏥 ${player.currentName} est soigné à 100 % au Centre Pokémon ! PV et attaques entièrement restaurés.`);
@@ -1874,8 +1878,17 @@ function getAttackType(pokemonType) { return pokemonType; }
 let pendingEnemyData = null;
 
 function showPreBattleMenu(enemyData) {
-  // Sync le pokémon actif avant le combat (respecte activeRosterIdx choisi depuis l'écran Équipe)
   if (player && player.roster && player.roster.length > 0) {
+    // Conserver l'ordre de passage : si le slot actif est K.O. (hp <= 0),
+    // trouver automatiquement le premier Pokémon vivant sans perturber l'ordre voulu.
+    const activeIdx = player.activeRosterIdx || 0;
+    const activePoke = player.roster[activeIdx];
+    if (!activePoke || activePoke.hp <= 0) {
+      const aliveIdx = player.roster.findIndex(p => p.hp > 0);
+      if (aliveIdx >= 0) {
+        player.activeRosterIdx = aliveIdx;
+      }
+    }
     syncPlayerFromActive();
   }
   startBattle(enemyData);
@@ -2218,7 +2231,15 @@ function scheduleFarmExplore() {
     if (currentScreen === 'battle') { scheduleFarmExplore(); return; }
     // Si on n'est pas sur l'écran de jeu, stop
     if (currentScreen !== 'game') { scheduleFarmExplore(); return; }
-    // Auto-repos si PV < 30%
+    // Conserver l'ordre de passage : si le slot actif est K.O., corriger avant de vérifier les PV
+    if (player.roster && player.roster.length > 0) {
+      const curIdx = player.activeRosterIdx || 0;
+      if ((player.roster[curIdx]?.hp || 0) <= 0) {
+        const aliveIdx = player.roster.findIndex(p => p.hp > 0);
+        if (aliveIdx >= 0) { player.activeRosterIdx = aliveIdx; syncPlayerFromActive(); }
+      }
+    }
+    // Auto-repos si PV < 30% (basé sur le Pokémon actif, maintenant corrigé)
     const hpPct = player.hp / player.maxHp;
     if (hpPct < 0.30) {
       const now = Date.now();
