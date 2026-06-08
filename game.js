@@ -1634,27 +1634,74 @@ function recordKill() {
   }
 }
 
+// ── Table de niveaux fixes des Boss par vague ──────────────────
+// Le niveau est FIXE (indépendant du niveau du joueur).
+// Les stats sont boostées via un multiplicateur croissant par vague.
+//
+//  Vague │ Niveau │ Mult stats │ Récompense XP │ Récompense Or
+//  ──────┼────────┼────────────┼───────────────┼──────────────
+//    1   │   10   │   ×1.80   │     300 XP    │    500 ₽
+//    5   │   30   │   ×2.60   │   1 500 XP    │  2 500 ₽
+//   10   │   55   │   ×3.60   │   3 000 XP    │  5 000 ₽
+//   20   │  100   │   ×5.60   │   6 000 XP    │ 10 000 ₽
+// ──────────────────────────────────────────────────────────────
+function _bossFixedLevel(wave) {
+  // Paliers fixes : vague 1→10, 2→15, 3→20 … plafonné à 100
+  return Math.min(100, 5 + wave * 5);
+}
+function _bossStatMult(wave) {
+  // Multiplicateur de stats : 1.8 en vague 1, +0.2 par vague, max 8.0
+  return Math.min(8.0, 1.6 + wave * 0.2);
+}
+
 function generateBossEnemy() {
   if (!player) return null;
   const { wave } = getWaveState();
-  const bossLevel = Math.max(5, Math.min(100, wave * 5 + (player.level||1)));
+  const bossLevel = _bossFixedLevel(wave);
+  const sc        = _bossStatMult(wave);
+
   const BOSS_POOL = [
-    {id:6,n:'Dracaufeu',t:'Feu'},{id:9,n:'Tortank',t:'Eau'},{id:3,n:'Florizarre',t:'Plante'},
-    {id:130,n:'Léviator',t:'Eau'},{id:131,n:'Lokhlass',t:'Glace'},{id:143,n:'Ronflex',t:'Normal'},
-    {id:149,n:'Dracolosse',t:'Dragon'},{id:142,n:'Ptéra',t:'Vol'},{id:59,n:'Arcanin',t:'Feu'},
-    {id:65,n:'Alakazam',t:'Psy'},{id:68,n:'Mackogneur',t:'Combat'},{id:94,n:'Ectoplasma',t:'Spectre'},
-    {id:144,n:'Artikodin',t:'Glace'},{id:145,n:'Électhor',t:'Électrik'},{id:146,n:'Sulfura',t:'Feu'},
-    {id:150,n:'Mewtwo',t:'Psy'},{id:151,n:'Mew',t:'Psy'},
+    {id:6,  n:'Dracaufeu',  t:'Feu'    },
+    {id:9,  n:'Tortank',    t:'Eau'    },
+    {id:3,  n:'Florizarre', t:'Plante' },
+    {id:130,n:'Léviator',   t:'Eau'    },
+    {id:131,n:'Lokhlass',   t:'Glace'  },
+    {id:143,n:'Ronflex',    t:'Normal' },
+    {id:149,n:'Dracolosse', t:'Dragon' },
+    {id:142,n:'Ptéra',      t:'Vol'    },
+    {id:59, n:'Arcanin',    t:'Feu'    },
+    {id:65, n:'Alakazam',   t:'Psy'    },
+    {id:68, n:'Mackogneur', t:'Combat' },
+    {id:94, n:'Ectoplasma', t:'Spectre'},
+    {id:144,n:'Artikodin',  t:'Glace'  },
+    {id:145,n:'Électhor',   t:'Électrik'},
+    {id:146,n:'Sulfura',    t:'Feu'    },
+    {id:150,n:'Mewtwo',     t:'Psy'    },
+    {id:151,n:'Mew',        t:'Psy'    },
   ];
-  const b = BOSS_POOL[(wave-1) % BOSS_POOL.length];
-  const pData = GEN1.find(p=>p.id===b.id);
-  const sc = 1 + bossLevel * 0.15;
+  const b     = BOSS_POOL[(wave - 1) % BOSS_POOL.length];
+  const pData = (typeof ALL_POKEMON !== 'undefined' ? ALL_POKEMON : GEN1).find(p => p.id === b.id);
+
+  // Stats fixes × multiplicateur de vague — PAS de scaling joueur
+  const baseHp  = pData?.hp  || 80;
+  const baseAtk = pData?.atk || 12;
+  const baseDef = pData?.def || 8;
+  const hp  = Math.round(baseHp  * sc * 1.4); // +40% PV bonus boss
+  const atk = Math.round(baseAtk * sc);
+  const def = Math.round(baseDef * sc * 0.9);
+  const spd = Math.round(60 * (1 + wave * 0.03));
+
+  // Récompenses fixes (ne dépendent pas du niveau du joueur)
+  const xpReward   = Math.round(200 + wave * 150);
+  const goldReward = Math.round(300 + wave * 100);
+
   return {
-    name:`⭐ ${b.n} (Boss)`, id:b.id, level:bossLevel,
-    hp:Math.round((pData?.hp||80)*sc*1.3), maxHp:Math.round((pData?.hp||80)*sc*1.3),
-    atk:Math.round((pData?.atk||12)*sc*1.0), def:Math.round((pData?.def||8)*sc*0.9),
-    spd:Math.round(50*(1+bossLevel*0.01)), type:b.t,
-    xp:bossLevel*20, gold:bossLevel*15, isBoss:true, isShiny:false,
+    name: `⭐ ${b.n} (Boss V.${wave})`,
+    id: b.id, level: bossLevel,
+    hp, maxHp: hp, atk, def, spd, type: b.t,
+    xp: xpReward, gold: goldReward,
+    isBoss: true, isShiny: false,
+    _bossWave: wave, _statMult: sc,   // debug info
   };
 }
 
@@ -1664,8 +1711,9 @@ function challengeBoss() {
   if (!bossReady) { notify('Pas encore prêt !'); return; }
   const boss = generateBossEnemy();
   if (!boss) return;
-  notify(`💀 Boss Vague ${wave} — ${boss.name} !`);
-  setMessage(`💀 Boss Vague ${wave} : ${boss.name} Niv.${boss.level} apparaît !`);
+  const multLabel = boss._statMult ? `×${boss._statMult.toFixed(1)} stats` : '';
+  notify(`💀 Boss V.${wave} — Niv.${boss.level} ${multLabel}`);
+  setMessage(`💀 Boss Vague ${wave} : ${boss.name} Niv.${boss.level} surgit ! Stats boostées ${multLabel} — +${boss.xp} XP / +${boss.gold}₽`);
   player._bossBattle = { wave };
   startBattle(boss);
 }
