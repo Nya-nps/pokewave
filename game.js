@@ -2450,20 +2450,18 @@ function battleAction(action) {
 
   if (enemy.hp <= 0) {
     enemy.hp=0; updateBattleHp();
-    // XP basée sur le niveau de l'ennemi
     const playerLv = player.level || 1;
     const enemyLv  = enemy.level  || 1;
-    const lvRatio  = enemyLv > playerLv
-      ? 1 + (enemyLv - playerLv) * 0.05
-      : 1;
-    // Bonus badge : +50% par badge (cumulatif, max ×5 avec 8 badges)
+    // XP proportionnel au niveau ennemi : fort = +XP, faible = -XP
+    const lvRatio   = Math.max(0.2, Math.min(2.5, enemyLv / Math.max(1, playerLv)));
+    // Bonus badge : +15% par badge (max ×2.2 avec 8 badges, était ×5)
     const badgeCount  = (player.badges||[]).length;
-    const badgeBonus  = 1 + badgeCount * 0.5;
+    const badgeBonus  = 1 + badgeCount * 0.15;
     // Streak de victoires consécutives (réinitialisé à la défaite ou au repos)
     player._winStreak = (player._winStreak||0) + 1;
     const streakBonus = player._bossBattle ? 1.0 : Math.min(2.0, 1 + Math.floor(player._winStreak / 5) * 0.1);
-    const baseXP      = enemy.xp || 10;
-    const xpG         = Math.round(baseXP * 3 * lvRatio * badgeBonus);
+    // XP = niveau ennemi × 20 (indépendant de l'espèce)
+    const xpG         = Math.round(enemyLv * 20 * lvRatio * badgeBonus);
     const goldG       = Math.round((enemy.gold + Math.floor(Math.random() * Math.max(1, enemy.gold * 0.4))) * getGoldMultiplier() * streakBonus);
     player.xp+=xpG; player.gold+=goldG;
     if (player._winStreak > 0 && player._winStreak % 5 === 0 && !player._bossBattle)
