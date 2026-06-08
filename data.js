@@ -960,6 +960,30 @@ Object.assign(EVO_CHAINS, {
   372:{next:373, name:'Drattack',   level:50},
   374:{next:375, name:'Métang',     level:20},
   375:{next:376, name:'Métalosse',  level:45},
+  // Gen 4 starters
+  387:{next:388, name:'Tortiflame',  level:18},
+  390:{next:391, name:'Chimpenfeu', level:14},
+  393:{next:394, name:'Prinplouf',  level:16},
+  // Gen 5 starters
+  495:{next:496, name:'Lianaja',    level:17},
+  498:{next:499, name:'Grotichon',  level:17},
+  501:{next:502, name:'Maousse',    level:17},
+  // Gen 6 starters
+  650:{next:651, name:'Sonistrelle',level:16},
+  653:{next:654, name:'Roussil',    level:16},
+  656:{next:657, name:'Croâporal',  level:16},
+  // Gen 7 starters
+  722:{next:723, name:'Efflèche',   level:17},
+  725:{next:726, name:'Matignon',   level:17},
+  728:{next:729, name:'Otarlette',  level:17},
+  // Gen 8 starters
+  810:{next:811, name:'Éfflèche',   level:16},
+  813:{next:814, name:'Raboot',     level:16},
+  816:{next:817, name:'Chlabrador', level:16},
+  // Gen 9 starters
+  906:{next:907, name:'Miaouss',    level:16},
+  909:{next:910, name:'Crocubot',   level:16},
+  912:{next:913, name:'Canards',    level:16},
 });
 
 // ──────────────────────────────────────────────────────────────
@@ -1000,6 +1024,150 @@ Object.assign(CLASSES, {
     id:258, evoId:259, evoName:'Flobio', evoLevel:16, sprite:258,
     type:'Eau', hp:125, mp:55, atk:19, def:13, spd:8, magic:11,
     move:'Griffe', mMove:'Pistolet-O', moveElem:'Normal', mMoveElem:'Eau',
+    moveUses:6, mMoveUses:4, items:[{n:'Potion',img:'potion',q:2}], animType:'water'
+  },
+});
+
+// ──────────────────────────────────────────────────────────────
+// STARTERS GEN 4
+// ──────────────────────────────────────────────────────────────
+Object.assign(CLASSES, {
+  'Tortipouss': {
+    id:387, evoId:388, evoName:'Tortiflame', evoLevel:18, sprite:387,
+    type:'Plante', hp:108, mp:70, atk:11, def:17, spd:7, magic:15,
+    move:'Fouet-Liane', mMove:'Tranche', moveElem:'Plante', mMoveElem:'Normal',
+    moveUses:6, mMoveUses:4, items:[{n:'Potion',img:'potion',q:2}], animType:'leaf'
+  },
+  'Ouisticram': {
+    id:390, evoId:391, evoName:'Chimpenfeu', evoLevel:14, sprite:390,
+    type:'Feu', hp:85, mp:65, atk:18, def:8, spd:17, magic:15,
+    move:'Griffe', mMove:'Flammèche', moveElem:'Normal', mMoveElem:'Feu',
+    moveUses:6, mMoveUses:4, items:[{n:'Potion',img:'potion',q:1},{n:'SuperPotion',img:'super-potion',q:1}], animType:'fire'
+  },
+  'Tiplouf': {
+    id:393, evoId:394, evoName:'Prinplouf', evoLevel:16, sprite:393,
+    type:'Eau', hp:112, mp:60, atk:12, def:14, spd:9, magic:13,
+    move:'Pistolet-O', mMove:'Écume', moveElem:'Eau', mMoveElem:'Eau',
+    moveUses:6, mMoveUses:4, items:[{n:'Potion',img:'potion',q:2}], animType:'water'
+  },
+});
+
+// ──────────────────────────────────────────────────────────────
+// STARTERS GEN 5
+// ──────────────────────────────────────────────────────────────
+Object.assign(CLASSES, {
+  'Vipélierre': {
+    id:495, evoId:496, evoName:'Lianaja', evoLevel:17, sprite:495,
+    type:'Plante', hp:90, mp:80, atk:13, def:10, spd:17, magic:17,
+    move:'Fouet-Liane', mMove:'Tranch\'Herbe', moveElem:'Plante', mMoveElem:'Plante',
+    moveUses:6, mMoveUses:4, items:[{n:'Potion',img:'potion',q:2}], animType:'leaf'
+  },
+  'Gruikui': {
+    id:498, evoId:499, evoName:'Grotichon', evoLevel:17, sprite:498,
+    type:'Feu', hp:110, mp:60, atk:20, def:11, spd:9, magic:12,
+    move:'Griffe', mMove:'Flammèche', moveElem:'Normal', mMoveElem:'Feu',
+    moveUses:6, mMoveUses:4, items:[{n:'Potion',img:'potion',q:2}], animType:'fire'
+  },
+  'Moustillon': {
+    id:501, evoId:502, evoName:'Maousse', evoLevel:17, sprite:501,
+    type:'Eau', hp:118, mp:55, atk:13, def:16, spd:8, magic:12,
+    move:'Pistolet-O', mMove:'Écume', moveElem:'Eau', mMoveElem:'Eau',
+    moveUses:6, mMoveUses:4, items:[{n:'Potion',img:'potion',q:2}], animType:'water'
+  },
+});
+
+// ──────────────────────────────────────────────────────────────
+// STARTERS GEN 6
+// ──────────────────────────────────────────────────────────────
+Object.assign(CLASSES, {
+  'Marisson': {
+    id:650, evoId:651, evoName:'Sonistrelle', evoLevel:16, sprite:650,
+    type:'Plante', hp:112, mp:65, atk:12, def:18, spd:8, magic:13,
+    move:'Fouet-Liane', mMove:'Tranche', moveElem:'Plante', mMoveElem:'Normal',
+    moveUses:6, mMoveUses:4, items:[{n:'Potion',img:'potion',q:2}], animType:'leaf'
+  },
+  'Feunnec': {
+    id:653, evoId:654, evoName:'Roussil', evoLevel:16, sprite:653,
+    type:'Feu', hp:88, mp:85, atk:12, def:8, spd:12, magic:21,
+    move:'Griffe', mMove:'Flammèche', moveElem:'Normal', mMoveElem:'Feu',
+    moveUses:6, mMoveUses:4, items:[{n:'Potion',img:'potion',q:1},{n:'SuperPotion',img:'super-potion',q:1}], animType:'fire'
+  },
+  'Grenousse': {
+    id:656, evoId:657, evoName:'Croâporal', evoLevel:16, sprite:656,
+    type:'Eau', hp:88, mp:65, atk:14, def:7, spd:18, magic:14,
+    move:'Pistolet-O', mMove:'Écume', moveElem:'Eau', mMoveElem:'Eau',
+    moveUses:6, mMoveUses:4, items:[{n:'Potion',img:'potion',q:2}], animType:'water'
+  },
+});
+
+// ──────────────────────────────────────────────────────────────
+// STARTERS GEN 7
+// ──────────────────────────────────────────────────────────────
+Object.assign(CLASSES, {
+  'Brindibou': {
+    id:722, evoId:723, evoName:'Efflèche', evoLevel:17, sprite:722,
+    type:'Plante', hp:100, mp:70, atk:15, def:12, spd:12, magic:16,
+    move:'Fouet-Liane', mMove:'Tranch\'Herbe', moveElem:'Plante', mMoveElem:'Plante',
+    moveUses:6, mMoveUses:4, items:[{n:'Potion',img:'potion',q:2}], animType:'leaf'
+  },
+  'Flamiaou': {
+    id:725, evoId:726, evoName:'Matignon', evoLevel:17, sprite:725,
+    type:'Feu', hp:85, mp:65, atk:17, def:9, spd:18, magic:14,
+    move:'Griffe', mMove:'Flammèche', moveElem:'Normal', mMoveElem:'Feu',
+    moveUses:6, mMoveUses:4, items:[{n:'Potion',img:'potion',q:2}], animType:'fire'
+  },
+  'Otaquin': {
+    id:728, evoId:729, evoName:'Otarlette', evoLevel:17, sprite:728,
+    type:'Eau', hp:108, mp:80, atk:10, def:11, spd:9, magic:21,
+    move:'Pistolet-O', mMove:'Écume', moveElem:'Eau', mMoveElem:'Eau',
+    moveUses:6, mMoveUses:4, items:[{n:'Potion',img:'potion',q:2}], animType:'water'
+  },
+});
+
+// ──────────────────────────────────────────────────────────────
+// STARTERS GEN 8
+// ──────────────────────────────────────────────────────────────
+Object.assign(CLASSES, {
+  'Ouistiaou': {
+    id:810, evoId:811, evoName:'Éfflèche', evoLevel:16, sprite:810,
+    type:'Plante', hp:96, mp:65, atk:19, def:10, spd:13, magic:14,
+    move:'Fouet-Liane', mMove:'Tranche', moveElem:'Plante', mMoveElem:'Normal',
+    moveUses:6, mMoveUses:4, items:[{n:'Potion',img:'potion',q:2}], animType:'leaf'
+  },
+  'Scorbunny': {
+    id:813, evoId:814, evoName:'Raboot', evoLevel:16, sprite:813,
+    type:'Feu', hp:90, mp:65, atk:18, def:9, spd:19, magic:13,
+    move:'Griffe', mMove:'Flammèche', moveElem:'Normal', mMoveElem:'Feu',
+    moveUses:6, mMoveUses:4, items:[{n:'Potion',img:'potion',q:1},{n:'SuperPotion',img:'super-potion',q:1}], animType:'fire'
+  },
+  'Larméléon': {
+    id:816, evoId:817, evoName:'Chlabrador', evoLevel:16, sprite:816,
+    type:'Eau', hp:100, mp:75, atk:10, def:12, spd:10, magic:20,
+    move:'Pistolet-O', mMove:'Écume', moveElem:'Eau', mMoveElem:'Eau',
+    moveUses:6, mMoveUses:4, items:[{n:'Potion',img:'potion',q:2}], animType:'water'
+  },
+});
+
+// ──────────────────────────────────────────────────────────────
+// STARTERS GEN 9
+// ──────────────────────────────────────────────────────────────
+Object.assign(CLASSES, {
+  'Poussacha': {
+    id:906, evoId:907, evoName:'Miaouss', evoLevel:16, sprite:906,
+    type:'Plante', hp:88, mp:70, atk:14, def:9, spd:19, magic:15,
+    move:'Fouet-Liane', mMove:'Tranch\'Herbe', moveElem:'Plante', mMoveElem:'Plante',
+    moveUses:6, mMoveUses:4, items:[{n:'Potion',img:'potion',q:2}], animType:'leaf'
+  },
+  'Chochodile': {
+    id:909, evoId:910, evoName:'Crocubot', evoLevel:16, sprite:909,
+    type:'Feu', hp:115, mp:60, atk:22, def:13, spd:7, magic:11,
+    move:'Griffe', mMove:'Flammèche', moveElem:'Normal', mMoveElem:'Feu',
+    moveUses:6, mMoveUses:4, items:[{n:'Potion',img:'potion',q:2}], animType:'fire'
+  },
+  'Coiffeton': {
+    id:912, evoId:913, evoName:'Canards', evoLevel:16, sprite:912,
+    type:'Eau', hp:115, mp:65, atk:15, def:15, spd:10, magic:14,
+    move:'Pistolet-O', mMove:'Écume', moveElem:'Eau', mMoveElem:'Eau',
     moveUses:6, mMoveUses:4, items:[{n:'Potion',img:'potion',q:2}], animType:'water'
   },
 });
@@ -1464,6 +1632,30 @@ const STARTER_META = {
   'Arcko':     { gen:3, role:'Rapide'    },
   'Poussifeu': { gen:3, role:'Offensif'  },
   'Gobou':     { gen:3, role:'Défensif'  },
+  // Gen 4
+  'Tortipouss':{ gen:4, role:'Défensif'  },
+  'Ouisticram':{ gen:4, role:'Rapide'    },
+  'Tiplouf':   { gen:4, role:'Équilibré' },
+  // Gen 5
+  'Vipélierre':{ gen:5, role:'Rapide'    },
+  'Gruikui':   { gen:5, role:'Offensif'  },
+  'Moustillon':{ gen:5, role:'Défensif'  },
+  // Gen 6
+  'Marisson':  { gen:6, role:'Défensif'  },
+  'Feunnec':   { gen:6, role:'Soutien'   },
+  'Grenousse': { gen:6, role:'Rapide'    },
+  // Gen 7
+  'Brindibou': { gen:7, role:'Équilibré' },
+  'Flamiaou':  { gen:7, role:'Rapide'    },
+  'Otaquin':   { gen:7, role:'Soutien'   },
+  // Gen 8
+  'Ouistiaou': { gen:8, role:'Offensif'  },
+  'Scorbunny': { gen:8, role:'Rapide'    },
+  'Larméléon': { gen:8, role:'Soutien'   },
+  // Gen 9
+  'Poussacha': { gen:9, role:'Rapide'    },
+  'Chochodile':{ gen:9, role:'Offensif'  },
+  'Coiffeton': { gen:9, role:'Défensif'  },
 };
 
 // ──────────────────────────────────────────────────────────────
