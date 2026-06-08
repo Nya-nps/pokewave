@@ -179,6 +179,9 @@ const GEN3 = [
   {id:310,n:'Élecsprint',  t:'Électrik',hp:70,  atk:17, def:11, xp:26, g:18},
   // Roselia
   {id:315,n:'Rosélia',     t:'Plante',  hp:50,  atk:13, def:11, xp:18, g:10},
+  // Gulpin / Avaltout (Poison)
+  {id:316,n:'Goinfrex',    t:'Poison',  hp:70,  atk:9,  def:8,  xp:12, g:6 },
+  {id:317,n:'Avaltout',    t:'Poison',  hp:100, atk:15, def:14, xp:20, g:15},
   // Carvanha / Sharpedo
   {id:318,n:'Carvanha',    t:'Eau',     hp:45,  atk:20, def:4,  xp:14, g:7 },
   {id:319,n:'Sharpedo',    t:'Eau',     hp:70,  atk:24, def:8,  xp:30, g:22},

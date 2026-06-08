@@ -648,6 +648,27 @@ const ZONE_LEVELS = {
   'route-19-20':    [90,  99],
   'iles-ecume':     [92, 101],
   'ligue-pokemon':  [95, 105],
+  // ── Zones Johto ──
+  'ecorce':         [100, 112],
+  'noeudpin':       [105, 118],
+  'azalee':         [110, 124],
+  'doublonville':   [115, 130],
+  'ecoraille':      [120, 136],
+  'acajou':         [126, 142],
+  'sapin':          [132, 148],
+  'cascade':        [138, 154],
+  'volcrystal':     [144, 160],
+  'ligue-johto':    [148, 165],
+  // ── Zones Hoenn ──
+  'littleroot':     [155, 170],
+  'pierreferite':   [160, 175],
+  'mardeborg':      [165, 180],
+  'laberganta':     [170, 185],
+  'lavaplage':      [175, 190],
+  'sylvemont':      [180, 196],
+  'lilycove':       [185, 202],
+  'sootopolis':     [190, 208],
+  'ever-grande':    [195, 215],
   // ── Zones annexes ──
   'route-1':        [2,    8],
   'jadielle':       [3,   10],
@@ -1281,6 +1302,8 @@ function syncActiveFromPlayer() {
   if (player.spDef !== undefined) p.spDef = player.spDef;
   p.moveUses        = player.moveUses;
   p.mMoveUses       = player.mMoveUses;
+  p.moveUsesMax     = player.moveUsesMax;
+  p.mMoveUsesMax    = player.mMoveUsesMax;
 }
 
 function switchToRosterPoke(idx, fromBattle=false) {
@@ -2076,6 +2099,7 @@ function startBattle(enemyData) {
 }
 
 function updateBattleHp() {
+  if (!player || !enemy) return;
   const pPct = Math.max(0,(player.hp/player.maxHp)*100);
   const ePct = Math.max(0,(enemy.hp/enemy.maxHp)*100);
   const barColor = pct => pct > 50 ? 'linear-gradient(90deg,#2dc653,#06d6a0)' : pct > 20 ? 'linear-gradient(90deg,#ffd60a,#ff9a3c)' : 'linear-gradient(90deg,#e63946,#ff6b9d)';
@@ -2159,7 +2183,8 @@ function setBattleTurn(turn) {
       if (!enemy || !player) return;
       const eMult = getEffectiveness(enemy.type, player.type);
       const eBase = Math.max(1, enemy.atk+Math.floor(Math.random()*5)-Math.floor(player.def/2));
-      const eDmg  = Math.round(eBase * eMult);
+      // Cap à 28% des PV max pour éviter les one-shots des ennemis très forts (zones Johto/Hoenn)
+      const eDmg  = Math.min(Math.round(eBase * eMult), Math.floor((player.maxHp||100) * 0.28));
       const eEff  = getEffLabel(eMult);
       player.hp -= eDmg;
       playAttackAnim('normal', true);
@@ -2427,6 +2452,8 @@ function battleAction(action) {
       const effInfo = getEffLabel(mult);
       const base = Math.max(1, player.magic + Math.floor(Math.random()*8) - Math.floor(enemy.def/2));
       dmg = Math.round(base * mult);
+      player.mMoveUses = Math.max(0, (player.mMoveUses||0) - 1);
+      if (player.mMoveUses === 0) player.mMoveUses = player.mMoveUsesMax || 4;
       playAttackAnim(player.animType, false);
       log=`✨ ${player.currentName} utilise ${player.mMove} (${atkType}) ! `;
       if (effInfo.label) log += effInfo.label + ' ';
@@ -2438,6 +2465,8 @@ function battleAction(action) {
       const effInfo = getEffLabel(mult);
       const base = Math.max(1, player.atk + Math.floor(Math.random()*6) - enemy.def);
       dmg = Math.round(base * mult);
+      player.moveUses = Math.max(0, (player.moveUses||0) - 1);
+      if (player.moveUses === 0) player.moveUses = player.moveUsesMax || 6;
       playAttackAnim(player.animType, false);
       log=`⚔ ${player.currentName} utilise ${player.move} (${atkType}) ! `;
       if (effInfo.label) log += effInfo.label + ' ';
@@ -2463,7 +2492,8 @@ function battleAction(action) {
     // XP = niveau ennemi × 20 (indépendant de l'espèce)
     const xpG         = Math.round(enemyLv * 20 * lvRatio * badgeBonus);
     const goldG       = Math.round((enemy.gold + Math.floor(Math.random() * Math.max(1, enemy.gold * 0.4))) * getGoldMultiplier() * streakBonus);
-    player.xp+=xpG; player.gold+=goldG;
+    // Les replays de boss sont de l'entraînement pur : aucune récompense
+    if (!player._bossBattle?.isReplay) { player.xp+=xpG; player.gold+=goldG; }
     if (player._winStreak > 0 && player._winStreak % 5 === 0 && !player._bossBattle)
       notify(`🔥 Streak ×${player._winStreak} — bonus or ×${streakBonus.toFixed(1)} !`);
     // XP pour tout le roster (50% au bench) + level-up silencieux
@@ -3407,8 +3437,16 @@ function loadGame() {
   if (!player.tourFloor)    player.tourFloor    = 0;
   if (!player.totalKills)   player.totalKills   = 0;
   if (!player.lastBossWave)   player.lastBossWave  = 0;
-  if (!player.trialPoints)    player.trialPoints   = 0;
-  if (!player.trialWins)      player.trialWins     = 0;
+  if (!player.trialPoints)      player.trialPoints      = 0;
+  if (!player.trialWins)        player.trialWins        = 0;
+  if (!player.worldBossKills)   player.worldBossKills   = 0;
+  if (!player.lastWorldBoss)    player.lastWorldBoss    = 0;
+  if (!player.shinyCount)       player.shinyCount       = 0;
+  if (!player.megaCount)        player.megaCount        = 0;
+  if (player._winStreak === undefined) player._winStreak = 0;
+  if (!player.breedingSelected) player.breedingSelected = [];
+  if (!player.stats)            player.stats            = {};
+  if (!player.achievements)     player.achievements     = [];
   player._trialBattle = false; player._trialBattleTp = 0;
   // Recalibrer xpNext sur tous les Pokémon en cas d'ancienne courbe
   const _recalibrate = (p) => { if (p && p.level) { p.xpNext = xpForLevel(p.level); p.xp = Math.min(p.xp||0, p.xpNext - 1); } };
