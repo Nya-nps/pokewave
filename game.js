@@ -3015,84 +3015,127 @@ function renderMap() {
     ctx.closePath();
   }
 
-  // Carte limitée à ~30fps pour réduire la charge GPU/CPU
-  let _mapLastDraw = 0;
-  function drawFrame(ts) {
-    if (ts - _mapLastDraw < 33) { mapAnimFrame = requestAnimationFrame(drawFrame); return; }
-    _mapLastDraw = ts;
-    mapPulseT += 0.04;
-    const ctx = canvas.getContext('2d');
-    const curZone = player.currentZone || 'bourg-palette';
-    const killNeeded = ZONE_KILL_NEEDED;
-    const kills = (player.zoneKills||{})[curZone]||0;
-    const killsOk = kills >= killNeeded;
-    ctx.clearRect(0,0,W,H);
-
-    // ── BACKGROUND IMAGE ──
+  // ── Canvas hors-écran : fond (statique tant que bgImg ne change pas) ──
+  const bgOffscreen = document.createElement('canvas');
+  bgOffscreen.width = W; bgOffscreen.height = H;
+  const bgCtx = bgOffscreen.getContext('2d');
+  let _bgDrawn = false;
+  function _drawBgOffscreen() {
+    bgCtx.clearRect(0, 0, W, H);
     if (bgImg.complete && bgImg.naturalWidth > 0) {
-      ctx.drawImage(bgImg, 0, 0, W, H);
-      ctx.fillStyle = 'rgba(0,0,20,0.22)';
-      ctx.fillRect(0,0,W,H);
+      bgCtx.drawImage(bgImg, 0, 0, W, H);
+      bgCtx.fillStyle = 'rgba(0,0,20,0.22)';
+      bgCtx.fillRect(0, 0, W, H);
     } else {
-      ctx.fillStyle = '#2a5c1a';
-      ctx.fillRect(0,0,W,H);
+      bgCtx.fillStyle = '#2a5c1a';
+      bgCtx.fillRect(0, 0, W, H);
     }
+    _bgDrawn = true;
+  }
+  bgImg.onload = () => { _bgDrawn = false; };
 
-    // ── ROUTE CONNECTIONS (PokéClicker style) ──
+  // ── Canvas hors-écran : routes + légende (ne change que si visitedZones/curZone change) ──
+  const routeOffscreen = document.createElement('canvas');
+  routeOffscreen.width = W; routeOffscreen.height = H;
+  const routeCtx = routeOffscreen.getContext('2d');
+  let _routeSnap = null;
+  function _drawRoutesOffscreen() {
+    const cz = player.currentZone || 'bourg-palette';
+    routeCtx.clearRect(0, 0, W, H);
     ROUTE_CONNECTIONS.forEach(conn => {
       const fromZ = getZoneById(conn.from);
       const toZ   = getZoneById(conn.to);
       if (!fromZ || !toZ) return;
       const fx = px(fromZ.x), fy = py(fromZ.y);
       const tx = px(toZ.x),   ty = py(toZ.y);
-      const fromVisited = player.visitedZones.includes(conn.from) || conn.from === curZone;
-      const toVisited   = player.visitedZones.includes(conn.to)   || conn.to === curZone;
-
-      // Route color: both seen = colored, else dark
+      const fromVisited = player.visitedZones.includes(conn.from) || conn.from === cz;
+      const toVisited   = player.visitedZones.includes(conn.to)   || conn.to === cz;
       const routeColor = fromVisited && toVisited ? '#e8d44d'
                        : fromVisited || toVisited  ? '#c8a030'
                        : 'rgba(80,60,20,0.5)';
-
-      // Draw road (thick line with border)
-      ctx.save();
-      ctx.strokeStyle = 'rgba(0,0,0,0.5)';
-      ctx.lineWidth = 5;
-      ctx.beginPath(); ctx.moveTo(fx,fy); ctx.lineTo(tx,ty); ctx.stroke();
-      ctx.strokeStyle = routeColor;
-      ctx.lineWidth = 3;
-      ctx.setLineDash(fromVisited ? [] : [8,5]);
-      ctx.beginPath(); ctx.moveTo(fx,fy); ctx.lineTo(tx,ty); ctx.stroke();
-      ctx.setLineDash([]);
-
-      // Route label — offset perpendicular to the line so it doesn't sit on it
+      routeCtx.save();
+      routeCtx.strokeStyle = 'rgba(0,0,0,0.5)';
+      routeCtx.lineWidth = 5;
+      routeCtx.beginPath(); routeCtx.moveTo(fx,fy); routeCtx.lineTo(tx,ty); routeCtx.stroke();
+      routeCtx.strokeStyle = routeColor;
+      routeCtx.lineWidth = 3;
+      routeCtx.setLineDash(fromVisited ? [] : [8,5]);
+      routeCtx.beginPath(); routeCtx.moveTo(fx,fy); routeCtx.lineTo(tx,ty); routeCtx.stroke();
+      routeCtx.setLineDash([]);
       if (fromVisited || toVisited) {
         const mx = (fx+tx)/2, my = (fy+ty)/2;
         const angle = Math.atan2(ty-fy, tx-fx);
-        // Perpendicular offset: push label above/beside the line
         const perpX = -Math.sin(angle) * 14;
         const perpY =  Math.cos(angle) * 14;
         const lFontSize = Math.max(8, Math.min(10, W*0.011));
         const lw = conn.label.length * lFontSize * 0.62 + 14;
         const lh = lFontSize + 8;
-        ctx.save();
-        ctx.fillStyle = 'rgba(5,5,25,0.88)';
-        rr(ctx, mx+perpX-lw/2, my+perpY-lh/2, lw, lh, 4);
-        ctx.fill();
-        ctx.strokeStyle = routeColor; ctx.lineWidth = 1.2;
-        rr(ctx, mx+perpX-lw/2, my+perpY-lh/2, lw, lh, 4);
-        ctx.stroke();
-        ctx.font = `bold ${lFontSize}px 'Press Start 2P',monospace`;
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillStyle = 'rgba(0,0,0,0.7)';
-        ctx.fillText(conn.label, mx+perpX+0.5, my+perpY+0.5);
-        ctx.fillStyle = '#ffe066';
-        ctx.fillText(conn.label, mx+perpX, my+perpY);
-        ctx.restore();
+        routeCtx.save();
+        routeCtx.fillStyle = 'rgba(5,5,25,0.88)';
+        rr(routeCtx, mx+perpX-lw/2, my+perpY-lh/2, lw, lh, 4);
+        routeCtx.fill();
+        routeCtx.strokeStyle = routeColor; routeCtx.lineWidth = 1.2;
+        rr(routeCtx, mx+perpX-lw/2, my+perpY-lh/2, lw, lh, 4);
+        routeCtx.stroke();
+        routeCtx.font = `bold ${lFontSize}px 'Press Start 2P',monospace`;
+        routeCtx.textAlign = 'center'; routeCtx.textBaseline = 'middle';
+        routeCtx.fillStyle = 'rgba(0,0,0,0.7)';
+        routeCtx.fillText(conn.label, mx+perpX+0.5, my+perpY+0.5);
+        routeCtx.fillStyle = '#ffe066';
+        routeCtx.fillText(conn.label, mx+perpX, my+perpY);
+        routeCtx.restore();
       }
-      ctx.restore();
+      routeCtx.restore();
     });
+    // Légende statique dans le canvas routes
+    const leg = [
+      { col:ZONE_COLORS.current.fill,  stroke:ZONE_COLORS.current.stroke,  label:'Zone actuelle' },
+      { col:ZONE_COLORS.complete.fill, stroke:ZONE_COLORS.complete.stroke, label:'Complétée ✓' },
+      { col:ZONE_COLORS.partial.fill,  stroke:ZONE_COLORS.partial.stroke,  label:'En cours' },
+      { col:ZONE_COLORS.locked.fill,   stroke:ZONE_COLORS.locked.stroke,   label:'Non explorée' },
+    ];
+    const legX = px(1), legY = py(88);
+    const legFontSize = Math.max(7, Math.min(9, W*0.011));
+    leg.forEach((l,i) => {
+      const ly = legY + i*(legFontSize+8);
+      routeCtx.fillStyle = 'rgba(0,0,20,0.7)';
+      rr(routeCtx, legX-2, ly-2, px(20)+4, legFontSize+8, 3); routeCtx.fill();
+      routeCtx.fillStyle = l.col;
+      rr(routeCtx, legX, ly, legFontSize, legFontSize, 2); routeCtx.fill();
+      routeCtx.strokeStyle = l.stroke; routeCtx.lineWidth=1;
+      rr(routeCtx, legX, ly, legFontSize, legFontSize, 2); routeCtx.stroke();
+      routeCtx.font = `bold ${legFontSize}px 'Press Start 2P',monospace`;
+      routeCtx.textAlign='left'; routeCtx.textBaseline='top';
+      routeCtx.fillStyle='rgba(0,0,0,0.8)';
+      routeCtx.fillText(l.label, legX+legFontSize+5+0.5, ly+0.5);
+      routeCtx.fillStyle='#fff';
+      routeCtx.fillText(l.label, legX+legFontSize+5, ly);
+    });
+    _routeSnap = player.visitedZones.join(',') + '|' + cz;
+  }
 
-    // ── ZONES ──
+  // ── drawFrame : limité à ~30fps, travail réduit au minimum par frame ──
+  const mainCtx = canvas.getContext('2d');
+  let _mapLastDraw = 0;
+  function drawFrame(ts) {
+    if (ts - _mapLastDraw < 33) { mapAnimFrame = requestAnimationFrame(drawFrame); return; }
+    _mapLastDraw = ts;
+    mapPulseT += 0.04;
+    const curZone = player.currentZone || 'bourg-palette';
+    const killNeeded = ZONE_KILL_NEEDED;
+    const curKills = (player.zoneKills||{})[curZone]||0;
+    const killsOk = curKills >= killNeeded;
+
+    // Reconstruit les caches hors-écran uniquement si l'état a changé
+    if (!_bgDrawn) _drawBgOffscreen();
+    const snap = player.visitedZones.join(',') + '|' + curZone;
+    if (snap !== _routeSnap) _drawRoutesOffscreen();
+
+    // Composite rapide : 2 drawImage au lieu de tout redessiner
+    mainCtx.drawImage(bgOffscreen, 0, 0);
+    mainCtx.drawImage(routeOffscreen, 0, 0);
+
+    // ── ZONES (seule partie vraiment dynamique : pulse zone courante) ──
     mapHitZones = [];
     KANTO_ZONES.forEach(z => {
       if (!ZONES[z.id]) return;
@@ -3105,72 +3148,62 @@ function renderMap() {
       const gl = GYM_LEADERS[z.id];
       const badgeGot = (player.badges||[]).includes(z.id);
       const col = getZoneColor(z.id);
-
-      // Pulse for current zone
       const pulse = isCurrent ? 0.65 + 0.35*Math.sin(mapPulseT*2) : 1;
 
-      // Shadow
-      ctx.save();
-      ctx.shadowColor = isCurrent ? '#2dc653' : (badgeGot ? '#ffd700' : 'rgba(0,0,0,0.6)');
-      ctx.shadowBlur = isCurrent ? 18*pulse : badgeGot ? 10 : 6;
+      // Shadow uniquement pour zone courante et zones avec badge (plus pour toutes les zones)
+      const needsShadow = isCurrent || badgeGot;
+      if (needsShadow) {
+        mainCtx.save();
+        mainCtx.shadowColor = isCurrent ? '#2dc653' : '#ffd700';
+        mainCtx.shadowBlur = isCurrent ? 18*pulse : 10;
+      }
 
-      // Box fill
-      rr(ctx, x1, y1, bw, bh, rad);
-      ctx.fillStyle = col.fill;
-      ctx.fill();
+      rr(mainCtx, x1, y1, bw, bh, rad);
+      mainCtx.fillStyle = col.fill;
+      mainCtx.fill();
 
-      // Border
-      rr(ctx, x1, y1, bw, bh, rad);
-      ctx.strokeStyle = isCurrent
-        ? `rgba(255,255,255,${pulse})`
-        : col.stroke;
-      ctx.lineWidth = isCurrent ? 2.5 : 1.8;
-      ctx.stroke();
-      ctx.shadowBlur = 0;
-      ctx.restore();
+      rr(mainCtx, x1, y1, bw, bh, rad);
+      mainCtx.strokeStyle = isCurrent ? `rgba(255,255,255,${pulse})` : col.stroke;
+      mainCtx.lineWidth = isCurrent ? 2.5 : 1.8;
+      mainCtx.stroke();
 
-      // Gym icon (top-right corner of box)
+      if (needsShadow) { mainCtx.shadowBlur = 0; mainCtx.restore(); }
+
       if (gl) {
         const iconSize = Math.max(12, Math.min(18, bh*0.75));
-        ctx.font = `${iconSize}px serif`;
-        ctx.textAlign = 'right';
-        ctx.textBaseline = 'top';
-        if (badgeGot) {
-          ctx.shadowColor = '#ffd700'; ctx.shadowBlur = 8;
-        }
-        ctx.fillStyle = badgeGot ? '#ffd700' : 'rgba(255,255,255,0.8)';
-        ctx.fillText(gl.icon, x1+bw-3, y1+2);
-        ctx.shadowBlur = 0;
+        mainCtx.font = `${iconSize}px serif`;
+        mainCtx.textAlign = 'right';
+        mainCtx.textBaseline = 'top';
+        if (badgeGot) { mainCtx.shadowColor = '#ffd700'; mainCtx.shadowBlur = 8; }
+        mainCtx.fillStyle = badgeGot ? '#ffd700' : 'rgba(255,255,255,0.8)';
+        mainCtx.fillText(gl.icon, x1+bw-3, y1+2);
+        mainCtx.shadowBlur = 0;
       }
 
-      // Zone name
       const fs = Math.max(7, Math.min(10, bh*0.36));
-      ctx.font = `bold ${fs}px 'Press Start 2P',monospace`;
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      // Drop shadow for readability
-      ctx.fillStyle = 'rgba(0,0,0,0.9)';
-      ctx.fillText(z.label, cx+1, cy+1);
-      ctx.fillStyle = col.text;
-      ctx.fillText(z.label, cx, cy);
+      mainCtx.font = `bold ${fs}px 'Press Start 2P',monospace`;
+      mainCtx.textAlign = 'center'; mainCtx.textBaseline = 'middle';
+      mainCtx.fillStyle = 'rgba(0,0,0,0.9)';
+      mainCtx.fillText(z.label, cx+1, cy+1);
+      mainCtx.fillStyle = col.text;
+      mainCtx.fillText(z.label, cx, cy);
 
-      // Current marker (star above box)
       if (isCurrent) {
         const starSize = bh * 0.7;
-        ctx.font = `${starSize}px serif`;
-        ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-        ctx.shadowColor = '#ffd700'; ctx.shadowBlur = 14 * pulse;
-        ctx.fillStyle = '#ffd700';
-        ctx.fillText('★', cx, y1 - 2);
-        ctx.shadowBlur = 0;
+        mainCtx.font = `${starSize}px serif`;
+        mainCtx.textAlign = 'center'; mainCtx.textBaseline = 'bottom';
+        mainCtx.shadowColor = '#ffd700'; mainCtx.shadowBlur = 14 * pulse;
+        mainCtx.fillStyle = '#ffd700';
+        mainCtx.fillText('★', cx, y1 - 2);
+        mainCtx.shadowBlur = 0;
       }
 
-      // Lock icon if accessible but not enough kills
       const accessible = ZONES[curZone]?.connexions?.includes(z.id);
       if (accessible && !isVisited && !killsOk) {
-        ctx.font = `${bh*0.55}px serif`;
-        ctx.textAlign = 'right'; ctx.textBaseline = 'top';
-        ctx.fillStyle = 'rgba(255,80,80,0.95)';
-        ctx.fillText('🔒', x1+bw-1, y1+bh*0.45);
+        mainCtx.font = `${bh*0.55}px serif`;
+        mainCtx.textAlign = 'right'; mainCtx.textBaseline = 'top';
+        mainCtx.fillStyle = 'rgba(255,80,80,0.95)';
+        mainCtx.fillText('🔒', x1+bw-1, y1+bh*0.45);
       }
 
       mapHitZones.push({id:z.id, x1, y1, x2:x1+bw, y2:y1+bh,
@@ -3178,51 +3211,25 @@ function renderMap() {
         visited: isVisited, current: isCurrent});
     });
 
-    // ── LÉGENDE (bas gauche) ──
-    const leg = [
-      { col:ZONE_COLORS.current.fill,  stroke:ZONE_COLORS.current.stroke,  label:'Zone actuelle' },
-      { col:ZONE_COLORS.complete.fill, stroke:ZONE_COLORS.complete.stroke, label:'Complétée ✓' },
-      { col:ZONE_COLORS.partial.fill,  stroke:ZONE_COLORS.partial.stroke,  label:'En cours' },
-      { col:ZONE_COLORS.locked.fill,   stroke:ZONE_COLORS.locked.stroke,   label:'Non explorée' },
-    ];
-    const legX = px(1), legY = py(88);
-    const legFontSize = Math.max(7, Math.min(9, W*0.011));
-    leg.forEach((l,i) => {
-      const ly = legY + i*(legFontSize+8);
-      ctx.fillStyle = 'rgba(0,0,20,0.7)';
-      rr(ctx, legX-2, ly-2, px(20)+4, legFontSize+8, 3); ctx.fill();
-      ctx.fillStyle = l.col;
-      rr(ctx, legX, ly, legFontSize, legFontSize, 2); ctx.fill();
-      ctx.strokeStyle = l.stroke; ctx.lineWidth=1;
-      rr(ctx, legX, ly, legFontSize, legFontSize, 2); ctx.stroke();
-      ctx.font = `bold ${legFontSize}px 'Press Start 2P',monospace`;
-      ctx.textAlign='left'; ctx.textBaseline='top';
-      ctx.fillStyle='rgba(0,0,0,0.8)';
-      ctx.fillText(l.label, legX+legFontSize+5+0.5, ly+0.5);
-      ctx.fillStyle='#fff';
-      ctx.fillText(l.label, legX+legFontSize+5, ly);
-    });
-
-    // ── KILL PROGRESS BAR (bas droite) ──
-    const curKills = (player.zoneKills||{})[curZone]||0;
+    // ── KILL PROGRESS BAR (dynamique) ──
     const barW = px(22), barH = py(3);
     const barX = W - barW - px(1.5), barY = H - barH - py(1.5);
-    ctx.fillStyle='rgba(0,0,20,0.75)';
-    rr(ctx,barX-6,barY-6,barW+12,barH+18,5); ctx.fill();
-    ctx.fillStyle='rgba(255,255,255,0.08)';
-    ctx.fillRect(barX, barY, barW, barH);
+    mainCtx.fillStyle='rgba(0,0,20,0.75)';
+    rr(mainCtx,barX-6,barY-6,barW+12,barH+18,5); mainCtx.fill();
+    mainCtx.fillStyle='rgba(255,255,255,0.08)';
+    mainCtx.fillRect(barX, barY, barW, barH);
     const prog = Math.min(1, curKills/killNeeded);
-    ctx.fillStyle = prog>=1 ? '#2dc653' : '#ffd60a';
-    ctx.fillRect(barX, barY, barW*prog, barH);
-    ctx.strokeStyle='rgba(255,255,255,0.2)'; ctx.lineWidth=1;
-    ctx.strokeRect(barX, barY, barW, barH);
+    mainCtx.fillStyle = prog>=1 ? '#2dc653' : '#ffd60a';
+    mainCtx.fillRect(barX, barY, barW*prog, barH);
+    mainCtx.strokeStyle='rgba(255,255,255,0.2)'; mainCtx.lineWidth=1;
+    mainCtx.strokeRect(barX, barY, barW, barH);
     const bfSize = Math.max(7,Math.min(9,W*0.011));
-    ctx.font=`bold ${bfSize}px 'Press Start 2P',monospace`;
-    ctx.textAlign='center'; ctx.textBaseline='bottom';
-    ctx.fillStyle='rgba(0,0,0,0.8)';
-    ctx.fillText(`${curKills}/${killNeeded} combats`, barX+barW/2+0.5, barY-1.5);
-    ctx.fillStyle='#fff';
-    ctx.fillText(`${curKills}/${killNeeded} combats`, barX+barW/2, barY-2);
+    mainCtx.font=`bold ${bfSize}px 'Press Start 2P',monospace`;
+    mainCtx.textAlign='center'; mainCtx.textBaseline='bottom';
+    mainCtx.fillStyle='rgba(0,0,0,0.8)';
+    mainCtx.fillText(`${curKills}/${killNeeded} combats`, barX+barW/2+0.5, barY-1.5);
+    mainCtx.fillStyle='#fff';
+    mainCtx.fillText(`${curKills}/${killNeeded} combats`, barX+barW/2, barY-2);
 
     mapAnimFrame = requestAnimationFrame(drawFrame);
   }
