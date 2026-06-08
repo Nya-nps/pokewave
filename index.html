@@ -52,6 +52,7 @@
       <button onclick="showTalents();toggleDropdown()" class="smtile" style="--tc:#c77dff;--bc:rgba(199,125,255,.1);--brd:rgba(199,125,255,.25)"><span>✨</span>TALENTS</button>
       <button onclick="showPokedex();toggleDropdown()" class="smtile" style="--tc:#e63946;--bc:rgba(230,57,70,.1);--brd:rgba(230,57,70,.25)"><span>📖</span>POKÉDEX</button>
       <button id="btn-tour-drop" onclick="showTourMode();toggleDropdown()" class="smtile" style="display:none;--tc:#ffd60a;--bc:rgba(255,214,10,.12);--brd:rgba(255,214,10,.3)"><span>🏆</span>TOUR</button>
+      <button onclick="showScreen('trial');toggleDropdown()" class="smtile" style="--tc:#a855f7;--bc:rgba(168,85,247,.1);--brd:rgba(168,85,247,.25)"><span>⚡</span>TRIAL</button>
       <button onclick="saveGame();toggleDropdown()" class="smtile" style="--tc:#e63946;--bc:rgba(230,57,70,.1);--brd:rgba(230,57,70,.25)"><span>💾</span>SAVE</button>
     </div>
   </div>
@@ -242,14 +243,7 @@
 <div id="screen-inventory" class="screen">
   <div class="inv-container">
     <div style="font-family:'Press Start 2P',monospace;font-size:.7rem;color:var(--yellow);text-align:center;text-shadow:2px 2px 0 #000;margin-bottom:.5rem">🎒 SAC DU DRESSEUR</div>
-    <div class="inv-tabs">
-      <div class="inv-tab active" onclick="switchInvTab('stats')">📊 Stats</div>
-      <div class="inv-tab" onclick="switchInvTab('bag')">🎒 Sac</div>
-    </div>
-    <div id="inv-panel-stats" class="inv-content">
-      <div class="inv-panel"><h3>📊 Fiche Pokémon</h3><div id="stat-list"></div></div>
-    </div>
-    <div id="inv-panel-bag" class="inv-content" style="display:none">
+    <div id="inv-panel-bag" class="inv-content">
       <div class="inv-panel"><h3>🎒 Objets &amp; Équipements</h3><div id="item-grid" class="item-grid-display"></div></div>
     </div>
     <button class="btn" onclick="showScreen('game')" style="align-self:center;margin-top:.5rem">↩ RETOUR</button>
@@ -445,6 +439,13 @@
 <div id="screen-tour" class="screen" style="background:rgba(7,7,16,.97);backdrop-filter:blur(18px);padding:1.5rem;overflow-y:auto">
   <div style="width:min(560px,97vw);margin:0 auto">
     <div id="tour-content"></div>
+  </div>
+</div>
+
+<!-- ══ TRIAL MODE ══ -->
+<div id="screen-trial" class="screen" style="background:rgba(7,7,16,.97);padding:1.5rem;overflow-y:auto">
+  <div style="width:min(560px,97vw);margin:0 auto">
+    <div id="trial-content"></div>
   </div>
 </div>
 
