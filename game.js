@@ -1091,6 +1091,13 @@ let currentScreen = 'title';
 // ══════════════════════════════════════════
 function showScreen(id) {
   if (id !== 'map' && mapAnimFrame){ cancelAnimationFrame(mapAnimFrame); mapAnimFrame=null; }
+  // ── Ferme tous les menus flottants pour éviter qu'ils restent bloqués ──
+  ['side-menu-overlay','catch-menu','zone-picker-overlay','pre-battle-menu'].forEach(ovId => {
+    const el = document.getElementById(ovId);
+    if (el) el.style.display = 'none';
+  });
+  pendingEnemyData = null;
+  if (id !== 'battle') battleBusy = false;
   document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); if(s.id==='screen-map') s.style.display='none'; });
   document.getElementById('hud').classList.remove('visible');
   document.body.className = '';
@@ -1857,7 +1864,7 @@ function startBattle(enemyData) {
   document.getElementById('btn-magic').innerHTML = `✨ ${player.mMove} <span class="atk-elem-badge elem-${player.mMoveElem||player.type}">${player.mMoveElem||player.type}</span>`;
   updateBattleHp(); disableBattleButtons(false);
   // Désactiver la capture uniquement pendant les modes spéciaux (Tour, World Boss, Trial, Dresseurs)
-  const _isCaptureBlocked = !!(enemy.isWorldBoss || enemy.isTrainerBattle || player._tourBattle || player._worldBossBattle || player._trialBattle);
+  const _isCaptureBlocked = !!(enemy.isWorldBoss || enemy.isBoss || enemy.isTrainerBattle || player._bossBattle || player._tourBattle || player._worldBossBattle || player._trialBattle || player._gymBattle);
   const btnCatch = document.getElementById('btn-catch-battle');
   if (btnCatch) { btnCatch.style.display = _isCaptureBlocked ? 'none' : ''; }
   const shinyBadge = enemy.isShiny ? ' ✨' : '';
@@ -2046,6 +2053,11 @@ function setBattleTurn(turn) {
               showScreen('game'); updateHUD();
               notify('💀 Défaite dans la Tour — retour à l\'Étage 1 !');
               setMessage('💀 Votre Pokémon s\'est évanoui dans la Tour… Vous repartez de l\'Étage 1 !');
+            } else if (player._gymBattle) {
+              player._gymBattle = null;
+              showScreen('game'); updateHUD();
+              notify('💀 Défaite au Gym !');
+              setMessage('💀 Votre Pokémon s\'est évanoui… Retentez le défi du Gym !');
             } else {
               showScreen('game'); updateHUD();
               setMessage(`${player.currentName} s'est évanoui… Vous vous réveillez.`);
@@ -2449,13 +2461,20 @@ function openCatchMenu() {
     list.appendChild(div);
   });
   if (!hasBalls) { list.innerHTML='<div style="font-family:\'Press Start 2P\',monospace;font-size:.5rem;color:rgba(255,255,255,.6);text-align:center;padding:1rem">Aucune Poké Ball !</div>'; }
+  battleBusy = true; // bloque l'auto-combat pendant le menu de capture
   document.getElementById('catch-menu').style.display='flex';
 }
-function closeCatchMenu(){ document.getElementById('catch-menu').style.display='none'; }
+function closeCatchMenu(){
+  document.getElementById('catch-menu').style.display='none';
+  // Libère le verrou uniquement si le combat est encore actif (pas déjà résolu)
+  if (enemy && player && player.hp > 0) battleBusy = false;
+}
 
 function throwBall(ballId) {
+  if (!enemy || !player) { document.getElementById('catch-menu').style.display='none'; battleBusy=false; return; }
   closeCatchMenu();
-  if (!player.balls[ballId]||player.balls[ballId]<=0){ notify('Plus de '+ballId+' !'); return; }
+  battleBusy = true; // re-verrouille jusqu'à la fin de l'animation de la ball
+  if (!player.balls[ballId]||player.balls[ballId]<=0){ notify('Plus de '+ballId+' !'); battleBusy=false; return; }
   player.balls[ballId]--;
   const item = SHOP_ITEMS.find(i=>i.id===ballId);
   const ballImg = item ? item.img : '';
@@ -3952,6 +3971,7 @@ function handleGymVictory() {
     notify(`🏅 ${gl.badge} obtenu !`);
     setMessage(`🏆 Vous avez vaincu ${gl.name} ! ${gl.badgeIcon} ${gl.badge} obtenu ! +${gl.reward}₽`);
     setTimeout(() => notify(`🏅 ${(player.badges||[]).length}/9 badges !`), 1500);
+    setTimeout(() => { stopAutoBattle(); syncActiveFromPlayer(); showScreen('game'); updateHUD(); }, 2000);
     return true;
   }
 }

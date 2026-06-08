@@ -749,6 +749,10 @@ window.setBattleTurn = function(turn) {
             } else if (player._tourBattle) {
               player._tourBattle = false; tourState = null; player.tourFloor = 0;
               showScreen('game'); updateHUD(); notify('💀 Défaite dans la Tour !');
+            } else if (player._gymBattle) {
+              player._gymBattle = null;
+              showScreen('game'); updateHUD(); notify('💀 Défaite au Gym !');
+              setMessage('💀 Votre Pokémon s\'est évanoui… Retentez le défi du Gym !');
             } else {
               showScreen('game'); updateHUD();
               setMessage(`${player.currentName} s'est évanoui…`);
@@ -905,7 +909,8 @@ function updateTimeHUD() {
   else                  el.textContent = '☀️ Jour';
 }
 
-setInterval(updateTimeHUD, 60000);
+if (window._timeHUDInterval) clearInterval(window._timeHUDInterval);
+window._timeHUDInterval = setInterval(updateTimeHUD, 60000);
 setTimeout(updateTimeHUD, 1000);
 
 // ──────────────────────────────────────────────────────────────
