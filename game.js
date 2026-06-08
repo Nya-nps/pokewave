@@ -851,14 +851,14 @@ const ZONES = {
     name:'Bourg-Palette', color:'#44bb44', x:50, y:88, type:'ville',
     desc:'Votre village natal. Herbes hautes calmes pour débuter.',
     connexions:['argenta'],
-    pokemon:[16,19,10,13,25,27,21],
+    pokemon:[16,19,10,13,25,27,21,161,162,163,263,264,265,399,401,403,504,505,506,659,660,664,734,735,736,819,820,824,915,916,917],
     gymLeader: null,
   },
   'argenta': {
     name:'Argenta City', color:'#aaaaff', x:50, y:75, type:'ville',
     desc:'1ère Arène — Badge Pierre. Leader : Pierre, spécialiste Roche.',
     connexions:['bourg-palette','brindibourg'],
-    pokemon:[74,75,76,95,138,140,27,19],
+    pokemon:[74,75,76,95,138,140,27,19,185,207,231,328,408,409,438,524,525,526,744,745,749,830,831,861,932,933,934],
     gymLeader: {
       name:'Pierre', title:'Champion Roche', badge:'Badge Pierre', badgeIcon:'🪨',
       badgeImg:'https://archives.bulbagarden.net/media/upload/d/dd/Boulder_Badge.png',
@@ -873,7 +873,7 @@ const ZONES = {
     name:'Brindibourg', color:'#4499ee', x:50, y:62, type:'ville',
     desc:'2ème Arène — Badge Cascade. Leader : Ondine, spécialiste Eau.',
     connexions:['argenta','lavanville'],
-    pokemon:[54,55,60,61,72,90,98,116,129],
+    pokemon:[54,55,60,61,72,90,98,116,129,158,159,160,258,259,260,393,394,418,501,502,503,656,657,688,728,729,746,816,817,818,912,914,960],
     gymLeader: {
       name:'Ondine', title:'Champion Eau', badge:'Badge Cascade', badgeIcon:'💧',
       badgeImg:'https://archives.bulbagarden.net/media/upload/0/00/Cascade_Badge.png',
@@ -889,7 +889,7 @@ const ZONES = {
     name:'Lavanville', color:'#ffcc00', x:50, y:49, type:'ville',
     desc:'3ème Arène — Badge Foudre. Leader : Surge, spécialiste Électrik.',
     connexions:['brindibourg','celadopole'],
-    pokemon:[25,26,81,82,100,101,125,41,42],
+    pokemon:[25,26,81,82,100,101,125,41,42,172,179,180,309,310,403,404,405,522,523,602,824,825,858,921,938,939],
     gymLeader: {
       name:'Surge', title:'Champion Électrik', badge:'Badge Foudre', badgeIcon:'⚡',
       badgeImg:'https://archives.bulbagarden.net/media/upload/e/e9/Thunder_Badge.png',
@@ -905,7 +905,7 @@ const ZONES = {
     name:'Céladon City', color:'#88cc44', x:50, y:36, type:'ville',
     desc:'4ème Arène — Badge Arc-en-Ciel. Leader : Erika, spécialiste Plante.',
     connexions:['lavanville','carmin-sur-mer'],
-    pokemon:[43,44,45,69,70,71,52,103,114],
+    pokemon:[43,44,45,69,70,71,52,103,114,152,153,154,252,253,254,387,388,420,495,496,497,650,651,672,753,754,763,810,822,823,906,907,951],
     gymLeader: {
       name:'Erika', title:'Champion Plante', badge:'Badge Arc-en-Ciel', badgeIcon:'🌿',
       badgeImg:'https://archives.bulbagarden.net/media/upload/b/b5/Rainbow_Badge.png',
@@ -921,7 +921,7 @@ const ZONES = {
     name:'Carmin-sur-Mer', color:'#cc4422', x:50, y:23, type:'ville',
     desc:'5ème Arène — Badge Âme. Leader : Aya, spécialiste Poison.',
     connexions:['celadopole','parmanie'],
-    pokemon:[23,24,29,32,88,89,109,110,92],
+    pokemon:[23,24,29,32,88,89,109,110,92,169,211,316,317,434,451,453,568,569,590,690,691,747,757,848,944,945],
     gymLeader: {
       name:'Aya', title:'Champion Poison', badge:'Badge Âme', badgeIcon:'💜',
       badgeImg:'https://archives.bulbagarden.net/media/upload/8/8f/Soul_Badge.png',
@@ -937,7 +937,7 @@ const ZONES = {
     name:'Parmanie City', color:'#dddd22', x:50, y:10, type:'ville',
     desc:'6ème Arène — Badge Marais. Leader : Koga, spécialiste Poison ninja.',
     connexions:['carmin-sur-mer','safrania'],
-    pokemon:[96,97,49,88,109,110,132],
+    pokemon:[96,97,49,88,109,110,132,169,177,178,280,281,282,429,433,439,517,518,568,677,678,709,843,844,955,956],
     gymLeader: {
       name:'Koga', title:'Champion Poison Ninja', badge:'Badge Marais', badgeIcon:'🌿',
       badgeImg:'https://archives.bulbagarden.net/media/upload/6/6e/Marsh_Badge.png',
@@ -954,7 +954,7 @@ const ZONES = {
     name:'Safrania City', color:'#ff4499', x:50, y:-3, type:'ville',
     desc:'7ème Arène — Badge Marche. Leader : Sabrina, spécialiste Psy.',
     connexions:['parmanie','iles-ecume'],
-    pokemon:[63,64,65,96,97,122,124],
+    pokemon:[63,64,65,96,97,122,124,177,178,196,280,281,282,429,433,439,517,518,576,677,678,709,843,844,955,956],
     gymLeader: {
       name:'Sabrina', title:'Champion Psy', badge:'Badge Marche', badgeIcon:'🔮',
       badgeImg:'https://archives.bulbagarden.net/media/upload/3/3e/Volcano_Badge.png',
@@ -971,7 +971,7 @@ const ZONES = {
     name:'Îles Écume', color:'#ff6600', x:50, y:-16, type:'ville',
     desc:'8ème Arène — Badge Volcan. Leader : Blaine, spécialiste Feu.',
     connexions:['safrania','ligue-pokemon'],
-    pokemon:[58,59,77,78,126,37,38,136],
+    pokemon:[58,59,77,78,126,37,38,136,155,156,157,255,256,257,390,467,498,513,515,653,725,726,813,814,909,935],
     gymLeader: {
       name:'Blaine', title:'Champion Feu', badge:'Badge Volcan', badgeIcon:'🔥',
       badgeImg:'https://archives.bulbagarden.net/media/upload/1/1e/Volcano_Badge.png',
@@ -988,7 +988,7 @@ const ZONES = {
     name:'Ligue Pokémon', color:'#ff2200', x:50, y:-29, type:'elite',
     desc:'⚠ Plateau Indigo — Élite 4 & Champion. Les 8 badges sont requis !',
     connexions:['iles-ecume'],
-    pokemon:[142,143,144,145,146,147,148,149,150],
+    pokemon:[142,143,144,145,146,147,148,149,150,329,330,334,443,444,610,611,612,690,691,692,782,783,881],
     gymLeader: {
       name:'Champion Sacha', title:'Champion Pokémon', badge:'Titre de Champion', badgeIcon:'🏆',
       badgeImg:'https://archives.bulbagarden.net/media/upload/d/d8/Earth_Badge.png',
@@ -1008,70 +1008,70 @@ const ZONES = {
     name:'Forêt de Jade', color:'#228822', type:'foret',
     desc:'Forêt obscure — Insectes et Pokémon Plante.',
     connexions:['argenta','brindibourg'],
-    pokemon:[11,12,14,15,46,47,48,102,123,127],
+    pokemon:[11,12,14,15,46,47,48,102,123,127,152,153,154,252,253,254,387,388,412,495,496,497,650,651,664,736,753,754,810,822,823,906,907,917],
     gymLeader:null,
   },
   'route-3': {
     name:'Route 3', color:'#55bb55', type:'route',
     desc:'Entre Argenta et la Forêt de Jade.',
     connexions:['argenta','foret-jade'],
-    pokemon:[17,18,20,22,28,35,36,39,40,84],
+    pokemon:[17,18,20,22,28,35,36,39,40,84,161,162,163,263,264,274,399,401,424,504,505,506,659,660,676,734,735,759,819,820,826,915,916,924],
     gymLeader:null,
   },
   'mt-lune': {
     name:'Mt. Lune', color:'#8877bb', type:'grotte',
     desc:'Grotte sombre — fossiles et roches.',
     connexions:['foret-jade','brindibourg'],
-    pokemon:[50,51,56,57,66,67,68,104,105,139],
+    pokemon:[50,51,56,57,66,67,68,104,105,139,185,207,208,304,305,306,408,409,438,524,525,526,744,745,749,830,831,850,932,933,934],
     gymLeader:null,
   },
   'route-5-6': {
     name:'Routes 5-6-7', color:'#55bb55', type:'route',
     desc:'Plaines entre Brindibourg et Céladon.',
     connexions:['brindibourg','celadopole'],
-    pokemon:[30,31,33,34,53,79,80,108,113,115],
+    pokemon:[30,31,33,34,53,79,80,108,113,115,158,159,160,258,259,260,393,394,399,501,502,503,656,657,659,728,729,734,816,817,818,912,914,915],
     gymLeader:null,
   },
   'tour-pokemon': {
     name:'Tour Pokémon', color:'#664466', type:'grotte',
     desc:'Tour hantée de Lavanville — Spectres.',
     connexions:['lavanville','celadopole'],
-    pokemon:[93,94,128,130,131,133,134,135,137,151],
+    pokemon:[93,94,128,130,131,133,134,135,137,151,197,198,200,261,262,359,477,509,510,562,563,841,842,851,942,943,971],
     gymLeader:null,
   },
   'route-9-10': {
     name:'Routes 9-10', color:'#55bb55', type:'route',
     desc:'Chemin rocheux entre Brindibourg et Lavanville.',
     connexions:['brindibourg','lavanville'],
-    pokemon:[2,3,5,6,8,9,73,83,85,99],
+    pokemon:[2,3,5,6,8,9,73,83,85,99,161,162,163,263,264,274,399,401,408,504,505,506,659,660,676,734,735,744,819,820,830,915,916,924],
     gymLeader:null,
   },
   'grotte-azuria': {
     name:'Grotte Azurée', color:'#445588', type:'grotte',
     desc:'Grotte mystérieuse — Pokémon rares.',
     connexions:['brindibourg','safrania'],
-    pokemon:[1,4,7,62,87,91,106,107,111,112],
+    pokemon:[1,4,7,62,87,91,106,107,111,112,177,178,185,280,281,282,402,408,409,517,518,524,677,678,709,739,744,745,839,843,844,932,933,934],
     gymLeader:null,
   },
   'safari-zone': {
     name:'Safari Zone', color:'#44aa44', type:'foret',
     desc:'Zone Safari — Pokémon exotiques !',
     connexions:['parmanie','carmin-sur-mer'],
-    pokemon:[86,117,118,119,120,121,141,86,87,99],
+    pokemon:[86,117,118,119,120,121,141,87,99,152,153,154,252,253,254,387,388,393,495,496,497,650,651,656,728,729,734,810,816,817,906,907,912],
     gymLeader:null,
   },
   'route-13-15': {
     name:'Routes 13-14-15', color:'#55bb55', type:'route',
     desc:'Routes venteuses au sud de Parmanie.',
     connexions:['parmanie','carmin-sur-mer'],
-    pokemon:[83,84,85,115,118,119,120,128,139,141],
+    pokemon:[83,84,85,115,118,119,120,128,139,141,158,159,160,258,259,260,393,394,399,501,502,503,656,657,659,728,729,734,816,817,818,912,914,915],
     gymLeader:null,
   },
   'route-19-20': {
     name:'Routes 19-20', color:'#4488ff', type:'eau',
     desc:'Mer entre Parmanie et les Îles Écume.',
     connexions:['parmanie','iles-ecume'],
-    pokemon:[73,80,86,87,91,99,117,130,131,151],
+    pokemon:[73,80,86,87,91,99,117,130,131,158,159,160,258,259,260,393,394,418,501,502,503,656,657,688,728,729,746,816,817,818,912,914,960],
     gymLeader:null,
   },
 };
@@ -1567,16 +1567,19 @@ function doExplore() {
     const zoneId  = ZONE_ORDER[zoneIdx];
     const zone    = ZONES[zoneId];
     const pool    = zone?.pokemon || [];
-    // Fallback si la zone n'a pas de pokemon
+    // Pokémon de toutes les générations
+    const _allPoke = (typeof ALL_POKEMON !== 'undefined') ? ALL_POKEMON : GEN1;
+    const _pokeMap = (typeof ALL_POKEMON_MAP !== 'undefined') ? ALL_POKEMON_MAP : null;
+    const _allSpdT = (typeof ALL_SPD !== 'undefined') ? ALL_SPD : GEN1_SPD;
     const pokeId  = pool.length > 0
       ? pool[Math.floor(Math.random() * pool.length)]
-      : Math.floor(Math.random() * 151) + 1;
-    const pData   = GEN1.find(p => p.id === pokeId) || GEN1[Math.floor(Math.random()*GEN1.length)];
+      : _allPoke[Math.floor(Math.random() * _allPoke.length)].id;
+    const pData   = (_pokeMap?.get(pokeId)) || _allPoke.find(p => p.id === pokeId) || _allPoke[Math.floor(Math.random()*_allPoke.length)];
 
     const baseLv    = Math.max(1, Math.floor((player.level||1) * 0.8 + wave * 1.5));
     const enemyLevel = baseLv + Math.floor(Math.random() * 4);
     const lvlScale  = scale * (1 + enemyLevel * 0.12);
-    const baseSpd   = GEN1_SPD[pData.id] || 50;
+    const baseSpd   = _allSpdT[pData.id] || 50;
     const e = {
       name: pData.n, id: pData.id, level: enemyLevel,
       hp:   Math.round(pData.hp  * lvlScale),
