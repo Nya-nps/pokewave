@@ -2367,8 +2367,13 @@ function battleAction(action) {
     player.xp+=xpG; player.gold+=goldG;
     if (player._winStreak > 0 && player._winStreak % 5 === 0 && !player._bossBattle)
       notify(`🔥 Streak ×${player._winStreak} — bonus or ×${streakBonus.toFixed(1)} !`);
-    // XP pour tout le roster (50% au bench)
-    if (player.roster) player.roster.forEach((p,i)=>{ if(i!==(player.activeRosterIdx||0) && p.hp>0){ p.xp=(p.xp||0)+Math.floor(xpG*0.5); } });
+    // XP pour tout le roster (50% au bench) + level-up automatique si seuil atteint
+    if (player.roster) player.roster.forEach((p,i)=>{
+      if(i!==(player.activeRosterIdx||0) && p.hp>0){
+        p.xp=(p.xp||0)+Math.floor(xpG*0.5);
+        checkRosterLevelUp(p);
+      }
+    });
     // Compteur kills par zone
     if (!player.zoneKills) player.zoneKills = {};
     const curZ = player.currentZone || 'bourg-palette';
@@ -2644,6 +2649,43 @@ function throwBall(ballId) {
 // ══════════════════════════════════════════
 // LEVEL UP + EVOLUTION
 // ══════════════════════════════════════════
+
+// Level-up silencieux pour les Pokémon en banc (ils gagnent 50% d'XP)
+function checkRosterLevelUp(p) {
+  if (!p || !p.level) return;
+  if (!p.xpNext) p.xpNext = xpForLevel(p.level);
+  let leveled = false;
+  while ((p.xp||0) >= p.xpNext) {
+    p.xp -= p.xpNext;
+    p.level++;
+    p.xpNext = xpForLevel(p.level);
+    p.maxHp  = (p.maxHp||50) + 14;
+    p.hp     = Math.min(p.maxHp, (p.hp||0) + 14);
+    p.maxMp  = (p.maxMp||50) + 8;
+    p.mp     = Math.min(p.maxMp, (p.mp||0) + 8);
+    p.atk    = (p.atk||0) + 3;
+    p.def    = (p.def||0) + 2;
+    p.magic  = (p.magic||0) + 2;
+    p.spd    = (p.spd||0) + 1;
+    if (p.spAtk !== undefined) p.spAtk += 2;
+    if (p.spDef !== undefined) p.spDef += 1;
+    leveled = true;
+  }
+  if (leveled) {
+    // Vérifier les évolutions pour ce Pokémon en banc
+    let chain = EVO_CHAINS[p.currentSpriteId || p.spriteId];
+    while (chain && p.level >= chain.level) {
+      p.currentSpriteId = chain.next;
+      p.currentName     = chain.name;
+      p.maxHp += 20; p.hp = Math.min(p.maxHp, p.hp + 20);
+      p.maxMp  = (p.maxMp||50) + 10; p.mp = Math.min(p.maxMp, p.mp + 10);
+      p.atk += 5; p.def += 4; p.magic += 4;
+      chain = EVO_CHAINS[p.currentSpriteId];
+    }
+    notify(`⬆ ${p.currentName||p.name} → Niveau ${p.level} ! (banc)`);
+  }
+}
+
 function checkLevelUp() {
   while (player.xp >= player.xpNext) {
     player.xp -= player.xpNext;
@@ -3272,6 +3314,9 @@ function loadGame() {
   if (player.mMoveUsesMax === undefined){ player.mMoveUsesMax=4; player.mMoveUses=4; }
   if (!player.moveElem)     player.moveElem     = player.type;
   if (!player.mMoveElem)    player.mMoveElem    = player.type;
+  // Rattrapage niveau pour les Pokémon du banc (XP accumulés sans level-up)
+  (player.roster||[]).forEach((p,i)=>{ if(i!==(player.activeRosterIdx||0)) checkRosterLevelUp(p); });
+  (player.box||[]).forEach(p=>checkRosterLevelUp(p));
   // Sync active roster pokemon to player
   if (player.roster.length > 0) syncPlayerFromActive();
   // Rattraper les évolutions manquées (Pokémon déjà au-delà du niveau d'évolution)
