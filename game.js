@@ -142,6 +142,49 @@ const SHOP_ITEMS = [
   { id:'hyperpotion',  name:'Hyper Potion', desc:'Restaure 120 PV',        price:1200, heal:120,       img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/hyper-potion.png',type:'heal' },
 ];
 
+// Taux de capture officiel Pokémon (1-255). 255 = très commun, 3 = légendaire.
+const POKE_CATCH_RATES = {
+  1:45,2:45,3:45,4:45,5:45,6:45,7:45,8:45,9:45,
+  10:255,11:120,12:45,13:255,14:120,15:45,
+  16:255,17:120,18:45,19:255,20:127,21:255,22:90,23:255,24:90,
+  25:190,26:75,27:255,28:90,29:235,30:120,31:45,32:235,33:120,34:45,
+  35:150,36:75,37:190,38:75,39:170,40:75,
+  41:255,42:90,43:255,44:120,45:45,46:190,47:75,48:255,49:75,
+  50:255,51:100,52:255,53:90,54:190,55:75,56:190,57:75,58:190,59:75,
+  60:255,61:120,62:45,63:200,64:100,65:45,
+  66:180,67:90,68:45,69:255,70:120,71:45,72:190,73:60,74:255,75:120,76:45,
+  77:190,78:75,79:190,80:75,81:190,82:60,83:45,84:190,85:75,
+  86:190,87:75,88:190,89:75,90:190,91:60,92:190,93:90,94:45,
+  95:30,96:190,97:75,98:190,99:60,100:190,101:60,102:190,103:45,
+  104:190,105:75,106:45,107:45,108:45,109:190,110:60,111:120,112:60,
+  113:30,114:45,115:45,116:225,117:75,118:225,119:60,120:225,121:60,
+  122:45,123:45,124:45,125:45,126:45,127:45,128:45,129:255,130:45,
+  131:45,132:35,133:45,134:45,135:45,136:45,137:45,138:45,139:45,
+  140:45,141:45,142:45,143:25,144:3,145:3,146:3,147:45,148:15,149:45,150:3,151:45,
+  152:45,153:45,154:45,155:45,156:45,157:45,158:45,159:45,160:45,
+  161:255,162:127,163:255,164:100,165:255,166:120,167:255,168:90,
+  170:190,171:75,172:190,175:190,176:75,177:190,178:75,
+  179:235,180:120,181:45,183:250,184:150,187:255,188:120,189:45,
+  194:255,195:75,196:45,197:45,204:120,209:190,210:75,
+  216:120,217:60,218:190,219:75,220:225,221:60,223:225,224:75,
+  228:120,229:45,231:190,232:60,236:180,237:45,246:45,247:15,248:45,
+  249:3,250:3,251:45,243:3,244:3,245:3,
+  252:45,253:45,254:45,255:45,256:45,257:45,258:45,259:45,260:45,
+  261:255,262:127,263:255,264:90,280:235,281:120,282:45,285:190,286:75,
+  290:255,291:75,296:180,297:90,304:235,305:120,306:45,307:190,308:75,
+  309:235,310:120,318:225,319:60,322:190,323:75,328:255,329:120,330:45,
+  333:190,334:45,349:255,350:60,361:190,362:75,363:225,364:60,365:45,
+  371:45,372:45,373:45,374:235,375:120,376:30,
+  377:3,378:3,379:3,380:3,381:3,382:3,383:3,384:3,385:45,386:3,
+  387:45,390:45,393:45,495:45,498:45,501:45,650:45,653:45,656:45,
+  722:45,725:45,728:45,810:45,813:45,816:45,906:45,909:45,912:45,
+};
+function getEnemyCatchRate(id) {
+  if (POKE_CATCH_RATES[id] !== undefined) return POKE_CATCH_RATES[id];
+  if (typeof LEGENDARIES_IDS !== 'undefined' && LEGENDARIES_IDS.includes(id)) return 3;
+  return 90; // défaut: assez commun
+}
+
 const ITEM_DISPLAY = {
   potion:      { name:'Potion',       img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/potion.png' },
   superpotion: { name:'Super Potion', img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/super-potion.png' },
@@ -1828,6 +1871,11 @@ function getGoldMultiplier() {
   const p = getActivePoke();
   return (p && p.heldItem === 'amulette-or') ? 1.3 : 1.0;
 }
+function xpForLevel(n) {
+  // Courbe "Medium Fast" Pokémon officielle, facteur ×4 pour l'équilibre du jeu
+  // n→n+1: 4*(3n²+3n+1)  →  lv10=1324, lv30=11164, lv50=30604, lv100=121204
+  return Math.floor(4 * (3*n*n + 3*n + 1));
+}
 let battleTurn = 'player'; // 'player' or 'enemy'
 let battleBusy = false;
 
@@ -2323,13 +2371,15 @@ function throwBall(ballId) {
   disableBattleButtons(true);
   (_hud('battle-log')).textContent = `⚽ Vous lancez une ${item.name} sur ${enemy.name} !`;
 
-  // Calcul taux de capture
-  const hpRatio = enemy.hp / enemy.maxHp; // moins de vie = plus facile
-  const baseRate = 0.15;
-  const hpBonus  = (1 - hpRatio) * 0.55;  // jusqu'à +55% si presque K.O.
-  const ballBonus= item.catchRate;
-  let catchChance = Math.min(0.98, (baseRate + hpBonus) * ballBonus);
+  // Calcul taux de capture — basé sur les taux officiels Pokémon
+  const catchRate = getEnemyCatchRate(enemy.id || 0);
+  // Formule officielle simplifiée : facteur PV (1/3 pleine vie → 1 presque KO)
+  const hpFactor = (3 * (enemy.maxHp||1) - 2 * Math.max(0,enemy.hp)) / (3 * (enemy.maxHp||1));
+  const ballBonus = item.catchRate;
+  let catchChance = Math.min(0.95, (catchRate / 255) * hpFactor * 1.5 * ballBonus);
   if (item.catchRate >= 999) catchChance = 1.0;
+  // Bonus compétence capture
+  if (player._catchBonus) catchChance = Math.min(0.95, catchChance + player._catchBonus);
 
   // Afficher animation
   const catchDiv = document.getElementById('catch-display');
@@ -2395,7 +2445,7 @@ function checkLevelUp() {
     player.level++;
     // Courbe adoucie : +20% par niveau au lieu de +45%
     // Au niveau 50 ça fait ~3800 XP au lieu de ~380000 XP
-    player.xpNext = Math.floor(player.xpNext * 1.20);
+    player.xpNext = xpForLevel(player.level);
     player.maxHp += 14; player.hp = player.maxHp;
     player.maxMp += 8;  player.mp = player.maxMp;
     player.atk+=3; player.def+=2; player.magic+=2; player.spd+=1;
@@ -2430,6 +2480,7 @@ function triggerEvolution(chain) {
   player.maxHp += 20; player.hp = player.maxHp;
   player.maxMp += 10; player.mp = player.maxMp;
   player.atk+=5; player.def+=4; player.magic+=4;
+  syncActiveFromPlayer();
 
   const evoScreen = document.getElementById('evo-screen');
   document.getElementById('evo-sprite').src = SPRITE_FRONT(chain.next);
@@ -2953,6 +3004,11 @@ function loadGame() {
   if (!player.trialPoints)    player.trialPoints   = 0;
   if (!player.trialWins)      player.trialWins     = 0;
   player._trialBattle = false; player._trialBattleTp = 0;
+  // Recalibrer xpNext sur tous les Pokémon en cas d'ancienne courbe
+  const _recalibrate = (p) => { if (p && p.level) { p.xpNext = xpForLevel(p.level); p.xp = Math.min(p.xp||0, p.xpNext - 1); } };
+  (player.roster||[]).forEach(_recalibrate);
+  (player.box||[]).forEach(_recalibrate);
+  if (player.level) { player.xpNext = xpForLevel(player.level); player.xp = Math.min(player.xp||0, player.xpNext - 1); }
   if (!player.roster)       { player.roster = []; player.activeRosterIdx = 0; }
   if (player.roster.length === 0) {
     // Migrate from old save — build roster from player data
@@ -5608,7 +5664,7 @@ function removeItemFromPokemon(source, idx) {
 
 function levelUpPokemon(p) {
   p.level++;
-  p.xpNext = Math.floor((p.xpNext || 100) * 1.45);
+  p.xpNext = xpForLevel((p.level||1));
   p.maxHp  += 12; p.hp = p.maxHp;
   p.atk    += 2; p.def += 1; p.magic += 2; p.spd += 1;
   if (p.spAtk !== undefined) p.spAtk += 2;
