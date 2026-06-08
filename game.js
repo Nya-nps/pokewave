@@ -6339,72 +6339,78 @@ const TOUR_RARE_ITEMS = ['super-bonbon','ceinture-choix','lentille-choix','bande
 // TRIAL MODE SCREEN
 // ══════════════════════════════════════════
 // ── TRIAL : pool de défis légendaires disponibles ──
+// ── TRIAL : contenu END-GAME — stats fixes, pas de scaling trainer ──
+// Formule dégâts : max(1, enemy.atk + rand(5) - player.def/2)
+// Joueur Niv.100 attendu : HP≈1450, ATK≈310, DEF≈210 (def/2≈105)
+// Tier 1 : accessible Niv.70+ · Tier 5 : mur absolu Niv.100+ build optimal
 const TRIAL_CHALLENGES = [
-  // Tier 1 — 20 PT
-  {id:144,n:'Artikodin',  t:'Glace/Vol',     tp:20, hp:120,atk:25,def:22},
-  {id:145,n:'Électhor',   t:'Électrik/Vol',  tp:20, hp:115,atk:28,def:18},
-  {id:146,n:'Sulfura',    t:'Feu/Vol',       tp:20, hp:110,atk:26,def:20},
-  {id:243,n:'Raikou',     t:'Électrik',      tp:20, hp:115,atk:24,def:20},
-  {id:244,n:'Entei',      t:'Feu',           tp:20, hp:130,atk:28,def:18},
-  {id:245,n:'Suicune',    t:'Eau',           tp:20, hp:125,atk:22,def:28},
-  {id:377,n:'Regirock',   t:'Roche',         tp:20, hp:110,atk:22,def:34},
-  {id:378,n:'Regice',     t:'Glace',         tp:20, hp:110,atk:20,def:34},
-  {id:379,n:'Registeel',  t:'Acier',         tp:20, hp:110,atk:21,def:35},
-  // Tier 2 — 30 PT
-  {id:380,n:'Latias',     t:'Dragon/Psy',    tp:30, hp:130,atk:24,def:24},
-  {id:381,n:'Latios',     t:'Dragon/Psy',    tp:30, hp:120,atk:28,def:22},
-  {id:384,n:'Rayquaza',   t:'Dragon/Vol',    tp:30, hp:140,atk:35,def:22},
-  {id:480,n:'Uxie',       t:'Psy',           tp:30, hp:115,atk:18,def:30},
-  {id:481,n:'Mesprit',    t:'Psy',           tp:30, hp:125,atk:24,def:24},
-  {id:482,n:'Azelf',      t:'Psy',           tp:30, hp:110,atk:30,def:20},
-  {id:483,n:'Dialga',     t:'Acier/Dragon',  tp:35, hp:150,atk:32,def:28},
-  {id:484,n:'Palkia',     t:'Eau/Dragon',    tp:35, hp:140,atk:34,def:24},
-  {id:487,n:'Giratina',   t:'Spectre/Dragon',tp:35, hp:160,atk:30,def:28},
-  // Tier 3 — 45 PT
-  {id:638,n:'Cobalion',   t:'Acier/Combat',  tp:45, hp:135,atk:28,def:30},
-  {id:639,n:'Terrakion',  t:'Roche/Combat',  tp:45, hp:130,atk:34,def:26},
-  {id:640,n:'Virizion',   t:'Plante/Combat', tp:45, hp:125,atk:26,def:30},
-  {id:641,n:'Boréas',     t:'Vol',           tp:45, hp:130,atk:32,def:24},
-  {id:642,n:'Démiolos',   t:'Électrik/Vol',  tp:45, hp:130,atk:35,def:22},
-  {id:716,n:'Xerneas',    t:'Fée',           tp:50, hp:155,atk:30,def:26},
-  {id:717,n:'Yveltal',    t:'Ténèbres/Vol',  tp:50, hp:150,atk:34,def:24},
-  {id:718,n:'Zygarde',    t:'Dragon/Sol',    tp:50, hp:165,atk:28,def:28},
-  // Tier 4 — 65 PT
-  {id:150,n:'Mewtwo',     t:'Psy',           tp:65, hp:180,atk:40,def:26},
-  {id:382,n:'Kyogre',     t:'Eau',           tp:65, hp:175,atk:38,def:28},
-  {id:383,n:'Groudon',    t:'Sol',           tp:65, hp:175,atk:40,def:32},
-  {id:791,n:'Solgaleo',   t:'Acier/Psy',     tp:65, hp:165,atk:38,def:30},
-  {id:792,n:'Lunala',     t:'Psy/Spectre',   tp:65, hp:160,atk:36,def:26},
-  {id:800,n:'Necrozma',   t:'Psy',           tp:65, hp:155,atk:38,def:28},
-  // Tier 5 — 85 PT
-  {id:888,n:'Zacian',     t:'Fée',           tp:85, hp:175,atk:48,def:30},
-  {id:889,n:'Zamazenta',  t:'Combat',        tp:85, hp:180,atk:42,def:40},
-  {id:1007,n:'Koraidon',  t:'Combat/Dragon', tp:85, hp:185,atk:46,def:34},
-  {id:1008,n:'Miraidon',  t:'Électrik/Dragon',tp:85, hp:180,atk:42,def:32},
+  // ── Tier 1 — 50 PT · Niv. 72 · "Légendaires régionaux" ──
+  {id:144, n:'Artikodin',  t:'Glace/Vol',      lv:72,  tp:50,  hp:1380, atk:440, def:110, spd:220, magic:400},
+  {id:145, n:'Électhor',   t:'Électrik/Vol',   lv:72,  tp:50,  hp:1300, atk:460, def:100, spd:235, magic:420},
+  {id:146, n:'Sulfura',    t:'Feu/Vol',        lv:72,  tp:50,  hp:1280, atk:455, def:105, spd:225, magic:415},
+  {id:243, n:'Raikou',     t:'Électrik',       lv:72,  tp:50,  hp:1350, atk:440, def:108, spd:240, magic:400},
+  {id:244, n:'Entei',      t:'Feu',            lv:72,  tp:50,  hp:1480, atk:460, def:102, spd:210, magic:420},
+  {id:245, n:'Suicune',    t:'Eau',            lv:72,  tp:50,  hp:1420, atk:420, def:132, spd:200, magic:382},
+  {id:377, n:'Regirock',   t:'Roche',          lv:72,  tp:50,  hp:1300, atk:415, def:155, spd:172, magic:378},
+  {id:378, n:'Regice',     t:'Glace',          lv:72,  tp:50,  hp:1300, atk:400, def:158, spd:175, magic:365},
+  {id:379, n:'Registeel',  t:'Acier',          lv:72,  tp:50,  hp:1300, atk:408, def:162, spd:175, magic:372},
+  // ── Tier 2 — 90 PT · Niv. 95 · "Duo légendaires + Création" ──
+  {id:380, n:'Latias',     t:'Dragon/Psy',     lv:95,  tp:90,  hp:2200, atk:545, def:158, spd:285, magic:500},
+  {id:381, n:'Latios',     t:'Dragon/Psy',     lv:95,  tp:90,  hp:2100, atk:575, def:148, spd:298, magic:525},
+  {id:384, n:'Rayquaza',   t:'Dragon/Vol',     lv:95,  tp:90,  hp:2380, atk:595, def:142, spd:290, magic:545},
+  {id:480, n:'Uxie',       t:'Psy',            lv:95,  tp:90,  hp:2050, atk:512, def:175, spd:262, magic:472},
+  {id:481, n:'Mesprit',    t:'Psy',            lv:95,  tp:90,  hp:2150, atk:548, def:160, spd:270, magic:502},
+  {id:482, n:'Azelf',      t:'Psy',            lv:95,  tp:90,  hp:2000, atk:582, def:145, spd:295, magic:535},
+  {id:483, n:'Dialga',     t:'Acier/Dragon',   lv:95,  tp:90,  hp:2520, atk:562, def:188, spd:252, magic:515},
+  {id:484, n:'Palkia',     t:'Eau/Dragon',     lv:95,  tp:90,  hp:2420, atk:582, def:168, spd:268, magic:535},
+  {id:487, n:'Giratina',   t:'Spectre/Dragon', lv:95,  tp:90,  hp:2680, atk:558, def:192, spd:245, magic:510},
+  // ── Tier 3 — 140 PT · Niv. 120 · "Épées / Forces de la Nature / Vie-Mort" ──
+  {id:638, n:'Cobalion',   t:'Acier/Combat',   lv:120, tp:140, hp:3400, atk:725, def:218, spd:342, magic:665},
+  {id:639, n:'Terrakion',  t:'Roche/Combat',   lv:120, tp:140, hp:3300, atk:765, def:208, spd:332, magic:700},
+  {id:640, n:'Virizion',   t:'Plante/Combat',  lv:120, tp:140, hp:3200, atk:710, def:222, spd:348, magic:650},
+  {id:641, n:'Boréas',     t:'Vol',            lv:120, tp:140, hp:3380, atk:745, def:202, spd:362, magic:682},
+  {id:642, n:'Démiolos',   t:'Électrik/Vol',   lv:120, tp:140, hp:3400, atk:758, def:198, spd:372, magic:695},
+  {id:716, n:'Xerneas',    t:'Fée',            lv:120, tp:140, hp:3620, atk:718, def:225, spd:328, magic:658},
+  {id:717, n:'Yveltal',    t:'Ténèbres/Vol',   lv:120, tp:140, hp:3560, atk:748, def:212, spd:338, magic:685},
+  {id:718, n:'Zygarde',    t:'Dragon/Sol',     lv:120, tp:140, hp:3780, atk:702, def:232, spd:320, magic:642},
+  // ── Tier 4 — 200 PT · Niv. 148 · "Dieu-Pokémon" ──
+  {id:150, n:'Mewtwo',     t:'Psy',            lv:148, tp:200, hp:5800, atk:1005,def:272, spd:455, magic:925},
+  {id:382, n:'Kyogre',     t:'Eau',            lv:148, tp:200, hp:5650, atk:985, def:288, spd:422, magic:905},
+  {id:383, n:'Groudon',    t:'Sol',            lv:148, tp:200, hp:5750, atk:1015,def:305, spd:418, magic:930},
+  {id:791, n:'Solgaleo',   t:'Acier/Psy',      lv:148, tp:200, hp:5520, atk:975, def:295, spd:434, magic:895},
+  {id:792, n:'Lunala',     t:'Psy/Spectre',    lv:148, tp:200, hp:5420, atk:965, def:280, spd:442, magic:885},
+  {id:800, n:'Necrozma',   t:'Psy',            lv:148, tp:200, hp:5320, atk:995, def:285, spd:438, magic:915},
+  // ── Tier 5 — 300 PT · Niv. 178 · "Mur absolu — contenu END-GAME" ──
+  {id:888, n:'Zacian',     t:'Fée',            lv:178, tp:300, hp:9600,  atk:1385,def:405, spd:565, magic:1275},
+  {id:889, n:'Zamazenta',  t:'Combat',         lv:178, tp:300, hp:10200, atk:1325,def:445, spd:528, magic:1215},
+  {id:1007,n:'Koraidon',   t:'Combat/Dragon',  lv:178, tp:300, hp:10800, atk:1405,def:425, spd:555, magic:1285},
+  {id:1008,n:'Miraidon',   t:'Électrik/Dragon',lv:178, tp:300, hp:10200, atk:1365,def:415, spd:560, magic:1255},
 ];
 
 // 5 défis aléatoires, régénérés à chaque ouverture du Trial
 let _trialChallengePool = [];
 function _refreshTrialPool() {
   const shuffled = [...TRIAL_CHALLENGES].sort(()=>Math.random()-.5);
-  // 2 tier1, 2 tier2/3, 1 tier4/5
-  const t1 = shuffled.filter(c=>c.tp<=20).slice(0,2);
-  const t2 = shuffled.filter(c=>c.tp>=30&&c.tp<=50).slice(0,2);
-  const t3 = shuffled.filter(c=>c.tp>=65).slice(0,1);
-  _trialChallengePool = [...t1,...t2,...t3].sort(()=>Math.random()-.5);
+  // 1 par tier pour une difficulté graduée : de l'accessible au mur absolu
+  const t1 = shuffled.filter(c=>c.tp===50).slice(0,1);
+  const t2 = shuffled.filter(c=>c.tp===90).slice(0,1);
+  const t3 = shuffled.filter(c=>c.tp===140).slice(0,1);
+  const t4 = shuffled.filter(c=>c.tp===200).slice(0,1);
+  const t5 = shuffled.filter(c=>c.tp===300).slice(0,1);
+  _trialChallengePool = [...t1,...t2,...t3,...t4,...t5];
 }
 
-// Trial Shop catalog
+// Trial Shop catalog — prix calibrés sur les nouveaux PT (Tier5 = 300 PT/victoire)
 const TRIAL_SHOP = [
-  {id:'orb-bird',    name:'Orbe Oiseau',    legendaries:'Artikodin · Électhor · Sulfura',   cost:100, img:ITEM_DISPLAY['orb-bird']?.img},
-  {id:'orb-beast',   name:'Orbe Bête',      legendaries:'Raikou · Entei · Suicune',         cost:100, img:ITEM_DISPLAY['orb-beast']?.img},
-  {id:'orb-golem',   name:'Orbe Golem',     legendaries:'Regirock · Regice · Registeel',    cost:100, img:ITEM_DISPLAY['orb-golem']?.img},
-  {id:'orb-dragon',  name:'Orbe Dragon',    legendaries:'Latias · Latios · Rayquaza',       cost:160, img:ITEM_DISPLAY['orb-dragon']?.img},
-  {id:'orb-space',   name:'Orbe Espace',    legendaries:'Dialga · Palkia · Giratina',       cost:200, img:ITEM_DISPLAY['orb-space']?.img},
-  {id:'orb-mega',    name:'Orbe Méga',      legendaries:'Mewtwo · Kyogre · Groudon',        cost:450, img:ITEM_DISPLAY['orb-mega']?.img},
-  {id:'orb-ancient', name:'Orbe Ancestral', legendaries:'Solgaleo · Lunala · Necrozma',     cost:320, img:ITEM_DISPLAY['orb-ancient']?.img},
-  {id:'orb-ultra',   name:'Orbe Ultime',    legendaries:'Zacian · Zamazenta · Koraidon...',  cost:650, img:ITEM_DISPLAY['orb-ultra']?.img},
-  {id:'shiny-gem',   name:'Gemme Éclat',    legendaries:'Rend un Pokémon Shiny (+15% stats)',cost:900, img:ITEM_DISPLAY['shiny-gem']?.img},
+  {id:'orb-bird',    name:'Orbe Oiseau',    legendaries:'Artikodin · Électhor · Sulfura',    cost:160,  img:ITEM_DISPLAY['orb-bird']?.img},
+  {id:'orb-beast',   name:'Orbe Bête',      legendaries:'Raikou · Entei · Suicune',          cost:160,  img:ITEM_DISPLAY['orb-beast']?.img},
+  {id:'orb-golem',   name:'Orbe Golem',     legendaries:'Regirock · Regice · Registeel',     cost:160,  img:ITEM_DISPLAY['orb-golem']?.img},
+  {id:'orb-dragon',  name:'Orbe Dragon',    legendaries:'Latias · Latios · Rayquaza',        cost:280,  img:ITEM_DISPLAY['orb-dragon']?.img},
+  {id:'orb-space',   name:'Orbe Espace',    legendaries:'Dialga · Palkia · Giratina',        cost:380,  img:ITEM_DISPLAY['orb-space']?.img},
+  {id:'orb-ancient', name:'Orbe Ancestral', legendaries:'Solgaleo · Lunala · Necrozma',      cost:600,  img:ITEM_DISPLAY['orb-ancient']?.img},
+  {id:'orb-mega',    name:'Orbe Méga',      legendaries:'Mewtwo · Kyogre · Groudon',         cost:900,  img:ITEM_DISPLAY['orb-mega']?.img},
+  {id:'orb-ultra',   name:'Orbe Ultime',    legendaries:'Zacian · Zamazenta · Koraidon...',   cost:1500, img:ITEM_DISPLAY['orb-ultra']?.img},
+  {id:'shiny-gem',   name:'Gemme Éclat',    legendaries:'Rend un Pokémon Shiny (+15% stats)', cost:2500, img:ITEM_DISPLAY['shiny-gem']?.img},
 ];
 
 function buyTrialItem(itemId) {
@@ -6426,17 +6432,16 @@ function startTrialChallenge(idx) {
   if (!player.roster || player.roster.filter(p=>p.hp>0).length===0) {
     notify('Tous vos Pokémon sont K.O. !'); return;
   }
-  const trLvl = Math.max(40, (player.trainerLevel||1) * 4 + 30);
-  const sc = 1 + trLvl * 0.12;
+  // Stats FIXES — contenu end-game, pas de scaling joueur
   const trialEnemy = {
     name: c.n, id: c.id,
     type: c.t.includes('/') ? c.t.split('/')[0] : c.t,
     dualType: c.t,
-    hp: Math.round(c.hp * sc), maxHp: Math.round(c.hp * sc),
-    atk: Math.round(c.atk * sc), def: Math.round(c.def * sc),
-    spd: Math.round(90 * sc * 0.35),
-    magic: Math.round(c.atk * sc * 0.85),
-    level: trLvl, xp: 0, gold: 0,
+    hp: c.hp, maxHp: c.hp,
+    atk: c.atk, def: c.def,
+    spd: c.spd,
+    magic: c.magic,
+    level: c.lv, xp: 0, gold: 0,
     isLegendary: true, isTrainerBattle: true,
   };
   player._trialBattle = true;
@@ -6456,16 +6461,20 @@ function renderTrialScreen() {
   // Challenges section
   const challengeCards = _trialChallengePool.map((c, i) => {
     const sid = c.id;
-    const tier = c.tp <= 20 ? 1 : c.tp <= 35 ? 2 : c.tp <= 50 ? 3 : c.tp <= 65 ? 4 : 5;
-    const tierColor = ['','#7bc8f6','#a8e6cf','#ffd166','#ff9a3c','#e63946'][tier];
-    return `<div style="background:rgba(168,85,247,.07);border:2px solid rgba(168,85,247,.25);border-radius:12px;padding:.7rem;display:flex;align-items:center;gap:.7rem">
-      <img src="${SPRITE_FRONT(sid)}" style="width:52px;height:52px;image-rendering:pixelated;filter:drop-shadow(0 0 6px ${tierColor}40)"/>
+    const tier = c.tp<=50 ? 1 : c.tp<=90 ? 2 : c.tp<=140 ? 3 : c.tp<=200 ? 4 : 5;
+    const tierColor  = ['','#7bc8f6','#a8e6cf','#ffd166','#ff9a3c','#e63946'][tier];
+    const tierLabel  = ['','ACCESSIBLE','INTERMÉDIAIRE','DIFFICILE','TRÈS DIFFICILE','END-GAME ⚠'][tier];
+    const tierBg     = ['','rgba(123,200,246,.08)','rgba(168,230,207,.08)','rgba(255,209,102,.08)','rgba(255,154,60,.10)','rgba(230,57,70,.12)'][tier];
+    const tierBorder = ['','rgba(123,200,246,.3)','rgba(168,230,207,.3)','rgba(255,209,102,.35)','rgba(255,154,60,.4)','rgba(230,57,70,.55)'][tier];
+    return `<div style="background:${tierBg};border:2px solid ${tierBorder};border-radius:12px;padding:.7rem;display:flex;align-items:center;gap:.7rem">
+      <img src="${SPRITE_FRONT(sid)}" style="width:52px;height:52px;image-rendering:pixelated;filter:drop-shadow(0 0 8px ${tierColor}60)"/>
       <div style="flex:1">
         <div style="font-family:'Press Start 2P',monospace;font-size:.42rem;color:#ffd700">${c.n}</div>
-        <div style="font-family:'Press Start 2P',monospace;font-size:.3rem;color:rgba(255,255,255,.5);margin-top:.15rem">${c.t} · Tier ${tier}</div>
-        <div style="font-family:'Press Start 2P',monospace;font-size:.32rem;color:${tierColor};margin-top:.1rem">+${c.tp} PT en cas de victoire</div>
+        <div style="font-family:'Press Start 2P',monospace;font-size:.28rem;color:rgba(255,255,255,.45);margin-top:.12rem">${c.t} · Niv.<b>${c.lv}</b></div>
+        <div style="font-family:'Press Start 2P',monospace;font-size:.28rem;color:${tierColor};margin-top:.08rem">${tierLabel}</div>
+        <div style="font-family:'Press Start 2P',monospace;font-size:.32rem;color:#a855f7;margin-top:.1rem">+${c.tp} PT</div>
       </div>
-      <button onclick="startTrialChallenge(${i})" style="font-family:'Press Start 2P',monospace;font-size:.32rem;padding:.4rem .6rem;background:linear-gradient(180deg,#a855f7,#7c3aed);color:#fff;border:none;border-radius:8px;cursor:pointer;white-space:nowrap">⚡ DÉFIER</button>
+      <button onclick="startTrialChallenge(${i})" style="font-family:'Press Start 2P',monospace;font-size:.32rem;padding:.4rem .6rem;background:linear-gradient(180deg,${tierColor},${tierBorder.replace('rgba','rgb').replace(/,[\d.]+\)/,')')});color:#000;border:none;border-radius:8px;cursor:pointer;white-space:nowrap;font-weight:bold">⚡ DÉFIER</button>
     </div>`;
   }).join('');
 
@@ -6501,7 +6510,8 @@ function renderTrialScreen() {
     </div>
 
     <div style="font-family:'Press Start 2P',monospace;font-size:.4rem;color:#a855f7;margin-bottom:.4rem">⚔ DÉFIS DISPONIBLES</div>
-    <div style="font-family:'Press Start 2P',monospace;font-size:.3rem;color:rgba(255,255,255,.35);margin-bottom:.5rem">Victoire = PT · Défaite = 0 PT · Pas de capture possible</div>
+    <div style="font-family:'Press Start 2P',monospace;font-size:.28rem;color:rgba(255,154,60,.8);margin-bottom:.2rem">⚠ Contenu END-GAME — Niv.100+ recommandé pour Tier 3+</div>
+    <div style="font-family:'Press Start 2P',monospace;font-size:.28rem;color:rgba(255,255,255,.3);margin-bottom:.5rem">Victoire = PT · Défaite = 0 PT · Stats fixes · Pas de capture</div>
     <div style="display:flex;flex-direction:column;gap:.4rem;margin-bottom:1rem">${challengeCards}</div>
     <button onclick="_refreshTrialPool();renderTrialScreen()" style="width:100%;margin-bottom:1rem;padding:.45rem;background:rgba(168,85,247,.15);border:1px solid rgba(168,85,247,.3);border-radius:8px;color:#a855f7;cursor:pointer;font-family:'Press Start 2P',monospace;font-size:.35rem">🔄 Nouveaux défis</button>
 
