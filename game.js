@@ -1396,6 +1396,20 @@ function _doUpdateHUD() {
   setBar('bar-hp','val-hp', player.hp, player.maxHp);
   setBar('bar-xp','val-xp', player.xp, player.xpNext);
   updateHUDTrainer();
+  // Bouton REPOS : affiche % PV et streak
+  const restBtn = document.getElementById('btn-rest-dynamic');
+  if (restBtn) {
+    const hpPct = player.maxHp > 0 ? Math.round((player.hp / player.maxHp) * 100) : 100;
+    const streak = player._winStreak || 0;
+    restBtn.textContent = streak >= 5
+      ? `🏥 REPOS (${hpPct}%) 🔥×${streak}`
+      : `🏥 REPOS (${hpPct}%)`;
+    restBtn.style.background = hpPct < 30
+      ? 'linear-gradient(180deg,#e63946,#a01e27)'
+      : hpPct < 60
+        ? 'linear-gradient(180deg,#f4a261,#e76f51)'
+        : 'linear-gradient(180deg,#2dc653,#1a8035)';
+  }
   // Tour button in dropdown
   const tourBtn = _hud('btn-tour-drop');
   if (tourBtn) tourBtn.style.display = (player.trainerLevel||1) >= 10 ? 'block' : 'none';
@@ -1590,6 +1604,21 @@ function updateKillHUD() {
   if (bf) bf.style.width = `${Math.min(100,(display/KILLS_PER_WAVE)*100)}%`;
   if (dl) dl.textContent = `×${diffMult}`;
   if (bb) bb.style.display = bossReady ? 'inline-block' : 'none';
+  _updateQuestHUD();
+}
+
+// ── Mini-tracker quêtes journalières dans le HUD ──
+function _updateQuestHUD() {
+  const bar = document.getElementById('quest-hud-bar');
+  if (!bar || !player) return;
+  const quests = player.dailyQuests || [];
+  if (!quests.length) { bar.style.display='none'; return; }
+  bar.style.display = 'flex';
+  bar.innerHTML = quests.map(q => {
+    const pct = Math.min(100, Math.round(((q.progress||0)/q.goal)*100));
+    const color = q.done ? '#2dc653' : pct > 50 ? '#ffd60a' : 'rgba(255,255,255,.5)';
+    return `<span title="${q.desc}" style="color:${color}">${q.done?'✅':' '} ${q.title.length > 12 ? q.title.slice(0,12)+'…':q.title} ${q.done?'':pct+'%'}</span>`;
+  }).join('<span style="color:rgba(255,255,255,.2)">│</span>');
 }
 
 function recordKill() {
@@ -1710,6 +1739,7 @@ function doRest() {
     return;
   }
   lastRestTime = now;
+  player._winStreak = 0; // le repos réinitialise le streak
   // Soin complet : le Centre Pokémon restaure 100 % des PV et PP
   player.hp = player.maxHp;
   player.mp = player.maxMp;
@@ -1964,9 +1994,9 @@ function getGoldMultiplier() {
   return (p && p.heldItem === 'amulette-or') ? 1.3 : 1.0;
 }
 function xpForLevel(n) {
-  // Courbe "Medium Fast" Pokémon officielle, facteur ×4 pour l'équilibre du jeu
-  // n→n+1: 4*(3n²+3n+1)  →  lv10=1324, lv30=11164, lv50=30604, lv100=121204
-  return Math.floor(4 * (3*n*n + 3*n + 1));
+  // Courbe "Medium Fast" allégée — facteur ×3 (−25 % vs l'ancienne ×4)
+  // lv10≈993  lv30≈8373  lv50≈22953  lv100≈90903
+  return Math.floor(3 * (3*n*n + 3*n + 1));
 }
 let battleTurn = 'player'; // 'player' or 'enemy'
 let battleBusy = false;
@@ -2059,6 +2089,7 @@ function setBattleTurn(turn) {
               showScreen('game'); updateHUD();
               setMessage(`${player.currentName} s'est évanoui… Vous vous réveillez.`);
             }
+            player._winStreak = 0; // réinitialise le streak en cas de défaite
             // Farm auto continue si actif — reprend l'exploration automatiquement
             if (farmAutoOn) {
               if (farmAutoTimer) clearTimeout(farmAutoTimer);
@@ -2270,10 +2301,15 @@ function battleAction(action) {
     // Bonus badge : +50% par badge (cumulatif, max ×5 avec 8 badges)
     const badgeCount  = (player.badges||[]).length;
     const badgeBonus  = 1 + badgeCount * 0.5;
+    // Streak de victoires consécutives (réinitialisé à la défaite ou au repos)
+    player._winStreak = (player._winStreak||0) + 1;
+    const streakBonus = player._bossBattle ? 1.0 : Math.min(2.0, 1 + Math.floor(player._winStreak / 5) * 0.1);
     const baseXP      = enemy.xp || 10;
     const xpG         = Math.round(baseXP * 3 * lvRatio * badgeBonus);
-    const goldG       = Math.round((enemy.gold + Math.floor(Math.random()*10)) * getGoldMultiplier());
+    const goldG       = Math.round((enemy.gold + Math.floor(Math.random()*10)) * getGoldMultiplier() * streakBonus);
     player.xp+=xpG; player.gold+=goldG;
+    if (player._winStreak > 0 && player._winStreak % 5 === 0 && !player._bossBattle)
+      notify(`🔥 Streak ×${player._winStreak} — bonus or ×${streakBonus.toFixed(1)} !`);
     // XP pour tout le roster (50% au bench)
     if (player.roster) player.roster.forEach((p,i)=>{ if(i!==(player.activeRosterIdx||0) && p.hp>0){ p.xp=(p.xp||0)+Math.floor(xpG*0.5); } });
     // Compteur kills par zone
@@ -2295,6 +2331,9 @@ function battleAction(action) {
     if (enemy.type) awardShardOnKill(enemy.type);
     // Random event trigger
     triggerRandomEvent();
+    // Auto-save silencieux toutes les 5 victoires
+    _autoSaveKillCounter = (_autoSaveKillCounter||0) + 1;
+    if (_autoSaveKillCounter % 5 === 0) _silentSave();
 
     // Record kill for wave system
     if (!player._bossBattle) recordKill();
@@ -2322,6 +2361,7 @@ function battleAction(action) {
       updateGlobalStats('boss_kills');
       gainSkillPoints(3 + bossWave);
       checkAchievements();
+      _silentSave(); // toujours sauvegarder après un boss
       setTimeout(()=>{ stopAutoBattle(); disableBattleButtons(false); syncActiveFromPlayer(); showScreen('game'); updateHUD(); updateKillHUD(); }, 1800);
       return;
     }
@@ -2562,7 +2602,8 @@ function checkLevelUp() {
     player.moveUses = player.moveUsesMax || 6;
     player.mMoveUses = player.mMoveUsesMax || 4;
     syncActiveFromPlayer();
-    notify(`⬆ ${player.currentName} → Niveau ${player.level} !`);
+    notify(`⬆ Niv.${player.level} ! +14PV +3ATQ +2DEF +2Mag +1Vit`);
+    setMessage(`🌟 ${player.currentName} passe au Niveau ${player.level} ! ❤️+14PV  ⚔️+3ATQ  🛡️+2DEF  ✨+2Mag  ⚡+1Vit`);
     updateGlobalStats('level_ups');
     checkAchievements();
     const lvlMoves = (LEVEL_UP_MOVES[player.type] || LEVEL_UP_MOVES['Normal']).filter(m => m.lv === player.level && MOVES_DB[m.move]);
@@ -3235,6 +3276,20 @@ saveGame = function() {
   notify('Partie sauvegardée !');
   setMessage('💾 Votre aventure a été sauvegardée.');
 };
+
+// ── Auto-save silencieux (sans notification) ──
+let _autoSaveKillCounter = 0;
+function _silentSave() {
+  if (!player) return;
+  try {
+    const serialized = JSON.stringify(player);
+    localStorage.setItem(SAVE_KEY, serialized);
+    _idbSave(serialized);
+  } catch(e) {}
+}
+// Auto-save toutes les 3 minutes en arrière-plan
+if (window._autoSaveInterval) clearInterval(window._autoSaveInterval);
+window._autoSaveInterval = setInterval(_silentSave, 180000);
 
 // ── Export — télécharge un fichier .pwsave (JSON) ──
 function exportSave() {
@@ -6270,3 +6325,46 @@ document.addEventListener('click', function(e) {
   if (!overlay || overlay.style.display === 'none') return;
   if (e.target === overlay) closeZonePicker();
 }, { passive: true });
+
+// ══════════════════════════════════════════
+// RACCOURCIS CLAVIER (QoL)
+// ══════════════════════════════════════════
+document.addEventListener('keydown', function(e) {
+  // Ne pas interférer si l'utilisateur tape dans un champ texte
+  if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+  const key = e.key;
+
+  // ── Écran de jeu ──
+  if (currentScreen === 'game') {
+    if (key === ' ' || key === 'Enter') { e.preventDefault(); doExplore(); }
+    else if (key === 'r' || key === 'R') { doRest(); }
+    else if (key === 'i' || key === 'I') { showScreen('inventory'); }
+    else if (key === 'm' || key === 'M') { showMap(); }
+    else if (key === 't' || key === 'T') { showTeam(); }
+  }
+  // ── Écran de combat ──
+  else if (currentScreen === 'battle') {
+    if ((key === 'a' || key === 'A') && !battleBusy) {
+      const btnAtk = document.getElementById('btn-attack');
+      if (btnAtk && !btnAtk.disabled) btnAtk.click();
+    } else if ((key === 's' || key === 'S') && !battleBusy) {
+      const btnMag = document.getElementById('btn-magic');
+      if (btnMag && !btnMag.disabled) btnMag.click();
+    } else if (key === 'f' || key === 'F') {
+      const btnFlee = document.getElementById('btn-flee');
+      if (btnFlee && !btnFlee.disabled) btnFlee.click();
+    }
+  }
+  // ── Retour (Échap) ──
+  if (key === 'Escape') {
+    const overlay = document.getElementById('zone-picker-overlay');
+    if (overlay && overlay.style.display !== 'none') { closeZonePicker(); return; }
+    const sideMenu = document.getElementById('side-menu-overlay');
+    if (sideMenu && sideMenu.style.display !== 'none') { toggleDropdown(); return; }
+    const catchMenu = document.getElementById('catch-menu');
+    if (catchMenu && catchMenu.style.display !== 'none') { closeCatchMenu(); return; }
+    if (currentScreen !== 'game' && currentScreen !== 'title' && currentScreen !== 'menu' && currentScreen !== 'battle') {
+      showScreen('game');
+    }
+  }
+});
