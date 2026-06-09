@@ -1457,8 +1457,10 @@ function _doUpdateHUD() {
 }
 function setBar(barId, valId, cur, max) {
   const pct = Math.max(0, Math.min(100, (cur/max)*100));
-  _hud(barId).style.width = pct+'%';
+  const el = _hud(barId);
+  el.style.width = pct+'%';
   _hud(valId).textContent = `${Math.ceil(cur)} / ${max}`;
+  if (barId === 'bar-hp') el.classList.toggle('hp-low', pct < 25);
 }
 const eventLog = [];
 let _msgRafPending = false;
@@ -1607,7 +1609,7 @@ function getWaveState() {
   const bossReady      = killsSinceBoss >= KILLS_PER_WAVE;
   const wave           = bossesBeaten + 1;
   const killsInWave    = killsSinceBoss % KILLS_PER_WAVE;
-  const diffMult       = parseFloat((1 + bossesBeaten * 0.15).toFixed(2));
+  const diffMult       = parseFloat(Math.min(10.0, 1 + bossesBeaten * 0.15).toFixed(2));
   return { wave, killsInWave, bossReady, diffMult, totalKills, killsSinceBoss };
 }
 
@@ -1665,11 +1667,13 @@ function recordKill() {
 //    1   │   10   │   ×1.80   │     300 XP    │    500 ₽
 //    5   │   30   │   ×2.60   │   1 500 XP    │  2 500 ₽
 //   10   │   55   │   ×3.60   │   3 000 XP    │  5 000 ₽
-//   20   │  100   │   ×5.60   │   6 000 XP    │ 10 000 ₽
+//   20   │  105   │   ×5.60   │   6 000 XP    │ 10 000 ₽
+//   50   │  255   │  ×10.00   │   6 000 XP    │ 10 000 ₽
+//   89+  │  450   │  ×10.00   │   6 000 XP    │ 10 000 ₽ (plafond)
 // ──────────────────────────────────────────────────────────────
 function _bossFixedLevel(wave) {
-  // Paliers fixes : vague 1→10, 2→15, 3→20 … plafonné à 100
-  return Math.min(100, 5 + wave * 5);
+  // Paliers fixes : vague 1→10, 2→15, 3→20 … vague 89→450 (plafond)
+  return Math.min(450, 5 + wave * 5);
 }
 function _bossStatMult(wave) {
   // Vague 1 : ×1.8 (intro abordable)
@@ -1716,8 +1720,8 @@ function generateBossEnemy() {
   const spd = Math.round(60 * (1 + wave * 0.03));
 
   // Récompenses fixes (ne dépendent pas du niveau du joueur)
-  const xpReward   = Math.round(200 + wave * 150);
-  const goldReward = Math.round(300 + wave * 100);
+  const xpReward   = Math.max(300, Math.round(15 * wave * wave));
+  const goldReward = Math.max(200, Math.round(8 * wave * wave));
 
   return {
     name: `⭐ ${b.n} (Boss V.${wave})`,
@@ -2607,7 +2611,7 @@ function battleAction(action) {
         notify(`🔁 Boss Vague ${bossWave} rejoué — entraînement accompli !`);
         setMessage(`🔁 Boss Vague ${bossWave} rejoué — aucune récompense (entraînement pur).`);
       } else {
-        const bonusGold = Math.round(200 * bossWave);
+        const bonusGold = Math.round(200 * bossWave * getPrestigeMults().boss);
         player.gold += bonusGold;
         updateHUD();
         notify(`🏆 Boss Vague ${bossWave} vaincu ! +${bonusGold}₽`);
@@ -2853,6 +2857,7 @@ function checkRosterLevelUp(p) {
   if (!p.xpNext) p.xpNext = xpForLevel(p.level);
   let leveled = false;
   while ((p.xp||0) >= p.xpNext) {
+    if (p.level >= 500) { p.xp = 0; break; }
     p.xp -= p.xpNext;
     p.level++;
     p.xpNext = xpForLevel(p.level);
@@ -2887,6 +2892,7 @@ function checkRosterLevelUp(p) {
 
 function checkLevelUp() {
   while (player.xp >= player.xpNext) {
+    if (player.level >= 500) { player.xp = 0; break; }
     player.xp -= player.xpNext;
     player.level++;
     // Courbe adoucie : +20% par niveau au lieu de +45%
@@ -3895,10 +3901,15 @@ function renderSaveManager() {
 // ══════════════════════════════════════════
 let notifTimer;
 function notify(msg) {
-  const el=document.getElementById('notif');
-  el.textContent=msg; el.classList.add('show');
+  const el = document.getElementById('notif');
+  el.textContent = msg;
+  el.className = 'show';
+  if (/✅|🏆|⬆|🔓|🎖|🥚/.test(msg))          el.classList.add('notif-success');
+  else if (/✨\s*PRESTIGE|MAÎTRE/.test(msg))    el.classList.add('notif-prestige');
+  else if (/💀\s*BOSS|WORLD BOSS|boss/.test(msg)) el.classList.add('notif-boss');
+  else if (/❌|⚠|Requis|impossible/.test(msg)) el.classList.add('notif-error');
   clearTimeout(notifTimer);
-  notifTimer=setTimeout(()=>el.classList.remove('show'),2400);
+  notifTimer = setTimeout(() => el.classList.remove('show'), 2400);
 }
 // ══════════════════════════════════════════
 // MAP — IMAGE + OVERLAY TRANSPARENT
@@ -5319,12 +5330,12 @@ function canPrestige() {
   if (!player) return false;
   const wave = player.lastBossWave || 0;
   const lv   = player.level || 1;
-  return wave >= 20 && lv >= 50;
+  return wave >= 20 && lv >= 100;
 }
 
 function doPrestige() {
   if (!canPrestige()) {
-    notify('Requis : Boss Vague 20+ et Niveau 50+');
+    notify('Requis : Boss Vague 20+ et Niveau 100+');
     return;
   }
   const prestigeLv = (player.prestigeLevel||0) + 1;
@@ -5333,9 +5344,10 @@ function doPrestige() {
   // Keep: prestige level, dex, achievements, badges bonus
   const keepFields = {
     name:player.name, prestigeLevel:prestigeLv,
-    prestigeXPMult: (player.prestigeXPMult||1) * (reward.mult.xp||1),
-    prestigeGoldMult:(player.prestigeGoldMult||1)*(reward.mult.gold||1),
-    prestigeShinyMult:(player.prestigeShinyMult||1)*(reward.mult.shiny||1),
+    prestigeXPMult:   (player.prestigeXPMult||1)   * (reward.mult.xp||1),
+    prestigeGoldMult: (player.prestigeGoldMult||1)  * (reward.mult.gold||1),
+    prestigeShinyMult:(player.prestigeShinyMult||1) * (reward.mult.shiny||1),
+    prestigeBossMult: (player.prestigeBossMult||1)  * (reward.mult.boss||1),
     dexSeen: player.dexSeen,
     dexMilestonesGiven: player.dexMilestonesGiven,
     achievements: player.achievements,
@@ -5358,6 +5370,7 @@ function getPrestigeMults() {
     xp:   player?.prestigeXPMult   || 1,
     gold: player?.prestigeGoldMult || 1,
     shiny:player?.prestigeShinyMult|| 1,
+    boss: player?.prestigeBossMult || 1,
   };
 }
 
@@ -6289,6 +6302,7 @@ function removeItemFromPokemon(source, idx) {
 }
 
 function levelUpPokemon(p) {
+  if (p.level >= 500) return;
   p.level++;
   p.xpNext = xpForLevel((p.level||1));
   p.maxHp  += 12; p.hp = p.maxHp;
