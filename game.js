@@ -5143,14 +5143,18 @@ function challengeWorldBoss() {
     return;
   }
   const lv = player.level || 1;
+  if (lv < 30) {
+    notify('⚠️ Niveau 30 requis !');
+    setMessage('🌍 Trop faible ! Atteignez le niveau 30 avant d\'affronter les World Boss.');
+    return;
+  }
   const b = WORLD_BOSS_POOL[Math.floor(Math.random() * WORLD_BOSS_POOL.length)];
   const level = Math.max(80, Math.min(450, lv + 55));
-  // Stats calées sur le joueur — toujours challengeant mais mathématiquement faisable.
-  // +10% HP par kill pour la progression longue durée.
+  // +10% HP par kill. Stats relatives au joueur, mais planchers fixes pour éviter boss trivial.
   const difficulty = 1 + (player.worldBossKills || 0) * 0.10;
-  const bossHp  = Math.round(player.maxHp  * 3 * difficulty);
-  const bossAtk = Math.round(player.maxHp  * 0.15 + Math.floor(player.def / 2));
-  const bossDef = Math.round(player.atk * 0.40);
+  const bossHp  = Math.max(1200, Math.round(player.maxHp  * 5   * difficulty));
+  const bossAtk = Math.max(80,   Math.round(player.atk    * 0.90));
+  const bossDef = Math.max(50,   Math.round(player.atk    * 0.50));
   const boss = {
     name:`🌍 ${b.n}`, id:b.id, level,
     hp:bossHp, maxHp:bossHp, atk:bossAtk, def:bossDef,

@@ -26,6 +26,16 @@
 - **Boss level cap 100→450** : `_bossFixedLevel` plafonnait à 100 (résidu ancien cap) → porté à 450. Vague 20 = niv.105, vague 50 = niv.255, vague 89+ = niv.450
 - **Prestige niveau 50→100** : `canPrestige` exigeait niveau 50 (10% du cap) → porté à 100 (20%)
 
+## Correctifs appliqués (2026-06-09 — session 3)
+
+### World Boss — stats triviales au bas niveau CORRIGÉ
+- **Problème** : stats boss 100% relatives au joueur, sans plancher → niv 1 générait un boss à 60 HP / 5 ATK
+- **Fix** : gate niveau 30 + planchers `Math.max` sur les trois stats
+  - `bossHp  = Math.max(1200, player.maxHp * 5 * difficulty)` (était `player.maxHp * 3`)
+  - `bossAtk = Math.max(80,   player.atk   * 0.90)` (était `player.maxHp * 0.15 + def/2`)
+  - `bossDef = Math.max(50,   player.atk   * 0.50)` (était `player.atk * 0.40`)
+- **Pattern** : gate de niveau → stats minimales fixes → scaling pour late-game (standard RPG browser)
+
 ## Règles de design établies
 - Les ennemis ont des stats simplifiées : {id, n, t, hp, atk, def, xp, g} (divisées par ~5 des stats officielles)
 - Le niveau maximum du jeu est 500 (enforced)
