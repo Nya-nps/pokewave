@@ -1483,13 +1483,7 @@ ZONE_ORDER.push(
 // NOUVEAUX ITEMS — status healers, baies, objets portés
 // ──────────────────────────────────────────────────────────────
 SHOP_ITEMS.push(
-  { id:'antidote',    name:'Antidote',      desc:'Soigne le Poison',          price:100,  heal:0, statusCure:'poison', img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/antidote.png',         type:'status' },
-  { id:'paralysoin',  name:'Anti-Para',     desc:'Soigne la Paralysie',       price:200,  heal:0, statusCure:'paralysis', img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/paralyze-heal.png', type:'status' },
-  { id:'réveil',      name:'Réveil',        desc:'Soigne le Sommeil',         price:250,  heal:0, statusCure:'sleep', img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/awakening.png',         type:'status' },
-  { id:'brulsoins',   name:'Brûle-Soins',   desc:'Soigne les Brûlures',       price:250,  heal:0, statusCure:'burn', img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/burn-heal.png',          type:'status' },
-  { id:'antidegel',   name:'Antigel',       desc:'Soigne le Gel',             price:250,  heal:0, statusCure:'freeze', img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/ice-heal.png',         type:'status' },
-  { id:'totalsoins',  name:'Total-Soins',   desc:'Soigne tous les statuts',   price:600,  heal:0, statusCure:'all', img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/full-heal.png',            type:'status' },
-  { id:'maxrevif',    name:'Max Revif',     desc:'Soigne tout + restaure PV', price:1500, heal:999, statusCure:'all', img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/max-revive.png',          type:'heal' },
+  { id:'maxrevif',    name:'Max Revif',     desc:'Soigne tout + restaure PV', price:1500, heal:999, img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/max-revive.png',          type:'heal' },
   { id:'elixir',      name:'Élixir',        desc:'Restaure 10 PP de toutes les attaques', price:1500, pp:10, img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/elixir.png', type:'pp' },
   { id:'maxelixir',   name:'Max Élixir',    desc:'Restaure tous les PP',      price:4500, pp:999, img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/max-elixir.png',                             type:'pp' },
 );

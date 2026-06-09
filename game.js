@@ -1756,8 +1756,13 @@ function challengeBoss() {
   const boss = generateBossEnemy();
   if (!boss) return;
   const multLabel = boss._statMult ? `×${boss._statMult.toFixed(1)} stats` : '';
-  notify(`💀 Boss V.${wave} — Niv.${boss.level} ${multLabel}`);
-  setMessage(`💀 Boss Vague ${wave} : ${boss.name} Niv.${boss.level} surgit ! Stats boostées ${multLabel} — +${boss.xp} XP / +${boss.gold}₽`);
+  if (hasPrestigeUpgrade('boss-preview')) {
+    notify(`🔍 Intel Boss : ${boss.name} PV${boss.hp} ATK${boss.atk} DEF${boss.def} VIT${boss.spd}`);
+    setMessage(`🔍 Intel Boss — ${boss.name} Niv.${boss.level} : PV ${boss.hp} | ATK ${boss.atk} | DEF ${boss.def} | VIT ${boss.spd} | +${boss.xp} XP / +${boss.gold}₽`);
+  } else {
+    notify(`💀 Boss V.${wave} — Niv.${boss.level} ${multLabel}`);
+    setMessage(`💀 Boss Vague ${wave} : ${boss.name} Niv.${boss.level} surgit ! Stats boostées ${multLabel} — +${boss.xp} XP / +${boss.gold}₽`);
+  }
   player._bossBattle = { wave };
   startBattle(boss);
 }
@@ -2014,8 +2019,9 @@ function cancelPreBattle() {
 
 function startBattle(enemyData) {
   enemy = { ...enemyData, maxHp: enemyData.hp };
-  // Réinitialiser Revenant (une seule fois par combat)
+  // Réinitialiser Revenant + auto-heal (une seule fois par combat)
   if (player.roster) player.roster.forEach(p => { if (p._revenant) p._revenantUsed = false; });
+  player._autoHealUsed = false;
   const activePoke = getActivePoke();
   const playerShiny = activePoke?.isShiny || false;
   document.getElementById('b-player-name').textContent = player.currentName + (playerShiny ? ' ✨' : '');
@@ -2184,6 +2190,7 @@ function getGoldMultiplier() {
   if (p && p._fortuneBonus) mult *= (1 + p._fortuneBonus);
   if (player && player._globalGoldBonus) mult *= (1 + player._globalGoldBonus);
   if (player && player.prestigeGoldMult) mult *= player.prestigeGoldMult;
+  mult *= getTrainerRank().bonus.gold;
   const ev = getActiveEventEffects();
   if (ev.goldMult) mult *= ev.goldMult;
   return mult;
@@ -2194,6 +2201,7 @@ function getXpMultiplier() {
   if (p && p._xpBonus) mult *= (1 + p._xpBonus);
   if (player && player._globalXPBonus) mult *= (1 + player._globalXPBonus);
   if (player && player.prestigeXPMult) mult *= player.prestigeXPMult;
+  mult *= getTrainerRank().bonus.xp;
   const ev = getActiveEventEffects();
   if (ev.xpMult) mult *= ev.xpMult;
   return mult;
@@ -2203,6 +2211,7 @@ function getEffectiveShinyOdds() {
   if (player) {
     if (player._shinyLuckMult) odds = Math.max(1, Math.round(odds / player._shinyLuckMult));
     if (player.prestigeShinyMult) odds = Math.max(1, Math.round(odds / player.prestigeShinyMult));
+    if ((player._luckyEggKills||0) > 0) odds = Math.max(1, Math.round(odds / 3));
   }
   const ev = getActiveEventEffects();
   if (ev.shinyMult) odds = Math.max(1, Math.round(odds / ev.shinyMult));
@@ -2239,6 +2248,12 @@ function setBattleTurn(turn) {
       const eDmg  = Math.min(Math.round(eBase * eMult / _eDefMult), Math.floor((player.maxHp||100) * 0.22));
       const eEff  = getEffLabel(eMult);
       player.hp -= eDmg;
+      // auto-heal: if HP drops to ≤20% and upgrade owned, auto-heal to 50% HP (once per battle, no potion)
+      if (hasPrestigeUpgrade('auto-heal') && player.hp > 0 && player.hp <= Math.floor(player.maxHp * 0.20) && !player._autoHealUsed) {
+        player._autoHealUsed = true;
+        player.hp = Math.floor(player.maxHp * 0.50);
+        notify('💊 Soin Auto déclenché !');
+      }
       playAttackAnim('normal', true);
       hurtSprite('player-battle-img');
       let log = `${enemy.name} attaque`;
@@ -2567,8 +2582,10 @@ function battleAction(action) {
     player._winStreak = (player._winStreak||0) + 1;
     const streakBonus = player._bossBattle ? 1.0 : Math.min(2.0, 1 + Math.floor(player._winStreak / 5) * 0.1);
     // XP = niveau ennemi × 20 (indépendant de l'espèce)
-    const xpG         = Math.round(enemyLv * 20 * lvRatio * badgeBonus * getXpMultiplier());
-    const goldG       = Math.round((enemy.gold + Math.floor(Math.random() * Math.max(1, enemy.gold * 0.4))) * getGoldMultiplier() * streakBonus);
+    let xpG         = Math.round(enemyLv * 20 * lvRatio * badgeBonus * getXpMultiplier());
+    let goldG       = Math.round((enemy.gold + Math.floor(Math.random() * Math.max(1, enemy.gold * 0.4))) * getGoldMultiplier() * streakBonus);
+    // double-drop prestige upgrade: 20% chance to double loot
+    if (hasPrestigeUpgrade('double-drop') && Math.random() < 0.20) { xpG *= 2; goldG *= 2; notify('💰 Double Récolte !'); }
     // Les replays de boss sont de l'entraînement pur : aucune récompense
     if (!player._bossBattle?.isReplay) { player.xp+=xpG; player.gold+=goldG; }
     if (player._winStreak > 0 && player._winStreak % 5 === 0 && !player._bossBattle)
@@ -2601,8 +2618,10 @@ function battleAction(action) {
     if (player.roster?.[player.activeRosterIdx||0]) addAffinity(player.roster[player.activeRosterIdx||0], 1);
     // Stats globales — batch en 1 appel pour éviter 3× updateDailyProgress
     updateGlobalStatsBatch({ kills:1, battles:1, earn_gold: goldG });
-    // Shards from enemy type
-    if (enemy.type) awardShardOnKill(enemy.type);
+    // Shards from enemy type (shard-magnet: ×3 shards)
+    if (enemy.type) awardShardOnKill(enemy.type, hasPrestigeUpgrade('shard-magnet') ? 3 : 1);
+    // Decrement lucky-egg counter
+    if ((player._luckyEggKills||0) > 0) { player._luckyEggKills--; if (player._luckyEggKills===0) notify('🥚 Œuf Chanceux terminé.'); }
     // Random event trigger
     triggerRandomEvent();
     // Auto-save silencieux toutes les 5 victoires
@@ -2645,6 +2664,13 @@ function battleAction(action) {
         setMessage(`🏆 Boss vaincu ! Vague ${bossWave+1} commence — difficulté +15% ! +${bonusGold}₽`);
         updateGlobalStats('boss_kills');
         gainSkillPoints(3 + bossWave);
+        // lucky-egg: shiny ×3 for next 10 kills after boss
+        if (hasPrestigeUpgrade('lucky-egg')) { player._luckyEggKills = 10; notify('🥚 Œuf Chanceux actif — Shiny ×3 !'); }
+        // team-regen: +2% HP to all roster after boss
+        if (hasPrestigeUpgrade('team-regen') && player.roster) {
+          player.roster.forEach(p => { if (p.maxHp > 0) { p.maxHp = Math.round(p.maxHp * 1.02); p.hp = Math.min(p.hp + Math.round(p.maxHp * 0.02), p.maxHp); } });
+          notify('❤️ Régénération — PV équipe +2% !');
+        }
         checkAchievements();
         _silentSave();
       }
@@ -2831,6 +2857,8 @@ function throwBall(ballId) {
   catchResult.textContent='';
   catchDiv.classList.add('active');
 
+  const _catchDelay = hasPrestigeUpgrade('fast-catch') ? 400 : 800;
+  const _catchFinish = hasPrestigeUpgrade('fast-catch') ? 900 : 1800;
   setTimeout(()=>{
     const success = Math.random() < catchChance;
     if (success) {
@@ -2851,7 +2879,7 @@ function throwBall(ballId) {
         const shinyCapture = _capShiny ? ' ✨ Et en plus il est SHINY !' : '';
         setMessage(`🎉 Félicitations ! Vous avez capturé ${_capName} ! (${Math.round(catchChance*100)}% de chance)${shinyCapture}`);
         notify(`${_capName} capturé !${_capShiny?' ✨':''}`);
-      }, 1800);
+      }, _catchFinish);
     } else {
       catchBall.style.animation='captureFail 1s ease forwards';
       catchResult.textContent = `✗ ${enemy.name} s'est échappé ! (${Math.round(catchChance*100)}%)`;
@@ -2871,9 +2899,9 @@ function throwBall(ballId) {
           battleBusy = false;
           setBattleTurn('player');
         }
-      }, 1500);
+      }, _catchFinish);
     }
-  }, 800);
+  }, _catchDelay);
 }
 
 // ══════════════════════════════════════════
@@ -2921,8 +2949,15 @@ function checkRosterLevelUp(p) {
 
 function checkLevelUp() {
   while (player.xp >= player.xpNext) {
+    const _overflowXp = hasPrestigeUpgrade('xp-overflow') ? Math.round(player.xpNext * 0.25) : 0;
     player.xp -= player.xpNext;
     player.level++;
+    // xp-overflow: pass 25% of level XP to the next bench pokemon
+    if (_overflowXp > 0 && player.roster) {
+      const _nextIdx = ((player.activeRosterIdx||0) + 1) % player.roster.length;
+      const _nextP = player.roster[_nextIdx];
+      if (_nextP && _nextIdx !== (player.activeRosterIdx||0)) { _nextP.xp = (_nextP.xp||0) + _overflowXp; checkRosterLevelUp(_nextP); }
+    }
     // Courbe adoucie : +20% par niveau au lieu de +45%
     // Au niveau 50 ça fait ~3800 XP au lieu de ~380000 XP
     player.xpNext = xpForLevel(player.level);
@@ -5018,25 +5053,39 @@ function drawTalent(p) {
   else if (r < 0.12) tier = 'epique';
   else if (r < 0.40) tier = 'rare';
 
-  // If already has a talent, replace it — reset base stats first to avoid cumulative stacking
+  // Save pre-talent base stats on first talent (used for accurate reset on re-roll)
+  if (!p._baseStats) {
+    p._baseStats = { atk:p.atk, def:p.def, hp:p.maxHp, magic:p.magic, spd:p.spd };
+  }
+
+  // If already has a talent, replace it — reset to stored base stats to avoid cumulative stacking
   if (p.talents && p.talents.length >= MAX_TALENTS_PER_POKE) {
-    const pData = ((typeof ALL_POKEMON!=='undefined')?ALL_POKEMON:GEN1).find(d => d.id === (p.spriteId || p.currentSpriteId));
-    if (pData) {
-      const lvl = p.level || 1;
-      const scale = 1 + (lvl - 1) * 0.08;
-      p.atk   = Math.round((pData.atk || 10) * scale);
-      p.def   = Math.round((pData.def || 8)  * scale);
-      p.maxHp = Math.round((pData.hp  || 45) * scale);
+    if (p._baseStats) {
+      p.atk   = p._baseStats.atk;
+      p.def   = p._baseStats.def;
+      p.maxHp = p._baseStats.hp;
       p.hp    = p.maxHp;
-      p.magic = p.atk;
-      if (p.spAtk !== undefined) p.spAtk = p.atk;
-      if (p.spDef !== undefined) p.spDef = p.def;
-      p._fortuneBonus = 0;
-      p._xpBonus      = 0;
-      p._isElu        = false;
-      p._dragonSoul   = false;
-      p._revenant     = false;
+      p.magic = p._baseStats.magic;
+      p.spd   = p._baseStats.spd;
+    } else {
+      const pData = ((typeof ALL_POKEMON!=='undefined')?ALL_POKEMON:GEN1).find(d => d.id === (p.spriteId || p.currentSpriteId));
+      if (pData) {
+        const lvl = p.level || 1;
+        const scale = 1 + (lvl - 1) * 0.08;
+        p.atk   = Math.round((pData.atk || 10) * scale);
+        p.def   = Math.round((pData.def || 8)  * scale);
+        p.maxHp = Math.round((pData.hp  || 45) * scale);
+        p.hp    = p.maxHp;
+        p.magic = p.atk;
+      }
     }
+    if (p.spAtk !== undefined) p.spAtk = p.atk;
+    if (p.spDef !== undefined) p.spDef = p.def;
+    p._fortuneBonus = 0;
+    p._xpBonus      = 0;
+    p._isElu        = false;
+    p._dragonSoul   = false;
+    p._revenant     = false;
     p.talents = [];
   }
 
@@ -5423,9 +5472,9 @@ function getShardsBonus(pokeType) {
   return 1 + Math.min(base * 0.001, 0.5); // +0.1% per shard, max +50%
 }
 
-function awardShardOnKill(enemyType) {
+function awardShardOnKill(enemyType, mult=1) {
   if (Math.random() < 0.15) { // 15% chance
-    addShard(enemyType, 1);
+    addShard(enemyType, mult);
   }
 }
 
@@ -6134,10 +6183,12 @@ function addAffinity(poke, amount=1) {
     poke.affinity = 0;
     poke.affinityLv++;
     const lvData = AFFINITY_LEVELS[poke.affinityLv-1];
-    notify(`💖 ${poke.currentName||poke.name} → Affinité ${lvData.name} ! +${(lvData.bonus*100).toFixed(0)}% dégâts`);
-    // Apply bonus to stats
-    poke.atk   = Math.round(poke.atk   * (1 + lvData.bonus/7));
-    poke.magic = Math.round(poke.magic * (1 + lvData.bonus/7));
+    const prevBonus = AFFINITY_LEVELS[poke.affinityLv-2]?.bonus || 0;
+    const delta = lvData.bonus - prevBonus;
+    notify(`💖 ${poke.currentName||poke.name} → Affinité ${lvData.name} ! +${(delta*100).toFixed(0)}% dégâts`);
+    // Apply incremental bonus (delta between new and old level)
+    poke.atk   = Math.round(poke.atk   * (1 + delta));
+    poke.magic = Math.round(poke.magic * (1 + delta));
   }
 }
 
@@ -6360,6 +6411,8 @@ function levelUpPokemon(p) {
   p.atk    += 2; p.def += 1; p.magic += 2; p.spd += 1;
   if (p.spAtk !== undefined) p.spAtk += 2;
   if (p.spDef !== undefined) p.spDef += 1;
+  // Keep pre-talent base stats in sync so talent re-roll resets correctly
+  if (p._baseStats) { p._baseStats.hp += 12; p._baseStats.atk += 2; p._baseStats.def += 1; p._baseStats.magic += 2; p._baseStats.spd += 1; }
   notify(`⬆ ${p.currentName||p.name} → Niveau ${p.level} ! (Super Bonbon)`);
   // Check evolution for the leveled pokemon
   let chain = EVO_CHAINS[p.currentSpriteId||p.spriteId];
