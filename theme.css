@@ -1122,14 +1122,38 @@ body { background: var(--c-bg) !important; }
 /* ── WORLD BOSS BUTTON ── */
 #btn-world-boss { font-size: .5rem !important; }
 
-/* Mobile : désactiver kill bar shimmer */
-@media (max-width: 900px) { #kill-bar-fill::after { display: none !important; } }
+/* Mobile : désactiver kill bar shimmer + smtile-glow (perf) */
+@media (max-width: 900px) {
+  #kill-bar-fill::after { display: none !important; }
+  .smtile { animation: none !important; will-change: auto; }
+}
 
 /* ════════════════════════════════════════════════════
    VISUAL UPGRADE V4 — Style vivid global
    ════════════════════════════════════════════════════ */
 
-/* ── SMTILE — fond plein coloré + effets lumineux identiques à .btn ── */
+/* ── SMTILE — fond coloré + shimmer + lueur pulsante par couleur (comme boss-epic) ── */
+@keyframes smtile-glow {
+  0%,100% {
+    box-shadow:
+      0 4px 0 var(--brd),
+      0 0 8px var(--brd),
+      0 6px 18px rgba(0,0,0,.45),
+      inset 0 1px 0 rgba(255,255,255,.3),
+      inset 0 0 0 1px rgba(255,255,255,.1),
+      inset 0 -1px 0 rgba(0,0,0,.22);
+  }
+  50% {
+    box-shadow:
+      0 4px 0 var(--brd),
+      0 0 22px var(--brd),
+      0 0 44px var(--brd),
+      0 6px 18px rgba(0,0,0,.45),
+      inset 0 1px 0 rgba(255,255,255,.3),
+      inset 0 0 0 1px rgba(255,255,255,.1),
+      inset 0 -1px 0 rgba(0,0,0,.22);
+  }
+}
 .smtile {
   background:
     linear-gradient(180deg, rgba(255,255,255,.22) 0%, rgba(255,255,255,.04) 40%, transparent 60%),
@@ -1138,13 +1162,9 @@ body { background: var(--c-bg) !important; }
   overflow: hidden !important;
   border: 2px solid rgba(255,255,255,.22) !important;
   border-radius: 14px !important;
-  box-shadow:
-    0 4px 0 var(--brd),
-    0 6px 18px rgba(0,0,0,.45),
-    inset 0 1px 0 rgba(255,255,255,.3),
-    inset 0 0 0 1px rgba(255,255,255,.1),
-    inset 0 -1px 0 rgba(0,0,0,.22) !important;
-  transition: transform .13s cubic-bezier(.34,1.56,.64,1), box-shadow .13s, filter .13s !important;
+  animation: smtile-glow 2.5s ease-in-out infinite !important;
+  will-change: box-shadow;
+  transition: transform .13s cubic-bezier(.34,1.56,.64,1), filter .13s !important;
 }
 /* Sweep lumineux périodique (même animation que .btn) */
 .smtile::before {
@@ -1171,8 +1191,10 @@ body { background: var(--c-bg) !important; }
 .smtile:hover {
   transform: translateY(-4px) scale(1.07) !important;
   filter: brightness(1.15) saturate(1.1) !important;
+  animation: none !important;
   box-shadow:
     0 7px 0 var(--brd),
+    0 0 30px var(--brd),
     0 14px 28px rgba(0,0,0,.55),
     inset 0 1px 0 rgba(255,255,255,.38),
     inset 0 0 0 1px rgba(255,255,255,.18) !important;
@@ -1182,6 +1204,7 @@ body { background: var(--c-bg) !important; }
 .smtile:active {
   transform: translateY(2px) scale(.97) !important;
   filter: brightness(.9) !important;
+  animation: none !important;
   box-shadow: 0 1px 0 var(--brd), 0 3px 10px rgba(0,0,0,.3) !important;
 }
 
