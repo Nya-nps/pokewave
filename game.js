@@ -2109,7 +2109,8 @@ function startBattle(enemyData) {
     autoBattleTimer = setTimeout(runAutoAction, 1200);
   }
 
-  if ((enemy.spd||50) > player.spd) {
+  const _playerSpd = Math.round(player.spd * getHeldItemCombatMults().spdMult);
+  if ((enemy.spd||50) > _playerSpd) {
     document.getElementById('battle-turn-info').textContent = '🔴 L\'ennemi attaque en premier !';
     disableBattleButtons(true);
     setTimeout(()=>{
@@ -2233,7 +2234,9 @@ function setBattleTurn(turn) {
       const eMult = getEffectiveness(enemy.type, player.type);
       const eBase = Math.max(1, enemy.atk+Math.floor(Math.random()*5)-Math.floor(player.def/2));
       // Cap à 22% des PV max — 5 coups minimum pour mourir en endgame (28% = 4 coups, trop punitif)
-      const eDmg  = Math.min(Math.round(eBase * eMult), Math.floor((player.maxHp||100) * 0.22));
+      // Écaille Mentale réduit les dégâts reçus de 25%
+      const _eDefMult = getHeldItemCombatMults().defMult;
+      const eDmg  = Math.min(Math.round(eBase * eMult / _eDefMult), Math.floor((player.maxHp||100) * 0.22));
       const eEff  = getEffLabel(eMult);
       player.hp -= eDmg;
       playAttackAnim('normal', true);
@@ -2519,12 +2522,13 @@ function battleAction(action) {
   } else {
     let dmg=0;
     const syn = applySynergyBonuses();
+    const heldMults = getHeldItemCombatMults();
     if (action==='magic') {
       const atkType = player.mMoveElem || player.type;
       const mult = getEffectiveness(atkType, enemy.type);
       const effInfo = getEffLabel(mult);
       const base = Math.max(1, player.magic + Math.floor(Math.random()*8) - Math.floor(enemy.def/2));
-      dmg = Math.round(base * mult * getShardsBonus(player.mMoveElem||player.type) * syn.spAtkMult);
+      dmg = Math.round(base * mult * getShardsBonus(player.mMoveElem||player.type) * syn.spAtkMult * heldMults.magicMult);
       player.mMoveUses = Math.max(0, (player.mMoveUses||0) - 1);
       if (player.mMoveUses === 0) player.mMoveUses = player.mMoveUsesMax || 4;
       playAttackAnim(player.animType, false);
@@ -2537,7 +2541,7 @@ function battleAction(action) {
       const mult = getEffectiveness(atkType, enemy.type);
       const effInfo = getEffLabel(mult);
       const base = Math.max(1, player.atk + Math.floor(Math.random()*6) - enemy.def);
-      dmg = Math.round(base * mult * getShardsBonus(player.moveElem||player.type) * syn.atkMult);
+      dmg = Math.round(base * mult * getShardsBonus(player.moveElem||player.type) * syn.atkMult * heldMults.atkMult);
       player.moveUses = Math.max(0, (player.moveUses||0) - 1);
       if (player.moveUses === 0) player.moveUses = player.moveUsesMax || 6;
       playAttackAnim(player.animType, false);
@@ -6286,6 +6290,19 @@ const HELD_ITEMS = {
 const TOUR_REWARD_POOL = ['super-bonbon','amulette-or','ceinture-choix','lentille-choix','bandeau-choix','reste','ecaille-mentale','pepite'];
 
 function getHeldItem(itemId) { return HELD_ITEMS[itemId] || null; }
+
+// Returns {atkMult, magicMult, defMult, spdMult} for the active Pokémon's held item
+function getHeldItemCombatMults() {
+  const p = getActivePoke();
+  if (!p || !p.heldItem) return { atkMult:1, magicMult:1, defMult:1, spdMult:1 };
+  switch (p.heldItem) {
+    case 'ceinture-choix':  return { atkMult:1.3, magicMult:1,   defMult:1,    spdMult:1   };
+    case 'lentille-choix':  return { atkMult:1,   magicMult:1.3, defMult:1,    spdMult:1   };
+    case 'bandeau-choix':   return { atkMult:1,   magicMult:1,   defMult:1,    spdMult:1.3 };
+    case 'ecaille-mentale': return { atkMult:1,   magicMult:1,   defMult:1.25, spdMult:1   };
+    default:                return { atkMult:1,   magicMult:1,   defMult:1,    spdMult:1   };
+  }
+}
 
 function assignItemToPokemon(source, idx, itemId) {
   const pool = source === 'roster' ? player.roster : player.box;
