@@ -2206,8 +2206,8 @@ function setBattleTurn(turn) {
       if (!enemy || !player) return;
       const eMult = getEffectiveness(enemy.type, player.type);
       const eBase = Math.max(1, enemy.atk+Math.floor(Math.random()*5)-Math.floor(player.def/2));
-      // Cap à 28% des PV max pour éviter les one-shots des ennemis très forts (zones Johto/Hoenn)
-      const eDmg  = Math.min(Math.round(eBase * eMult), Math.floor((player.maxHp||100) * 0.28));
+      // Cap à 22% des PV max — 5 coups minimum pour mourir en endgame (28% = 4 coups, trop punitif)
+      const eDmg  = Math.min(Math.round(eBase * eMult), Math.floor((player.maxHp||100) * 0.22));
       const eEff  = getEffLabel(eMult);
       player.hp -= eDmg;
       playAttackAnim('normal', true);
@@ -2497,7 +2497,7 @@ function battleAction(action) {
       const mult = getEffectiveness(atkType, enemy.type);
       const effInfo = getEffLabel(mult);
       const base = Math.max(1, player.magic + Math.floor(Math.random()*8) - Math.floor(enemy.def/2));
-      dmg = Math.round(base * mult);
+      dmg = Math.round(base * mult * getShardsBonus(player.mMoveElem||player.type));
       player.mMoveUses = Math.max(0, (player.mMoveUses||0) - 1);
       if (player.mMoveUses === 0) player.mMoveUses = player.mMoveUsesMax || 4;
       playAttackAnim(player.animType, false);
@@ -2510,7 +2510,7 @@ function battleAction(action) {
       const mult = getEffectiveness(atkType, enemy.type);
       const effInfo = getEffLabel(mult);
       const base = Math.max(1, player.atk + Math.floor(Math.random()*6) - enemy.def);
-      dmg = Math.round(base * mult);
+      dmg = Math.round(base * mult * getShardsBonus(player.moveElem||player.type));
       player.moveUses = Math.max(0, (player.moveUses||0) - 1);
       if (player.moveUses === 0) player.moveUses = player.moveUsesMax || 6;
       playAttackAnim(player.animType, false);

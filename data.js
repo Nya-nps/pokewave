@@ -1599,12 +1599,16 @@ Object.assign(LEVEL_UP_MOVES, {
       const zoneLvRange = ZONE_LEVELS[zoneId] || autoLvRange;
       const enemyLevel  = zoneLvRange[0] + Math.floor(Math.random() * (zoneLvRange[1] - zoneLvRange[0] + 1));
       const lvlScale    = 1 + enemyLevel * 0.15;
+      // DEF scales at ^0.65 so high-level enemies stay hittable (prevents 30+ hits per fight)
+      // HP scales at ^0.90 to give a slight reduction at high levels
+      const defScale = Math.pow(lvlScale, 0.65);
+      const hpScale  = Math.pow(lvlScale, 0.90);
       const baseSpd     = ALL_SPD[pData.id] || 50;
       const e = {
         name: pData.n, id: pData.id, level: enemyLevel,
-        hp:   Math.round(pData.hp  * lvlScale),
+        hp:   Math.round(pData.hp  * hpScale),
         atk:  Math.round(pData.atk * lvlScale),
-        def:  Math.round((pData.def||5) * lvlScale) || 1,
+        def:  Math.round((pData.def||5) * defScale) || 1,
         spd:  Math.round(baseSpd * (1 + enemyLevel * 0.02)),
         xp:   Math.round((pData.xp||10) * lvlScale),
         gold: Math.round(enemyLevel * 3),
