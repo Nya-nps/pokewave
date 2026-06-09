@@ -1027,10 +1027,10 @@ body { background: var(--c-bg) !important; }
 
 /* ── BOSS BUTTON — animation plus dramatique ── */
 @keyframes boss-epic {
-  0%,100% { box-shadow:0 4px 0 #500f13,0 0 14px rgba(230,57,70,.5); filter:brightness(1); }
-  50%     { box-shadow:0 4px 0 #500f13,0 0 32px rgba(230,57,70,.9),0 0 64px rgba(230,57,70,.35); filter:brightness(1.12); }
+  0%,100% { box-shadow:0 4px 0 #500f13,0 0 14px rgba(230,57,70,.5); }
+  50%     { box-shadow:0 4px 0 #500f13,0 0 32px rgba(230,57,70,.9),0 0 64px rgba(230,57,70,.35); }
 }
-#btn-boss { animation: boss-epic 1.1s ease-in-out infinite !important; }
+#btn-boss { animation: boss-epic 1.1s ease-in-out infinite !important; will-change: box-shadow; }
 
 /* ── GOLD DISPLAY — lueur dorée pulsée ── */
 @keyframes gold-pulse {
@@ -1058,8 +1058,8 @@ body { background: var(--c-bg) !important; }
 
 /* ── HP BAR — alerte rouge quand HP < 25% ── */
 @keyframes hp-danger-pulse {
-  0%,100% { box-shadow:0 0 12px rgba(255,30,60,.6); filter:brightness(1); }
-  50%     { box-shadow:0 0 24px rgba(255,0,30,.95),0 0 48px rgba(255,0,0,.35); filter:brightness(1.15); }
+  0%,100% { box-shadow:0 0 12px rgba(255,30,60,.6); }
+  50%     { box-shadow:0 0 24px rgba(255,0,30,.95),0 0 48px rgba(255,0,0,.35); }
 }
 .bar-fill.hp.hp-low {
   background: linear-gradient(90deg,#ff0844,#ff6b9d) !important;

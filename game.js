@@ -2003,6 +2003,7 @@ function cancelPreBattle() {
 
 function startBattle(enemyData) {
   enemy = { ...enemyData, maxHp: enemyData.hp };
+  _bHpCache = { pp: -1, ep: -1 }; // force le premier rendu des barres HP
   // Réinitialiser Revenant (une seule fois par combat)
   if (player.roster) player.roster.forEach(p => { if (p._revenant) p._revenantUsed = false; });
   const activePoke = getActivePoke();
@@ -2110,17 +2111,27 @@ function startBattle(enemyData) {
   showScreen('battle');
 }
 
+// Cache des pourcentages HP — évite les redraws si HP n'a pas bougé
+let _bHpCache = { pp: -1, ep: -1 };
 function updateBattleHp() {
   if (!player || !enemy) return;
-  const pPct = Math.max(0,(player.hp/player.maxHp)*100);
-  const ePct = Math.max(0,(enemy.hp/enemy.maxHp)*100);
-  const barColor = pct => pct > 50 ? 'linear-gradient(90deg,#2dc653,#06d6a0)' : pct > 20 ? 'linear-gradient(90deg,#ffd60a,#ff9a3c)' : 'linear-gradient(90deg,#e63946,#ff6b9d)';
-  const pBar = _hud('b-hp-player');
-  const eBar = _hud('b-hp-enemy');
-  pBar.style.width = pPct+'%'; pBar.style.background = barColor(pPct);
-  eBar.style.width = ePct+'%'; eBar.style.background = barColor(ePct);
-  _hud('b-hp-player-text').textContent = `${Math.ceil(player.hp)} / ${player.maxHp}`;
-  _hud('b-hp-enemy-text').textContent = `${Math.ceil(enemy.hp)} / ${enemy.maxHp}`;
+  const pPct = Math.round(Math.max(0, (player.hp / player.maxHp) * 100));
+  const ePct = Math.round(Math.max(0, (enemy.hp  / enemy.maxHp)  * 100));
+  const pChanged = pPct !== _bHpCache.pp;
+  const eChanged = ePct !== _bHpCache.ep;
+  if (!pChanged && !eChanged) return; // rien à redessiner
+  _bHpCache.pp = pPct; _bHpCache.ep = ePct;
+  const barColor = p => p > 50 ? 'linear-gradient(90deg,#2dc653,#06d6a0)' : p > 20 ? 'linear-gradient(90deg,#ffd60a,#ff9a3c)' : 'linear-gradient(90deg,#e63946,#ff6b9d)';
+  if (pChanged) {
+    const pBar = _hud('b-hp-player');
+    pBar.style.width = pPct+'%'; pBar.style.background = barColor(pPct);
+    _hud('b-hp-player-text').textContent = `${Math.ceil(player.hp)} / ${player.maxHp}`;
+  }
+  if (eChanged) {
+    const eBar = _hud('b-hp-enemy');
+    eBar.style.width = ePct+'%'; eBar.style.background = barColor(ePct);
+    _hud('b-hp-enemy-text').textContent = `${Math.ceil(enemy.hp)} / ${enemy.maxHp}`;
+  }
 }
 
 // ══════════════════════════════════════════
@@ -3190,11 +3201,16 @@ function renderTeam() {
   renderBox();
 }
 
+let _boxDirtyKey = null;
 function renderBox() {
   if (!player) return;
   if (!player.box) player.box = [];
   const boxEl = document.getElementById('box-display');
   if (!boxEl) return;
+  // Dirty check : skip si box n'a pas changé (length + premier/dernier id + sélection)
+  const dk = `${player.box.length}|${player.box[0]?.id??''}|${player.box[player.box.length-1]?.id??''}|${selectedBoxIdx??''}`;
+  if (dk === _boxDirtyKey) return;
+  _boxDirtyKey = dk;
   if (player.box.length === 0) {
     boxEl.innerHTML = '<div style="color:rgba(255,255,255,.3);font-family:\'Press Start 2P\',monospace;font-size:.42rem;padding:1.5rem;text-align:center;grid-column:1/-1">Box vide — capturez des Pokémon !</div>';
     return;
@@ -6009,7 +6025,15 @@ const ACHIEVEMENTS = [
   { id:'trainer-20',    title:'Légendaire',       desc:'Niveau Dresseur 20',         icon:'🌟',  condition:p=>(p.trainerLevel||1)>=20,     reward:{gold:10000, tokens:10, candy:5} },
 ];
 
+// checkAchievements debouncé — plusieurs appels en rafale (combat+levelup) → 1 seul check réel
+let _achTimer = null;
 function checkAchievements() {
+  if (!player) return;
+  if (_achTimer) clearTimeout(_achTimer);
+  _achTimer = setTimeout(_doCheckAchievements, 400);
+}
+function _doCheckAchievements() {
+  _achTimer = null;
   if (!player) return;
   if (!player.achievements) player.achievements = [];
   ACHIEVEMENTS.forEach(ach => {

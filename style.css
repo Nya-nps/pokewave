@@ -30,7 +30,7 @@ body.menu #bg-img{opacity:0.55;filter:blur(3px) brightness(.8)}
 
 /* ── PARTICLES ── */
 #particles{position:fixed;inset:0;pointer-events:none;z-index:1}
-.spark{position:absolute;border-radius:50%;animation:floatStar linear infinite;opacity:0}
+.spark{position:absolute;border-radius:50%;animation:floatStar linear infinite;opacity:0;will-change:transform;contain:layout}
 /* BOSS BUTTON PULSE */
 @keyframes bossPulse{0%,100%{box-shadow:0 4px 0 #500f13,0 0 0 rgba(230,57,70,0)}50%{box-shadow:0 4px 0 #500f13,0 0 22px rgba(230,57,70,.9)}}
 #btn-boss[style*="inline"]{animation:bossPulse 1s ease-in-out infinite}
@@ -973,3 +973,8 @@ input, select, textarea { font-size: 16px !important; }
   75%  { filter: drop-shadow(0 0 22px #fff176) brightness(1.4); }
 }
 .shiny-anim { animation: shinySprite 1.2s ease-in-out; }
+
+/* ── PERF : isolation de layout pour les containers à gros innerHTML ── */
+#box-display  { contain: layout; }
+#team-display { contain: layout; }
+#item-grid    { contain: layout; }
