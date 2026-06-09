@@ -37,10 +37,10 @@ body.menu #bg-img{opacity:0.55;filter:blur(3px) brightness(.8)}
 /* DROPDOWN — hidden by default, shown with .open class */
 #dropdown-menu{ display:none; }
 #dropdown-menu.open{ display:grid!important; }
-.smtile{all:unset;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.35rem;background:var(--bc);border:1.5px solid var(--brd);border-radius:12px;padding:.7rem .3rem .6rem;font-family:'Press Start 2P',monospace;font-size:.36rem;color:var(--tc);text-align:center;line-height:1.5;transition:background .15s,transform .12s,box-shadow .15s}
-.smtile span{font-size:1.6rem;line-height:1;display:block}
-.smtile:hover{background:color-mix(in srgb,var(--brd) 60%,transparent);transform:scale(1.07);box-shadow:0 0 14px color-mix(in srgb,var(--tc) 30%,transparent)}
-.smtile:active{transform:scale(.97)}
+.smtile{all:unset;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.3rem;background:var(--bc);border:2.5px solid rgba(255,255,255,.22);border-radius:8px;padding:.65rem .3rem .55rem;font-family:'Press Start 2P',monospace;font-size:.33rem;color:var(--tc);text-align:center;line-height:1.4;box-shadow:0 4px 0 var(--brd),0 6px 18px rgba(0,0,0,.4);transition:transform .12s,box-shadow .12s,filter .12s;text-shadow:1px 1px 0 rgba(0,0,0,.45);letter-spacing:.02em}
+.smtile span{font-size:1.45rem;line-height:1;display:block;filter:drop-shadow(0 1px 3px rgba(0,0,0,.5))}
+.smtile:hover{transform:translateY(-2px);box-shadow:0 6px 0 var(--brd),0 8px 22px rgba(0,0,0,.5);filter:brightness(1.12)}
+.smtile:active{transform:translateY(3px);box-shadow:0 1px 0 var(--brd);filter:brightness(.95)}
 /* KILL COUNTER */
 #kill-counter-hud{font-family:'Press Start 2P',monospace;font-size:.55rem;color:var(--yellow);background:rgba(10,10,30,.8);border:2px solid rgba(255,214,10,.35);border-radius:8px;padding:.35rem .8rem;display:flex;align-items:center;gap:.5rem}
 #kill-bar-track{width:100px;height:8px;background:rgba(0,0,0,.4);border-radius:999px;overflow:hidden;border:1px solid rgba(255,214,10,.2)}
