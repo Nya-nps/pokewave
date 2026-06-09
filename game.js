@@ -1446,6 +1446,21 @@ function _doUpdateHUD() {
   // Tour button in dropdown
   const tourBtn = _hud('btn-tour-drop');
   if (tourBtn) tourBtn.style.display = (player.trainerLevel||1) >= 10 ? 'block' : 'none';
+  // World boss button — affiche recharge si en cooldown
+  const wbBtn = document.getElementById('btn-world-boss');
+  if (wbBtn) {
+    const _wbRemain = WORLD_BOSS_COOLDOWN - (Date.now() - (player.lastWorldBoss||0));
+    if (_wbRemain > 0 && (player.lastWorldBoss||0) > 0) {
+      const _wbMin = Math.ceil(_wbRemain / 60000);
+      wbBtn.textContent = `⏳ WORLD BOSS (${_wbMin}m)`;
+      wbBtn.style.opacity = '0.6';
+      wbBtn.style.animation = 'none';
+    } else {
+      wbBtn.textContent = '🌍 WORLD BOSS';
+      wbBtn.style.opacity = '1';
+      wbBtn.style.animation = 'bossPulse 1.5s ease-in-out infinite';
+    }
+  }
   // Attack uses display — rebuild innerHTML seulement si le contenu a changé
   const atkDisp = _hud('atk-uses-display');
   if (atkDisp) {
@@ -1598,25 +1613,30 @@ function _updateZonePickerBtn() {
 // WAVE / BOSS SYSTEM
 // ══════════════════════════════════════════
 const KILLS_PER_WAVE = 10;
+function getEffectiveKillsPerWave() {
+  const ev = getActiveEventEffects();
+  return ev.bossEvery || KILLS_PER_WAVE;
+}
 
 function getWaveState() {
   if (!player) return { wave:1, killsInWave:0, bossReady:false, diffMult:1 };
   const totalKills     = player.totalKills  || 0;
   const bossesBeaten   = player.lastBossWave || 0;
+  const kpw            = getEffectiveKillsPerWave();
   const killsSinceBoss = totalKills - bossesBeaten * KILLS_PER_WAVE;
-  const bossReady      = killsSinceBoss >= KILLS_PER_WAVE;
+  const bossReady      = killsSinceBoss >= kpw;
   const wave           = bossesBeaten + 1;
-  const killsInWave    = killsSinceBoss % KILLS_PER_WAVE;
+  const killsInWave    = killsSinceBoss % kpw;
   const diffMult       = parseFloat((1 + bossesBeaten * 0.15).toFixed(2));
-  return { wave, killsInWave, bossReady, diffMult, totalKills, killsSinceBoss };
+  return { wave, killsInWave, bossReady, diffMult, totalKills, killsSinceBoss, kpw };
 }
 
 function getWaveEnemyScale() { return getWaveState().diffMult; }
 
 function updateKillHUD() {
   if (!player) return;
-  const { wave, killsInWave, bossReady, diffMult, killsSinceBoss } = getWaveState();
-  const display = Math.min(killsSinceBoss, KILLS_PER_WAVE);
+  const { wave, killsInWave, bossReady, diffMult, killsSinceBoss, kpw } = getWaveState();
+  const display = Math.min(killsSinceBoss, kpw);
   const wl = _hud('kill-wave-label');
   const kl = _hud('kill-count-label');
   const bf = _hud('kill-bar-fill');
@@ -1634,8 +1654,8 @@ function updateKillHUD() {
     wl.title = bossReady ? 'Boss disponible !' : `Vague ${wave} — ${zoneName}`;
   }
   _updateZonePickerBtn();
-  if (kl) kl.textContent = bossReady ? 'Prêt !' : `${display}/${KILLS_PER_WAVE}`;
-  if (bf) bf.style.width = `${Math.min(100,(display/KILLS_PER_WAVE)*100)}%`;
+  if (kl) kl.textContent = bossReady ? 'Prêt !' : `${display}/${kpw}`;
+  if (bf) bf.style.width = `${Math.min(100,(display/kpw)*100)}%`;
   if (dl) dl.textContent = `×${diffMult}`;
   if (bb) bb.style.display = bossReady ? 'inline-block' : 'none';
   // Bouton Replay Boss — visible si au moins 1 boss a été battu
@@ -2163,6 +2183,8 @@ function getGoldMultiplier() {
   if (p && p._fortuneBonus) mult *= (1 + p._fortuneBonus);
   if (player && player._globalGoldBonus) mult *= (1 + player._globalGoldBonus);
   if (player && player.prestigeGoldMult) mult *= player.prestigeGoldMult;
+  const ev = getActiveEventEffects();
+  if (ev.goldMult) mult *= ev.goldMult;
   return mult;
 }
 function getXpMultiplier() {
@@ -2171,6 +2193,8 @@ function getXpMultiplier() {
   if (p && p._xpBonus) mult *= (1 + p._xpBonus);
   if (player && player._globalXPBonus) mult *= (1 + player._globalXPBonus);
   if (player && player.prestigeXPMult) mult *= player.prestigeXPMult;
+  const ev = getActiveEventEffects();
+  if (ev.xpMult) mult *= ev.xpMult;
   return mult;
 }
 function getEffectiveShinyOdds() {
@@ -2179,6 +2203,8 @@ function getEffectiveShinyOdds() {
     if (player._shinyLuckMult) odds = Math.max(1, Math.round(odds / player._shinyLuckMult));
     if (player.prestigeShinyMult) odds = Math.max(1, Math.round(odds / player.prestigeShinyMult));
   }
+  const ev = getActiveEventEffects();
+  if (ev.shinyMult) odds = Math.max(1, Math.round(odds / ev.shinyMult));
   return odds;
 }
 function xpForLevel(n) {
@@ -2492,12 +2518,13 @@ function battleAction(action) {
     return;
   } else {
     let dmg=0;
+    const syn = applySynergyBonuses();
     if (action==='magic') {
       const atkType = player.mMoveElem || player.type;
       const mult = getEffectiveness(atkType, enemy.type);
       const effInfo = getEffLabel(mult);
       const base = Math.max(1, player.magic + Math.floor(Math.random()*8) - Math.floor(enemy.def/2));
-      dmg = Math.round(base * mult * getShardsBonus(player.mMoveElem||player.type));
+      dmg = Math.round(base * mult * getShardsBonus(player.mMoveElem||player.type) * syn.spAtkMult);
       player.mMoveUses = Math.max(0, (player.mMoveUses||0) - 1);
       if (player.mMoveUses === 0) player.mMoveUses = player.mMoveUsesMax || 4;
       playAttackAnim(player.animType, false);
@@ -2510,7 +2537,7 @@ function battleAction(action) {
       const mult = getEffectiveness(atkType, enemy.type);
       const effInfo = getEffLabel(mult);
       const base = Math.max(1, player.atk + Math.floor(Math.random()*6) - enemy.def);
-      dmg = Math.round(base * mult * getShardsBonus(player.moveElem||player.type));
+      dmg = Math.round(base * mult * getShardsBonus(player.moveElem||player.type) * syn.atkMult);
       player.moveUses = Math.max(0, (player.moveUses||0) - 1);
       if (player.moveUses === 0) player.moveUses = player.moveUsesMax || 6;
       playAttackAnim(player.animType, false);
@@ -2786,6 +2813,9 @@ function throwBall(ballId) {
   if (item.catchRate >= 999) catchChance = 1.0;
   // Bonus compétence capture
   if (player._catchBonus) catchChance = Math.min(0.95, catchChance + player._catchBonus);
+  // Bonus événement capture
+  const _catchEv = getActiveEventEffects();
+  if (_catchEv.catchMult && item.catchRate < 999) catchChance = Math.min(0.95, catchChance * _catchEv.catchMult);
 
   // Afficher animation
   const catchDiv = document.getElementById('catch-display');
@@ -3494,10 +3524,16 @@ function loadGame() {
   if (!player.lastWorldBoss)    player.lastWorldBoss    = 0;
   if (!player.shinyCount)       player.shinyCount       = 0;
   if (!player.megaCount)        player.megaCount        = 0;
-  if (player._winStreak === undefined) player._winStreak = 0;
-  if (!player.breedingSelected) player.breedingSelected = [];
-  if (!player.stats)            player.stats            = {};
-  if (!player.achievements)     player.achievements     = [];
+  if (player._winStreak === undefined)   player._winStreak   = 0;
+  if (!player.breedingSelected)          player.breedingSelected = [];
+  if (!player.stats)                     player.stats            = {};
+  if (!player.achievements)              player.achievements     = [];
+  if (!player.skills)                    player.skills           = [];
+  if (player.skillPoints === undefined)  player.skillPoints      = 0;
+  if (player.talentTokens === undefined) player.talentTokens     = 0;
+  if (player.prestigeXPMult   === undefined) player.prestigeXPMult   = 1;
+  if (player.prestigeGoldMult === undefined) player.prestigeGoldMult = 1;
+  if (player.prestigeShinyMult=== undefined) player.prestigeShinyMult= 1;
   player._trialBattle = false; player._trialBattleTp = 0;
   // Recalibrer xpNext sur tous les Pokémon en cas d'ancienne courbe
   const _recalibrate = (p) => { if (p && p.level) { p.xpNext = xpForLevel(p.level); p.xp = Math.min(p.xp||0, p.xpNext - 1); } };
@@ -5068,6 +5104,8 @@ function grantDexRewards(milestone) {
   setTimeout(() => { notify(`🎁 ${parts.join(', ')}`); }, 1200);
   setMessage(msg);
 }
+// Alias used by data.js patch
+const awardDexMilestone = grantDexRewards;
 
 
 // ══════════════════════════════════════════
@@ -5512,7 +5550,7 @@ function startBreeding(rosterIdx1, rosterIdx2) {
 
   const eggId = Math.random() < 0.5 ? (p1.spriteId||p1.currentSpriteId) : (p2.spriteId||p2.currentSpriteId);
   const avgLevel = Math.floor(((p1.level||1)+(p2.level||1))/2);
-  const isShiny = Math.random() < (1 / Math.max(1, 512 / ((player._shinyLuckMult||1) * (player.prestigeShinyMult||1))));
+  const isShiny = Math.random() < (1 / getEffectiveShinyOdds());
 
   breedingSlots[slotIdx] = {
     eggId, avgLevel, isShiny,
@@ -5629,13 +5667,15 @@ function getActiveSynergies() {
 
 function applySynergyBonuses() {
   const active = getActiveSynergies();
-  if (active.length === 0) return 1;
-  let atkMult = 1, defMult = 1;
+  if (active.length === 0) return { atkMult:1, defMult:1, spAtkMult:1 };
+  let atkMult = 1, defMult = 1, spAtkMult = 1;
   active.forEach(s => {
-    if (s.bonus.atk)  atkMult *= s.bonus.atk;
-    if (s.bonus.all)  { atkMult *= s.bonus.all; defMult *= s.bonus.all; }
+    if (s.bonus.atk)   atkMult   *= s.bonus.atk;
+    if (s.bonus.def)   defMult   *= s.bonus.def;
+    if (s.bonus.spAtk) spAtkMult *= s.bonus.spAtk;
+    if (s.bonus.all)   { atkMult *= s.bonus.all; defMult *= s.bonus.all; spAtkMult *= s.bonus.all; }
   });
-  return { atkMult, defMult };
+  return { atkMult, defMult, spAtkMult };
 }
 
 // ══════════════════════════════════════════
@@ -5789,7 +5829,7 @@ function startBreedFromScreen() {
   if (slotIdx===-1) { notify('Tous les slots d\'élevage sont occupés !'); return; }
   const eggId = Math.random()<0.5 ? (p1.spriteId||p1.currentSpriteId) : (p2.spriteId||p2.currentSpriteId);
   const avgLevel = Math.floor(((p1.level||1)+(p2.level||1))/2);
-  const isShiny = Math.random() < (1 / Math.max(1, 512 / ((player._shinyLuckMult||1) * (player.prestigeShinyMult||1))));
+  const isShiny = Math.random() < (1 / getEffectiveShinyOdds());
   breedingSlots[slotIdx] = {
     eggId, avgLevel, isShiny,
     startTime: Date.now(), endTime: Date.now()+BREEDING_TIME,
@@ -6168,11 +6208,13 @@ function updateGlobalStats(type, amount=1) {
 function updateGlobalStatsBatch(map) {
   if (!player) return;
   if (!player.stats) player.stats = {};
+  let hasNonKills = false;
   Object.entries(map).forEach(([type, amount]) => {
     player.stats[type] = (player.stats[type]||0) + amount;
     updateDailyProgress(type, amount);
+    if (type !== 'kills') hasNonKills = true;
   });
-  if ((player.stats.kills||0) % 10 === 0) checkAchievements();
+  if ((player.stats.kills||0) % 10 === 0 || hasNonKills) checkAchievements();
 }
 
 // ══════════════════════════════════════════
@@ -6410,7 +6452,9 @@ let tourState = null; // { floor, pokemon, enemy, phase:'choose'|'fight'|'reward
 let _tourSelectedFloor = null; // null = prochain étage non battu
 
 const TOUR_FLOOR_ENEMIES = floor => {
-  const scale = 1 + floor * 0.18;
+  const scale    = 1 + floor * 0.18;
+  const defScale = Math.pow(scale, 0.65);
+  const hpScale  = Math.pow(scale, 0.90);
   const allIds = GEN1.filter(p => p.id <= 151);
   // Pick random enemies, harder every floor
   const pool = allIds.filter(p => p.atk * scale >= 5);
@@ -6419,8 +6463,8 @@ const TOUR_FLOOR_ENEMIES = floor => {
   return {
     name: pData.n, id: pData.id,
     level: Math.max(1, Math.min(500, floor * 3 + Math.floor(Math.random() * 5))),
-    hp: Math.round(pData.hp * scale), maxHp: Math.round(pData.hp * scale),
-    atk: Math.round(pData.atk * scale), def: Math.round(pData.def * scale) || 1,
+    hp: Math.round(pData.hp * hpScale), maxHp: Math.round(pData.hp * hpScale),
+    atk: Math.round(pData.atk * scale), def: Math.round(pData.def * defScale) || 1,
     spd: Math.round(spd * scale), xp: 0, gold: 0, type: pData.t,
     isShiny: false,
   };
