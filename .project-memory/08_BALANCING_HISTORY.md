@@ -36,6 +36,29 @@
   - `bossDef = Math.max(50,   player.atk   * 0.50)` (était `player.atk * 0.40`)
 - **Pattern** : gate de niveau → stats minimales fixes → scaling pour late-game (standard RPG browser)
 
+## Balance pass complète (2026-06-09 — session 3) — Senior Game Design audit
+
+### Problème critique résolu : DEF ennemi scaling exponentiel
+**Symptôme** : TTK joueur de ~500 tours sur Onix niv 100, ~13 tours sur Magnéton niv 56 (vs 7 tours survie)
+**Cause** : `def = base_def * lvlScale * 1.0` — Onix (base DEF:25) à niv 100 = 400 DEF vs joueur ATK 326
+**Fix** :
+- `lvlScale = 1 + level * 0.17` (était 0.15) → scaling global +13%
+- HP ennemi × 1.15 → difficulté via PV, pas DEF
+- ATK ennemi × 0.88 → survie joueur +1-2 tours
+- DEF ennemi × 0.55 → TTK joueur divisé par ~2 en mid-game
+
+Simulations post-fix :
+| Phase | TTK joueur | Survie joueur |
+|---|---|---|
+| Early niv 5 | 5 tours | 12 tours |
+| Mid niv 56 | 7 tours (était 13) | 8 tours |
+| Late niv 112 | 9 tours | 10 tours |
+| End niv 205 | 17 tours | 4 tours |
+
+### Classe Carapuce rééquilibrée
+- ATK 11 → 13 (+18%), DEF 18 → 16 (-11%)
+- Tank avec ATK viable, plus distinct de l'archétype Évoli
+
 ## Règles de design établies
 - Les ennemis ont des stats simplifiées : {id, n, t, hp, atk, def, xp, g} (divisées par ~5 des stats officielles)
 - Le niveau maximum du jeu est 500 (enforced)

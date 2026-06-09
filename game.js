@@ -91,7 +91,7 @@ function applySizeVariant(poke, variant) {
 
 const CLASSES = {
   'Évoli':     { id:133, evoId:136, evoName:'Pyroli',   evoLevel:36, sprite:133, type:'Normal',    hp:100, mp:60,  atk:14, def:11, spd:14, magic:12, move:'Morsure',      mMove:'Vive-Attaque', moveElem:'Normal',    mMoveElem:'Normal',    moveUses:6,  mMoveUses:4,  items:[{n:'Potion',img:'potion',q:2}], animType:'normal' },
-  'Carapuce':  { id:7,   evoId:8,   evoName:'Carabaffe',evoLevel:16, sprite:7,   type:'Eau',       hp:115, mp:55,  atk:11, def:18, spd:8,  magic:10, move:'Pistolet-O',   mMove:'Écume',        moveElem:'Eau',       mMoveElem:'Eau',       moveUses:6,  mMoveUses:4,  items:[{n:'Potion',img:'potion',q:2}], animType:'water' },
+  'Carapuce':  { id:7,   evoId:8,   evoName:'Carabaffe',evoLevel:16, sprite:7,   type:'Eau',       hp:115, mp:55,  atk:13, def:16, spd:8,  magic:10, move:'Pistolet-O',   mMove:'Écume',        moveElem:'Eau',       mMoveElem:'Eau',       moveUses:6,  mMoveUses:4,  items:[{n:'Potion',img:'potion',q:2}], animType:'water' },
   'Salamèche': { id:4,   evoId:5,   evoName:'Reptincel',evoLevel:16, sprite:4,   type:'Feu',       hp:85,  mp:65,  atk:19, def:8,  spd:16, magic:16, move:'Griffe',        mMove:'Flammèche',    moveElem:'Normal',    mMoveElem:'Feu',       moveUses:6,  mMoveUses:4,  items:[{n:'Potion',img:'potion',q:1},{n:'SuperPotion',img:'super-potion',q:1}], animType:'fire' },
   'Bulbizarre':{ id:1,   evoId:2,   evoName:'Herbizarre',evoLevel:16,sprite:1,   type:'Plante',    hp:105, mp:80,  atk:12, def:12, spd:9,  magic:18, move:'Fouet-Liane',  mMove:'Poudre Toxik', moveElem:'Plante',    mMoveElem:'Poison',    moveUses:6,  mMoveUses:4,  items:[{n:'Potion',img:'potion',q:3}], animType:'leaf' },
 };
@@ -1841,13 +1841,18 @@ function doExplore() {
     // Tranche de niveau fixe par zone — fallback sur zone auto si l'ID est inconnu
     const zoneLvRange = ZONE_LEVELS[zoneId] || ZONE_LEVELS[ZONE_ORDER[zoneIdx]] || [1, 8];
     const enemyLevel  = zoneLvRange[0] + Math.floor(Math.random() * (zoneLvRange[1] - zoneLvRange[0] + 1));
-    const lvlScale    = 1 + enemyLevel * 0.15;
+    // lvlScale +13% vs ancienne formule (0.15→0.17) — late-game plus résistant.
+    // HP ×1.15 : difficulté via PV, pas via DEF.
+    // ATK ×0.88 : dégâts ennemis légèrement réduits — survie joueur +1-2 tours.
+    // DEF ×0.55 : correction critique — empêche les ennemis à haute DEF de base
+    //   (Onix DEF:25, Crustabri DEF:20) de devenir imbattables au niveau de la zone.
+    const lvlScale    = 1 + enemyLevel * 0.17;
     const baseSpd     = _allSpdT[pData.id] || 50;
     const e = {
       name: pData.n, id: pData.id, level: enemyLevel,
-      hp:   Math.round(pData.hp  * lvlScale),
-      atk:  Math.round(pData.atk * lvlScale),
-      def:  Math.round((pData.def||5) * lvlScale) || 1,
+      hp:   Math.round(pData.hp  * lvlScale * 1.15),
+      atk:  Math.round(pData.atk * lvlScale * 0.88),
+      def:  Math.round((pData.def||5) * lvlScale * 0.55) || 1,
       spd:  Math.round(baseSpd * (1 + enemyLevel * 0.02)),
       xp:   Math.round((pData.xp||10) * lvlScale),
       gold: Math.round(enemyLevel * 3),
