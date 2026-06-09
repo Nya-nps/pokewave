@@ -3076,16 +3076,18 @@ function useOrb(orbId) {
   saveGame();
   // Build legendary enemy and start battle
   const legendLvl = Math.max(50, (player.trainerLevel||1) * 5);
-  const legendScale = 1 + legendLvl * 0.12;
+  const legendScale    = 1 + legendLvl * 0.12;
+  const legendDefScale = Math.pow(legendScale, 0.65);
+  const legendHpScale  = Math.pow(legendScale, 0.90);
   const legendEnemy = {
     name: pick.n,
     id: pick.id,
     type: pick.t.includes('/') ? pick.t.split('/')[0] : pick.t,
     dualType: pick.t,
-    hp: Math.round(120 * legendScale),
-    maxHp: Math.round(120 * legendScale),
+    hp: Math.round(120 * legendHpScale),
+    maxHp: Math.round(120 * legendHpScale),
     atk: Math.round(28 * legendScale),
-    def: Math.round(22 * legendScale),
+    def: Math.round(22 * legendDefScale),
     spd: Math.round(100 * legendScale * 0.4),
     magic: Math.round(25 * legendScale),
     level: legendLvl,
@@ -6326,6 +6328,10 @@ function assignItemToPokemon(source, idx, itemId) {
       player.heldItemBag[itemId]--;
       p.heldItem = null;
       notify(`🍬 ${item.name} utilisé sur ${p.currentName||p.name} !`);
+      // Sync active pokemon stats back to player object
+      if (source === 'roster' && idx === (player.activeRosterIdx||0)) {
+        syncPlayerFromActive(); updateHUD();
+      }
     }
   } else {
     player.heldItemBag[itemId]--;
@@ -6355,6 +6361,13 @@ function levelUpPokemon(p) {
   if (p.spAtk !== undefined) p.spAtk += 2;
   if (p.spDef !== undefined) p.spDef += 1;
   notify(`⬆ ${p.currentName||p.name} → Niveau ${p.level} ! (Super Bonbon)`);
+  // Check evolution for the leveled pokemon
+  let chain = EVO_CHAINS[p.currentSpriteId||p.spriteId];
+  if (chain && p.level >= chain.level) {
+    p.currentSpriteId = chain.next; p.currentName = chain.name;
+    p.maxHp += 20; p.hp = p.maxHp; p.atk += 5; p.def += 4; p.magic += 4;
+    notify(`🌟 ${p.currentName} évolue ! (Super Bonbon)`);
+  }
 }
 
 // ══════════════════════════════════════════
