@@ -44,7 +44,7 @@ const SPRITE_SHINY = id => `${SPRITE_BASE}shiny/${id}.png`;
 
 // ── SHINY ──
 const SHINY_ODDS = 256; // 1/256
-function rollShiny() { return Math.floor(Math.random() * SHINY_ODDS) === 0; }
+function rollShiny() { return Math.floor(Math.random() * getEffectiveShinyOdds()) === 0; }
 function applyShinyBoost(poke) {
   // +15% on atk, def, spd, magic, hp
   const B = 1.15;
@@ -1898,6 +1898,7 @@ function doRest() {
     syncPlayerFromActive();
   }
   updateHUD();
+  updateGlobalStats('rests');
   setMessage(`🏥 ${player.currentName} est soigné à 100 % au Centre Pokémon ! PV et attaques entièrement restaurés.`);
   notify('🏥 Soin complet ! ⏳30s');
   // Countdown display on button
@@ -1993,6 +1994,8 @@ function cancelPreBattle() {
 
 function startBattle(enemyData) {
   enemy = { ...enemyData, maxHp: enemyData.hp };
+  // Réinitialiser Revenant (une seule fois par combat)
+  if (player.roster) player.roster.forEach(p => { if (p._revenant) p._revenantUsed = false; });
   const activePoke = getActivePoke();
   const playerShiny = activePoke?.isShiny || false;
   document.getElementById('b-player-name').textContent = player.currentName + (playerShiny ? ' ✨' : '');
@@ -2156,7 +2159,27 @@ function applyRestesHeal() {
 // Amulette d'Or: gold bonus — applied in battle victory
 function getGoldMultiplier() {
   const p = getActivePoke();
-  return (p && p.heldItem === 'amulette-or') ? 1.3 : 1.0;
+  let mult = (p && p.heldItem === 'amulette-or') ? 1.3 : 1.0;
+  if (p && p._fortuneBonus) mult *= (1 + p._fortuneBonus);
+  if (player && player._globalGoldBonus) mult *= (1 + player._globalGoldBonus);
+  if (player && player.prestigeGoldMult) mult *= player.prestigeGoldMult;
+  return mult;
+}
+function getXpMultiplier() {
+  const p = getActivePoke();
+  let mult = 1.0;
+  if (p && p._xpBonus) mult *= (1 + p._xpBonus);
+  if (player && player._globalXPBonus) mult *= (1 + player._globalXPBonus);
+  if (player && player.prestigeXPMult) mult *= player.prestigeXPMult;
+  return mult;
+}
+function getEffectiveShinyOdds() {
+  let odds = SHINY_ODDS;
+  if (player) {
+    if (player._shinyLuckMult) odds = Math.max(1, Math.round(odds / player._shinyLuckMult));
+    if (player.prestigeShinyMult) odds = Math.max(1, Math.round(odds / player.prestigeShinyMult));
+  }
+  return odds;
 }
 function xpForLevel(n) {
   // Courbe quadratique — plafond porté à 500
@@ -2193,6 +2216,19 @@ function setBattleTurn(turn) {
       if (eEff.label) log += ` — ${eEff.label}`;
       log += ` pour ${eDmg} dégâts !`;
       if (player.hp<=0) {
+        // Talent Revenant : ressuscite une fois à 50% PV
+        const _activePoke = getActivePoke();
+        if (_activePoke && _activePoke._revenant && !_activePoke._revenantUsed) {
+          _activePoke._revenantUsed = true;
+          player.hp = Math.floor(player.maxHp * 0.5);
+          if (_activePoke) _activePoke.hp = player.hp;
+          updateBattleHp(); updateHUD();
+          (_hud('battle-log')).textContent = `💫 Talent REVENANT ! ${player.currentName} ressuscite à 50% PV !`;
+          notify(`💫 Revenant ! ${player.currentName} continue !`);
+          battleBusy = false;
+          setBattleTurn('player');
+          return;
+        }
         player.hp=0; updateBattleHp(); updateHUD();
         syncActiveFromPlayer();
         (_hud('battle-log')).textContent=`💀 ${player.currentName} est K.O. !`;
@@ -2397,7 +2433,7 @@ function runAutoAction() {
 
   // Choisir l'action
   const hpPct = player.hp / player.maxHp;
-  const hasPotions = (player.bag.potion||0)+(player.bag.superpotion||0)+(player.bag.hyperpotion||0) > 0;
+  const hasPotions = (player.bag.potion||0)+(player.bag.superpotion||0)+(player.bag.hyperpotion||0)+(player.bag.maxrevif||0) > 0;
   if (hpPct < 0.25 && hasPotions) {
     battleAction('item');
   } else {
@@ -2431,15 +2467,25 @@ function battleAction(action) {
     setBattleTurn('enemy');
     return;
   } else if (action==='item') {
-    const totalPotions = (player.bag.potion||0)+(player.bag.superpotion||0)+(player.bag.hyperpotion||0);
-    if (totalPotions>0) {
+    const totalHeal = (player.bag.potion||0)+(player.bag.superpotion||0)+(player.bag.hyperpotion||0)+(player.bag.maxrevif||0);
+    const totalPP   = (player.bag.elixir||0)+(player.bag.maxelixir||0);
+    if (totalHeal > 0) {
       let heal=0, used='';
-      if (player.bag.hyperpotion>0){ heal=250; player.bag.hyperpotion--; used='Hyper Potion'; }
-      else if (player.bag.superpotion>0){ heal=120; player.bag.superpotion--; used='Super Potion'; }
-      else { heal=50; player.bag.potion--; used='Potion'; }
+      if ((player.bag.maxrevif||0)>0 && player.hp < player.maxHp * 0.4){ heal=player.maxHp; player.bag.maxrevif--; used='Max Revif'; }
+      else if ((player.bag.hyperpotion||0)>0){ heal=250; player.bag.hyperpotion--; used='Hyper Potion'; }
+      else if ((player.bag.superpotion||0)>0){ heal=120; player.bag.superpotion--; used='Super Potion'; }
+      else if ((player.bag.potion||0)>0){ heal=50; player.bag.potion--; used='Potion'; }
+      else { heal=player.maxHp; player.bag.maxrevif--; used='Max Revif'; }
       player.hp = Math.min(player.maxHp, player.hp+heal);
-      log=`🧪 ${used} utilisée sur ${player.currentName} ! +${heal} PV. `;
-    } else { log='🧪 Plus de Potions ! '; (_hud('battle-log')).textContent=log; return; }
+      log=`🧪 ${used} utilisée sur ${player.currentName} ! +${Math.min(heal,player.maxHp)} PV. `;
+    } else if (totalPP > 0) {
+      let used='', restore=0;
+      if ((player.bag.maxelixir||0)>0){ player.bag.maxelixir--; used='Max Élixir'; restore=-1; }
+      else { player.bag.elixir--; used='Élixir'; restore=10; }
+      if (restore === -1) { player.moveUses=player.moveUsesMax||6; player.mMoveUses=player.mMoveUsesMax||4; }
+      else { player.moveUses=Math.min(player.moveUsesMax||6,(player.moveUses||0)+restore); player.mMoveUses=Math.min(player.mMoveUsesMax||4,(player.mMoveUses||0)+restore); }
+      log=`🧪 ${used} utilisé ! PP restaurés. `;
+    } else { log='🧪 Aucun objet de soin disponible ! '; (_hud('battle-log')).textContent=log; return; }
     updateBattleHp(); updateHUD();
     (_hud('battle-log')).textContent=log;
     setBattleTurn('enemy');
@@ -2490,7 +2536,7 @@ function battleAction(action) {
     player._winStreak = (player._winStreak||0) + 1;
     const streakBonus = player._bossBattle ? 1.0 : Math.min(2.0, 1 + Math.floor(player._winStreak / 5) * 0.1);
     // XP = niveau ennemi × 20 (indépendant de l'espèce)
-    const xpG         = Math.round(enemyLv * 20 * lvRatio * badgeBonus);
+    const xpG         = Math.round(enemyLv * 20 * lvRatio * badgeBonus * getXpMultiplier());
     const goldG       = Math.round((enemy.gold + Math.floor(Math.random() * Math.max(1, enemy.gold * 0.4))) * getGoldMultiplier() * streakBonus);
     // Les replays de boss sont de l'entraînement pur : aucune récompense
     if (!player._bossBattle?.isReplay) { player.xp+=xpG; player.gold+=goldG; }
@@ -3025,12 +3071,18 @@ function renderInventory() {
   // BAG
   const grid = document.getElementById('item-grid');
   const allItems = [];
-  // Potions
-  const potionKeys = ['potion','superpotion','hyperpotion'];
-  potionKeys.forEach(k=>{ if (player.bag[k]>0) allItems.push({key:k,qty:player.bag[k]}); });
+  // Potions & soins
+  const potionKeys = ['potion','superpotion','hyperpotion','maxrevif'];
+  potionKeys.forEach(k=>{ if ((player.bag[k]||0)>0) allItems.push({key:k,qty:player.bag[k]}); });
+  // Soins de statut
+  const statusKeys = ['antidote','paralysoin','réveil','brulsoins','antidegel','totalsoins'];
+  statusKeys.forEach(k=>{ if ((player.bag[k]||0)>0) allItems.push({key:k,qty:player.bag[k]}); });
+  // PP
+  const ppKeys = ['elixir','maxelixir'];
+  ppKeys.forEach(k=>{ if ((player.bag[k]||0)>0) allItems.push({key:k,qty:player.bag[k]}); });
   // Balls
   const ballKeys = ['pokeball','superball','hyperball','masterball'];
-  ballKeys.forEach(k=>{ if (player.balls[k]>0) allItems.push({key:k,qty:player.balls[k]}); });
+  ballKeys.forEach(k=>{ if ((player.balls[k]||0)>0) allItems.push({key:k,qty:player.balls[k]}); });
   // CTs
   const ctKeys = Object.entries(player.ctBag||{}).filter(([,qty])=>qty>0);
   ctKeys.forEach(([id, qty]) => {
@@ -3378,9 +3430,8 @@ function buyItem(itemId) {
   player.gold -= item.price;
   if (item.type==='ball') {
     player.balls[itemId] = (player.balls[itemId]||0)+1;
-  } else if (item.type==='heal') {
-    player.bag[itemId] = (player.bag[itemId]||0)+1;
-  } else if (item.type==='special') {
+  } else {
+    // heal, status, pp, special → tous dans player.bag
     player.bag[itemId] = (player.bag[itemId]||0)+1;
   }
   document.getElementById('shop-gold').textContent = player.gold;
@@ -5134,6 +5185,7 @@ function handleWorldBossVictory(enemy) {
   const candy = 3 + Math.floor(Math.random()*3);
   player.heldItemBag['super-bonbon'] = (player.heldItemBag['super-bonbon']||0) + candy;
   rewards.push(`🍬×${candy} Super Bonbons`);
+  updateGlobalStats('world_boss');
   updateHUD();
   notify('🌍 WORLD BOSS VAINCU !');
   setTimeout(()=>notify(rewards.join(' · ')), 600);
@@ -5460,7 +5512,7 @@ function startBreeding(rosterIdx1, rosterIdx2) {
 
   const eggId = Math.random() < 0.5 ? (p1.spriteId||p1.currentSpriteId) : (p2.spriteId||p2.currentSpriteId);
   const avgLevel = Math.floor(((p1.level||1)+(p2.level||1))/2);
-  const isShiny = Math.random() < (1/512) * (player._shinyLuckMult||1);
+  const isShiny = Math.random() < (1 / Math.max(1, 512 / ((player._shinyLuckMult||1) * (player.prestigeShinyMult||1))));
 
   breedingSlots[slotIdx] = {
     eggId, avgLevel, isShiny,
@@ -5737,7 +5789,7 @@ function startBreedFromScreen() {
   if (slotIdx===-1) { notify('Tous les slots d\'élevage sont occupés !'); return; }
   const eggId = Math.random()<0.5 ? (p1.spriteId||p1.currentSpriteId) : (p2.spriteId||p2.currentSpriteId);
   const avgLevel = Math.floor(((p1.level||1)+(p2.level||1))/2);
-  const isShiny = Math.random()<(1/512)*(player._shinyLuckMult||1);
+  const isShiny = Math.random() < (1 / Math.max(1, 512 / ((player._shinyLuckMult||1) * (player.prestigeShinyMult||1))));
   breedingSlots[slotIdx] = {
     eggId, avgLevel, isShiny,
     startTime: Date.now(), endTime: Date.now()+BREEDING_TIME,
@@ -6052,8 +6104,8 @@ function startPassiveIncome() {
   if (passiveIncomeTimer) clearInterval(passiveIncomeTimer);
   passiveIncomeTimer = setInterval(() => {
     if (!player || currentScreen !== 'game') return;
-    const base = 2 + Math.floor((player.level||1) * 0.5) + (player.lastBossWave||0) * 3;
-    const income = Math.max(1, Math.round(base));
+    const base = 2 + Math.floor((player.level||1) * 0.5) + (player.lastBossWave||0) * 3 + (player._passiveIncome||0);
+    const income = Math.max(1, Math.round(base * (player.prestigeGoldMult||1)));
     player.gold += income;
     updateHUD();
     const ind = document.getElementById('passive-income-indicator');
