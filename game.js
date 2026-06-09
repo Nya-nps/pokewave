@@ -5230,8 +5230,11 @@ function applyMegaEvo(p) {
   const oldName = p.currentName || p.name;
   p.currentName = mega.name;
   if (player) player.megaCount = (player.megaCount||0) + 1;
+  // Sync mega stats to player object so combat uses updated values
+  if (player?.roster?.[player.activeRosterIdx||0] === p) syncPlayerFromActive();
   notify(`✨ ${oldName} → ${mega.name} !`);
   setMessage(`✨ MÉGA ÉVOLUTION ! ${mega.name} est libéré !`);
+  updateBattleHp(); updateHUD();
 }
 
 function revertMegaEvo(p) {
