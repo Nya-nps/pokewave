@@ -229,7 +229,7 @@ function setMessage(text) {
       const isLatest = i === eventLog.length - 1;
       return `<div style="opacity:${isLatest ? 1 : Math.max(0.3, 0.3 + (i / eventLog.length) * 0.7)};${isLatest ? 'color:var(--white)' : 'color:rgba(200,210,255,.65)'}">${msg}</div>`;
     }).join('');
-    box.scrollTop = box.scrollHeight;
+    box.scrollTop = 999999; // évite la lecture de scrollHeight (reflow)
   });
 }
 function showZone(name) {
@@ -1503,11 +1503,15 @@ function hurtSprite(id) {
   });
 }
 
+// Cache des boutons de combat — querySelectorAll évité à chaque turn
+let _battleBtnsCache = null;
 function disableBattleButtons(dis){
-  document.querySelectorAll('#battle-actions .btn').forEach(b=>{
-    if (b.id === 'btn-auto') return; // toujours cliquable pour interrompre l'auto
+  if (!_battleBtnsCache) _battleBtnsCache = Array.from(document.querySelectorAll('#battle-actions .btn'));
+  for (let i = 0; i < _battleBtnsCache.length; i++) {
+    const b = _battleBtnsCache[i];
+    if (b.id === 'btn-auto') continue;
     b.disabled = dis;
-  });
+  }
 }
 
 // ── CATCH MENU ──
