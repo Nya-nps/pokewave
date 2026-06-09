@@ -41,21 +41,21 @@
     </div>
     <!-- Grille de tuiles -->
     <div style="padding:.8rem;display:grid;grid-template-columns:repeat(3,1fr);gap:.55rem;flex:1">
-      <button onclick="showShop();toggleDropdown()" class="smtile" style="--tc:#1a1a00;--bc:linear-gradient(180deg,#ffd60a,#cc9900);--brd:#664d00"><span>🛒</span>SHOP</button>
-      <button onclick="showInventory();toggleDropdown()" class="smtile" style="--tc:#fff;--bc:linear-gradient(180deg,#4cc9f0,#1a8ab5);--brd:#0a4a6b"><span>🎒</span>SAC</button>
-      <button onclick="showQuests();toggleDropdown()" class="smtile" style="--tc:#fff;--bc:linear-gradient(180deg,#06d6a0,#048a68);--brd:#024534"><span>📋</span>QUÊTES</button>
-      <button onclick="showAchievements();toggleDropdown()" class="smtile" style="--tc:#1a1a00;--bc:linear-gradient(180deg,#ffd60a,#cc9900);--brd:#664d00"><span>🏅</span>SUCCÈS</button>
-      <button onclick="showForge();toggleDropdown()" class="smtile" style="--tc:#fff;--bc:linear-gradient(180deg,#ff9a3c,#cc6400);--brd:#663200"><span>⚒️</span>FORGE</button>
-      <button onclick="showScreen('skills');toggleDropdown()" class="smtile" style="--tc:#fff;--bc:linear-gradient(180deg,#4cc9f0,#1a8ab5);--brd:#0a4a6b"><span>📊</span>COMPÉT.</button>
-      <button onclick="showScreen('breeding');toggleDropdown()" class="smtile" style="--tc:#fff;--bc:linear-gradient(180deg,#ff88cc,#cc3d88);--brd:#660033"><span>🥚</span>ÉLEVAGE</button>
-      <button onclick="showScreen('prestige');toggleDropdown()" class="smtile" style="--tc:#1a1a00;--bc:linear-gradient(180deg,#ffd60a,#cc9900);--brd:#664d00"><span>⭐</span>PRESTIGE</button>
-      <button onclick="showTalents();toggleDropdown()" class="smtile" style="--tc:#fff;--bc:linear-gradient(180deg,#c77dff,#8a2be2);--brd:#4a0080"><span>✨</span>TALENTS</button>
-      <button onclick="showPokedex();toggleDropdown()" class="smtile" style="--tc:#fff;--bc:linear-gradient(180deg,#e63946,#a01e27);--brd:#500f13"><span>📖</span>POKÉDEX</button>
+      <button onclick="showShop()" class="smtile" style="--tc:#1a1a00;--bc:linear-gradient(180deg,#ffd60a,#cc9900);--brd:#664d00"><span>🛒</span>SHOP</button>
+      <button onclick="showInventory()" class="smtile" style="--tc:#fff;--bc:linear-gradient(180deg,#4cc9f0,#1a8ab5);--brd:#0a4a6b"><span>🎒</span>SAC</button>
+      <button onclick="showQuests()" class="smtile" style="--tc:#fff;--bc:linear-gradient(180deg,#06d6a0,#048a68);--brd:#024534"><span>📋</span>QUÊTES</button>
+      <button onclick="showAchievements()" class="smtile" style="--tc:#1a1a00;--bc:linear-gradient(180deg,#ffd60a,#cc9900);--brd:#664d00"><span>🏅</span>SUCCÈS</button>
+      <button onclick="showForge()" class="smtile" style="--tc:#fff;--bc:linear-gradient(180deg,#ff9a3c,#cc6400);--brd:#663200"><span>⚒️</span>FORGE</button>
+      <button onclick="showScreen('skills')" class="smtile" style="--tc:#fff;--bc:linear-gradient(180deg,#4cc9f0,#1a8ab5);--brd:#0a4a6b"><span>📊</span>COMPÉT.</button>
+      <button onclick="showScreen('breeding')" class="smtile" style="--tc:#fff;--bc:linear-gradient(180deg,#ff88cc,#cc3d88);--brd:#660033"><span>🥚</span>ÉLEVAGE</button>
+      <button onclick="showScreen('prestige')" class="smtile" style="--tc:#1a1a00;--bc:linear-gradient(180deg,#ffd60a,#cc9900);--brd:#664d00"><span>⭐</span>PRESTIGE</button>
+      <button onclick="showTalents()" class="smtile" style="--tc:#fff;--bc:linear-gradient(180deg,#c77dff,#8a2be2);--brd:#4a0080"><span>✨</span>TALENTS</button>
+      <button onclick="showPokedex()" class="smtile" style="--tc:#fff;--bc:linear-gradient(180deg,#e63946,#a01e27);--brd:#500f13"><span>📖</span>POKÉDEX</button>
       <button id="btn-tour-drop" onclick="showTourMode();toggleDropdown()" class="smtile" style="display:none;--tc:#1a1a00;--bc:linear-gradient(180deg,#ffd60a,#cc9900);--brd:#664d00"><span>🏆</span>TOUR</button>
-      <button onclick="showScreen('trial');toggleDropdown()" class="smtile" style="--tc:#fff;--bc:linear-gradient(180deg,#a855f7,#7b2ff7);--brd:#3a0080"><span>⚡</span>TRIAL</button>
+      <button onclick="showScreen('trial')" class="smtile" style="--tc:#fff;--bc:linear-gradient(180deg,#a855f7,#7b2ff7);--brd:#3a0080"><span>⚡</span>TRIAL</button>
       <button onclick="saveGame();toggleDropdown()" class="smtile" style="--tc:#fff;--bc:linear-gradient(180deg,#e63946,#a01e27);--brd:#500f13"><span>💾</span>SAVE</button>
-      <button onclick="showScreen('saves');toggleDropdown()" class="smtile" style="--tc:#fff;--bc:linear-gradient(180deg,#4cc9f0,#1a8ab5);--brd:#0a4a6b"><span>📦</span>EXPORT</button>
-      <button onclick="showScreen('wiki');toggleDropdown()" class="smtile" style="--tc:#fff;--bc:linear-gradient(180deg,#06d6a0,#048a68);--brd:#024534"><span>📚</span>WIKI</button>
+      <button onclick="showScreen('saves')" class="smtile" style="--tc:#fff;--bc:linear-gradient(180deg,#4cc9f0,#1a8ab5);--brd:#0a4a6b"><span>📦</span>EXPORT</button>
+      <button onclick="showScreen('wiki')" class="smtile" style="--tc:#fff;--bc:linear-gradient(180deg,#06d6a0,#048a68);--brd:#024534"><span>📚</span>WIKI</button>
     </div>
   </div>
 </div>
