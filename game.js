@@ -2648,7 +2648,7 @@ function battleAction(action) {
     if (player._worldBossBattle) {
       disableBattleButtons(true);
       handleWorldBossVictory(enemy);
-      setTimeout(()=>{ stopAutoBattle(); disableBattleButtons(false); syncActiveFromPlayer(); showScreen('game'); updateHUD(); }, 1800);
+      setTimeout(()=>{ stopAutoBattle(); disableBattleButtons(false); syncActiveFromPlayer(); showScreen('game'); updateHUD(); _silentSave(); }, 1800);
       return;
     }
 
@@ -2725,6 +2725,7 @@ function battleAction(action) {
         syncActiveFromPlayer();
         showScreen('game');
         updateHUD();
+        _silentSave();
         if (isRewardFloor && !isReplay) {
           showTourReward(completedFloor);
         } else {
@@ -4583,7 +4584,7 @@ function handleGymVictory() {
     notify(`🏅 ${gl.badge} obtenu !`);
     setMessage(`🏆 Vous avez vaincu ${gl.name} ! ${gl.badgeIcon} ${gl.badge} obtenu ! +${gl.reward}₽`);
     setTimeout(() => notify(`🏅 ${(player.badges||[]).length}/9 badges !`), 1500);
-    setTimeout(() => { stopAutoBattle(); syncActiveFromPlayer(); showScreen('game'); updateHUD(); }, 2000);
+    setTimeout(() => { stopAutoBattle(); syncActiveFromPlayer(); showScreen('game'); updateHUD(); _silentSave(); }, 2000);
     return true;
   }
 }
@@ -4902,7 +4903,7 @@ const TALENT_DEFS = [
   { id:'fortune-3',    name:'Fortune III',   tier:'epique',    color:'#ffd700', desc:'+60% or, +10% XP',      apply:p=>{ p._fortuneBonus=(p._fortuneBonus||0)+0.60; p._xpBonus=(p._xpBonus||0)+0.10; } },
   // ── LÉGENDAIRE (2%) ──
   { id:'elu',          name:"L'Élu",         tier:'legendaire',color:'#ffe066', desc:'+80% ATK, +50% VIT, +30% PV', apply:p=>{ p.atk=Math.round(p.atk*1.80); p.magic=Math.round(p.magic*1.80); p.spd=Math.round(p.spd*1.50); p.maxHp=Math.round(p.maxHp*1.30); p.hp=p.maxHp; p._isElu=true; } },
-  { id:'dragon-soul',  name:'Âme du Dragon', tier:'legendaire',color:'#cc88ff', desc:'+100% ATK Spé, +40% DEF',    apply:p=>{ p.magic=Math.round(p.magic*2.0); p.spAtk=Math.round((p.spAtk||p.magic)*2.0); p.def=Math.round(p.def*1.40); p._dragonSoul=true; } },
+  { id:'dragon-soul',  name:'Âme du Dragon', tier:'legendaire',color:'#cc88ff', desc:'+100% ATK Spé, +40% DEF',    apply:p=>{ const _bm=p.magic; p.magic=Math.round(_bm*2.0); p.spAtk=Math.round((p.spAtk||_bm)*2.0); p.def=Math.round(p.def*1.40); p._dragonSoul=true; } },
   { id:'revenant',     name:'Revenant',      tier:'legendaire',color:'#cc44ff', desc:'Ressuscite 1× avec 50% PV',  apply:p=>{ p._revenant=true; } },
   { id:'providence',   name:'Providence',    tier:'legendaire',color:'#88ffcc', desc:'+50% tout + triple or',       apply:p=>{ ['atk','def','magic','spd'].forEach(s=>{p[s]=Math.round(p[s]*1.5);}); p.maxHp=Math.round(p.maxHp*1.5); p.hp=p.maxHp; p._fortuneBonus=(p._fortuneBonus||0)+2.0; } },
 ];
@@ -6420,13 +6421,13 @@ const HELD_ITEMS = {
   'ceinture-choix':{ name:'Ceinture Choix', icon:'🥊', desc:'+30% Attaque',                    consumable:false, color:'#ff4500',
     apply(p){ p.atk = Math.round(p.atk * 1.3); return false; } },
   'lentille-choix':{ name:'Lentille Choix', icon:'🔮', desc:'+30% Att. Spéciale',              consumable:false, color:'#9b59b6',
-    apply(p){ p.magic = Math.round(p.magic * 1.3); p.spAtk = Math.round((p.spAtk||p.magic)*1.3); return false; } },
+    apply(p){ const _bm=p.magic; p.magic=Math.round(_bm*1.3); p.spAtk=Math.round((p.spAtk||_bm)*1.3); return false; } },
   'bandeau-choix': { name:'Bandeau Choix',  icon:'🏃', desc:'+30% Vitesse',                    consumable:false, color:'#2dc653',
     apply(p){ p.spd = Math.round(p.spd * 1.3); return false; } },
   'reste':         { name:'Restes',         icon:'🍖', desc:'Récupère 5% PV/tour en combat',   consumable:false, color:'#888',
     apply(p){ return false; } },
   'ecaille-mentale':{ name:'Écaille Mentale',icon:'🛡', desc:'+25% Déf. Spéciale',             consumable:false, color:'#4cc9f0',
-    apply(p){ p.def = Math.round(p.def * 1.25); p.spDef = Math.round((p.spDef||p.def)*1.25); return false; } },
+    apply(p){ const _bd=p.def; p.def=Math.round(_bd*1.25); p.spDef=Math.round((p.spDef||_bd)*1.25); return false; } },
   'pepite':        { name:'Pépite',         icon:'💎', desc:'Vaut 3000₽ si vendue',           consumable:true,  color:'#00ffff',
     apply(p){ player.gold += 3000; updateHUD(); return true; } },
 };
