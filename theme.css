@@ -1129,17 +1129,44 @@ body { background: var(--c-bg) !important; }
    VISUAL UPGRADE V4 — Style vivid global
    ════════════════════════════════════════════════════ */
 
-/* ── SMTILE — fond plein coloré via --bc (gradient défini dans le HTML) ── */
+/* ── SMTILE — fond plein coloré + effets lumineux identiques à .btn ── */
 .smtile {
-  background: var(--bc) !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.22) 0%, rgba(255,255,255,.04) 40%, transparent 60%),
+    var(--bc) !important;
+  position: relative !important;
+  overflow: hidden !important;
   border: 2px solid rgba(255,255,255,.22) !important;
   border-radius: 14px !important;
   box-shadow:
     0 4px 0 var(--brd),
     0 6px 18px rgba(0,0,0,.45),
-    inset 0 1px 0 rgba(255,255,255,.28),
+    inset 0 1px 0 rgba(255,255,255,.3),
+    inset 0 0 0 1px rgba(255,255,255,.1),
     inset 0 -1px 0 rgba(0,0,0,.22) !important;
   transition: transform .13s cubic-bezier(.34,1.56,.64,1), box-shadow .13s, filter .13s !important;
+}
+/* Sweep lumineux périodique (même animation que .btn) */
+.smtile::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important; left: 0 !important;
+  width: 38% !important;
+  height: 100% !important;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,.3) 50%, transparent 100%) !important;
+  transform: translateX(-130%) skewX(-20deg) !important;
+  animation: btn-shimmer 3.8s ease-in-out infinite !important;
+  pointer-events: none !important;
+}
+/* Gloss hover */
+.smtile::after {
+  content: '' !important;
+  position: absolute !important;
+  inset: 0 !important;
+  background: linear-gradient(135deg, rgba(255,255,255,.22) 0%, transparent 55%) !important;
+  opacity: 0 !important;
+  transition: opacity .13s !important;
+  pointer-events: none !important;
 }
 .smtile:hover {
   transform: translateY(-4px) scale(1.07) !important;
@@ -1147,9 +1174,16 @@ body { background: var(--c-bg) !important; }
   box-shadow:
     0 7px 0 var(--brd),
     0 14px 28px rgba(0,0,0,.55),
-    inset 0 1px 0 rgba(255,255,255,.35) !important;
+    inset 0 1px 0 rgba(255,255,255,.38),
+    inset 0 0 0 1px rgba(255,255,255,.18) !important;
 }
-.smtile:active { transform: translateY(2px) scale(.97) !important; filter: brightness(.9) !important; }
+.smtile:hover::before { animation-duration: .5s !important; }
+.smtile:hover::after  { opacity: 1 !important; }
+.smtile:active {
+  transform: translateY(2px) scale(.97) !important;
+  filter: brightness(.9) !important;
+  box-shadow: 0 1px 0 var(--brd), 0 3px 10px rgba(0,0,0,.3) !important;
+}
 
 /* ── CLASS BTN (starters) — vivid ── */
 .class-btn {
