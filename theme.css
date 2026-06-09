@@ -941,6 +941,8 @@ body { background: var(--c-bg) !important; }
 #kill-counter-hud,
 .combatant,
 #battle-log,
+#side-menu-panel,
+#notif,
 #screen-menu,
 #screen-inventory,
 #screen-shop,
@@ -951,17 +953,23 @@ body { background: var(--c-bg) !important; }
 #screen-forge,
 #screen-skills,
 #screen-prestige,
-#screen-breeding {
+#screen-breeding,
+#screen-pokedex,
+#screen-wiki,
+#screen-saves,
+#screen-trial,
+#screen-tour {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
-/* Compenser par un fond légèrement plus opaque sur les éléments HUD */
+/* Compenser par un fond légèrement plus opaque */
 .hud-card         { background: rgba(14,10,40,.96) !important; }
 #player-name-hud  { background: rgba(14,10,40,.96) !important; }
 #gold-display     { background: rgba(30,22,5,.94) !important; }
 #message-box      { background: rgba(10,8,30,.96) !important; }
 #kill-counter-hud { background: rgba(14,10,40,.96) !important; }
 .combatant        { background: rgba(10,8,30,.96) !important; }
+#side-menu-panel  { background: rgba(8,5,24,.97) !important; }
 #battle-log       { background: rgba(10,8,30,.97) !important; }
 /* Désactiver shimmer sur mobile */
 @media (max-width: 900px) { .bar-fill::after { display: none !important; } }
@@ -1163,7 +1171,6 @@ body { background: var(--c-bg) !important; }
   border: 2px solid rgba(255,255,255,.22) !important;
   border-radius: 14px !important;
   animation: smtile-glow 2.5s ease-in-out infinite !important;
-  will-change: box-shadow;
   transition: transform .13s cubic-bezier(.34,1.56,.64,1), filter .13s !important;
 }
 /* Sweep lumineux périodique (même animation que .btn) */

@@ -162,6 +162,8 @@ function _hud(id) { return _hudEls[id] || (_hudEls[id] = document.getElementById
 
 // updateHUD debouncé : plusieurs appels en rafale = 1 seul vrai rendu par frame
 let _hudPending = false;
+// updateKillHUD debouncé — appelée à chaque kill pendant l'auto-battle
+let _killHudPending = false;
 function updateHUD() {
   if (!player) return;
   if (_hudPending) return; // déjà prévu pour ce frame
@@ -179,7 +181,7 @@ function _doUpdateHUD() {
   setBar('bar-xp','val-xp', player.xp, player.xpNext);
   updateHUDTrainer();
   // Bouton REPOS : affiche % PV et streak
-  const restBtn = document.getElementById('btn-rest-dynamic');
+  const restBtn = _hud('btn-rest-dynamic');
   if (restBtn) {
     const hpPct = player.maxHp > 0 ? Math.round((player.hp / player.maxHp) * 100) : 100;
     const streak = player._winStreak || 0;
@@ -366,6 +368,13 @@ function getWaveEnemyScale() { return getWaveState().diffMult; }
 
 function updateKillHUD() {
   if (!player) return;
+  if (_killHudPending) return;
+  _killHudPending = true;
+  requestAnimationFrame(_doUpdateKillHUD);
+}
+function _doUpdateKillHUD() {
+  _killHudPending = false;
+  if (!player) return;
   const { wave, killsInWave, bossReady, diffMult, killsSinceBoss } = getWaveState();
   const display = Math.min(killsSinceBoss, KILLS_PER_WAVE);
   const wl = _hud('kill-wave-label');
@@ -389,7 +398,6 @@ function updateKillHUD() {
   if (bf) bf.style.width = `${Math.min(100,(display/KILLS_PER_WAVE)*100)}%`;
   if (dl) dl.textContent = `×${diffMult}`;
   if (bb) bb.style.display = bossReady ? 'inline-block' : 'none';
-  // Bouton Replay Boss — visible si au moins 1 boss a été battu
   const brp = _hud('btn-boss-replay');
   if (brp) brp.style.display = (player.lastBossWave||0) >= 1 ? 'inline-block' : 'none';
 }
@@ -842,7 +850,7 @@ function startBattle(enemyData) {
     // On ne lance PAS l'auto-combat sur un shiny — combat manuel uniquement
   } else if (farmAutoOn) {
     autoBattleOn = true;
-    const abBtn = document.getElementById('btn-auto');
+    const abBtn = _hud('btn-auto');
     if (abBtn) { abBtn.style.background='linear-gradient(180deg,#2dc653,#1a8035)'; abBtn.style.boxShadow='0 4px 0 #0c4019'; abBtn.textContent='🤖 AUTO ON'; }
     if (autoBattleTimer) clearTimeout(autoBattleTimer);
     autoBattleTimer = setTimeout(runAutoAction, 1200);
@@ -964,11 +972,11 @@ function setBattleTurn(turn) {
   if (turn === 'player') {
     disableBattleButtons(false);
     applyRestesHeal();
-    const turnInfo = document.getElementById('battle-turn-info');
+    const turnInfo = _hud('battle-turn-info');
     if(turnInfo) turnInfo.textContent = '🟢 Votre tour !';
   } else {
     disableBattleButtons(true);
-    const turnInfo = document.getElementById('battle-turn-info');
+    const turnInfo = _hud('battle-turn-info');
     if(turnInfo) turnInfo.textContent = '🔴 Tour ennemi…';
     // Enemy attacks after delay
     setTimeout(()=>{
@@ -1098,7 +1106,7 @@ const FARM_INTERVAL = 2200; // ms entre chaque exploration auto
 
 function toggleFarmAuto() {
   farmAutoOn = !farmAutoOn;
-  const btn = document.getElementById('btn-farm-auto');
+  const btn = _hud('btn-farm-auto');
   if (farmAutoOn) {
     btn.style.background = 'linear-gradient(180deg,#ff9a3c,#cc5500)';
     btn.style.boxShadow  = '0 4px 0 #663300';
@@ -1114,7 +1122,7 @@ function toggleFarmAuto() {
     // also stop auto battle if running
     autoBattleOn = false;
     if (autoBattleTimer) { clearTimeout(autoBattleTimer); autoBattleTimer = null; }
-    const abBtn = document.getElementById('btn-auto');
+    const abBtn = _hud('btn-auto');
     if (abBtn) { abBtn.style.background='linear-gradient(180deg,#888,#555)'; abBtn.style.boxShadow='0 4px 0 #222'; abBtn.textContent='🤖 AUTO'; }
     notify('🤖 FARM AUTO OFF');
   }
@@ -1123,7 +1131,7 @@ function toggleFarmAuto() {
 function stopFarmAuto() {
   farmAutoOn = false;
   if (farmAutoTimer) { clearTimeout(farmAutoTimer); farmAutoTimer = null; }
-  const btn = document.getElementById('btn-farm-auto');
+  const btn = _hud('btn-farm-auto');
   if (btn) { btn.style.background='linear-gradient(180deg,#888,#555)'; btn.style.boxShadow='0 4px 0 #222'; btn.textContent='🤖 FARM AUTO'; }
 }
 
@@ -1160,7 +1168,7 @@ function scheduleFarmExplore() {
 
 function toggleAutoBattle() {
   autoBattleOn = !autoBattleOn;
-  const btn = document.getElementById('btn-auto');
+  const btn = _hud('btn-auto');
   if (autoBattleOn) {
     btn.style.background = 'linear-gradient(180deg,#2dc653,#1a8035)';
     btn.style.boxShadow = '0 4px 0 #0c4019';
@@ -1181,7 +1189,7 @@ function toggleAutoBattle() {
 function stopAutoBattle() {
   autoBattleOn = false;
   if (autoBattleTimer) { clearTimeout(autoBattleTimer); autoBattleTimer = null; }
-  const btn = document.getElementById('btn-auto');
+  const btn = _hud('btn-auto');
   if (btn) { btn.style.background = 'linear-gradient(180deg,#888,#555)'; btn.style.boxShadow = '0 4px 0 #222'; btn.textContent = '🤖 AUTO'; btn.style.boxShadow = '0 4px 0 #222'; }
   // Si farm auto toujours actif, reprendre l'exploration rapidement
   if (farmAutoOn) {
@@ -4080,7 +4088,7 @@ function getDayNightXPBonus() {
 
 function updateDayNightHUD() {
   const t = getTimeOfDay();
-  const el = document.getElementById('time-of-day-hud');
+  const el = _hud('time-of-day-hud');
   if (el) el.textContent = `${t.icon} ${t.name}`;
 }
 
@@ -4336,7 +4344,7 @@ function checkBreedingSlots() {
 }
 
 function updateBreedingHUD() {
-  const el = document.getElementById('breeding-hud');
+  const el = _hud('breeding-hud');
   if (!el) return;
   const active = breedingSlots.filter(s=>s!==null);
   if (active.length === 0) { el.style.display='none'; return; }
@@ -4387,7 +4395,7 @@ function getActiveEventEffects() {
 }
 
 function updateEventHUD() {
-  const el = document.getElementById('event-hud');
+  const el = _hud('event-hud');
   if (!el) return;
   if (!activeEvent || Date.now() > eventEndTime) {
     el.style.display = 'none'; return;
@@ -4600,7 +4608,7 @@ function updatePeriodicHUD() {
   updateEventHUD();
   updateBreedingHUD();
   checkBreedingSlots();
-  const rankEl = document.getElementById('rank-hud');
+  const rankEl = _hud('rank-hud');
   if (rankEl) {
     const r = getTrainerRank();
     rankEl.textContent = `${r.icon} ${r.rank}`;
