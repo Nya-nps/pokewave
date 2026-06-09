@@ -2937,6 +2937,7 @@ function checkRosterLevelUp(p) {
     p.spd    = (p.spd||0) + 1;
     if (p.spAtk !== undefined) p.spAtk += 2;
     if (p.spDef !== undefined) p.spDef += 1;
+    if (p._baseStats) { p._baseStats.hp+=10; p._baseStats.atk+=3; p._baseStats.def+=1; p._baseStats.magic+=2; p._baseStats.spd+=1; }
     leveled = true;
   }
   if (leveled) {
