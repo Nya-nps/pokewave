@@ -1,16 +1,25 @@
 # MAP_QUICKREF — Réponses rapides "Où est X ?"
-Dernière mise à jour : 2026-06-09
+Dernière mise à jour : 2026-06-09 (refactor Phase 1 — constants.js + state.js extraits)
+
+## Fichiers modules créés
+| Fichier | Contenu | Lignes |
+|---------|---------|--------|
+| `js/constants.js` | DUAL_TYPES, sprites, shiny, SIZE_VARIANTS, CLASSES, EVO_CHAINS, ENEMIES, EVENTS, SHOP_ITEMS, POKE_CATCH_RATES, ITEM_DISPLAY, MOVES_DB, CT_LIST, LEVEL_UP_MOVES, ZONE_LEVELS, GEN1_SPD, GEN1, ZONES, ZONE_KILL_NEEDED + helpers (getPokeType, rollShiny, typeToAnim, etc.) | 835 |
+| `js/state.js` | player, enemy, currentScreen, detailPokeIdx/detailSlot + showScreen() + startGame() + roster helpers (getActivePoke, sync, switch, addCaptured) | 321 |
+
+## Ordre de chargement (index.html)
+`js/constants.js` → `js/state.js` → `game.js` → `data.js` → `mechanics.js`
 
 ## Questions fréquentes
 
 | Question | Réponse |
 |----------|---------|
 | Où est la logique de combat ? | `game.js:1973` (startBattle) + `game.js:2396` (battleAction) — patchés par mechanics.js |
-| Où sont les données Pokémon ? | `game.js:699` (Gen1) + `data.js:10-877` (Gen2-9) — fusionnés dans `ALL_POKEMON` |
+| Où sont les données Pokémon ? | `js/constants.js` (GEN1, GEN1_SPD) + `data.js:10-877` (Gen2-9) — fusionnés dans `ALL_POKEMON` |
 | Où est la sauvegarde ? | `game.js:3383` (saveGame) / `game.js:3391` (loadGame) + anti-cheat `game.js:3482` |
-| Où est la config des zones ? | `game.js:859` (ZONES{}) + `game.js:631` (ZONE_LEVELS) |
+| Où est la config des zones ? | `js/constants.js` (ZONES{} + ZONE_LEVELS) |
 | Où est le système de waves/boss ? | `game.js:1579-1791` — KILLS_PER_WAVE, getWaveState, generateBossEnemy |
-| Où est le router d'écrans ? | `game.js:1102` — showScreen(id) |
+| Où est le router d'écrans ? | `js/state.js` — showScreen(id) |
 | Où est la formule XP ? | `game.js:2139` — xpForLevel(n) |
 | Où est la formule dégâts ? | `mechanics.js:330` — calcFullDamage() |
 | Où est le tableau de types ? | `game.js:1903` (TYPE_CHART) — override par mechanics.js |
@@ -62,15 +71,15 @@ Dernière mise à jour : 2026-06-09
 | Tâche | Fichier(s) cible |
 |-------|-----------------|
 | Modifier une formule de dégâts | `mechanics.js:330` (calcFullDamage) |
-| Ajouter un nouveau Pokémon Gen1 | `game.js:699` (GEN1) |
+| Ajouter un nouveau Pokémon Gen1 | `js/constants.js` (GEN1) |
 | Ajouter un nouveau Pokémon Gen2+ | `data.js` (GEN correspondante) |
-| Modifier l'équilibre d'une zone | `game.js:631` (ZONE_LEVELS) + `game.js:859` (ZONES) |
-| Modifier les stats des boss | `game.js:1649` (_bossFixedLevel) + `game.js:1653` (_bossStatMult) |
+| Modifier l'équilibre d'une zone | `js/constants.js` (ZONE_LEVELS + ZONES) |
+| Modifier les stats des boss | `game.js` (_bossFixedLevel + _bossStatMult) |
 | Ajouter une capacité (ability) | `mechanics.js:80` (ABILITIES_DB) |
 | Modifier la formule XP | `game.js:2139` (xpForLevel) |
 | Ajouter un écran | `index.html` (div) + `game.js:1102` (showScreen) |
-| Modifier les taux de catch | `game.js:146` (POKE_CATCH_RATES) |
-| Ajouter un move | `game.js:212` (MOVES_DB) |
+| Modifier les taux de catch | `js/constants.js` (POKE_CATCH_RATES) |
+| Ajouter un move | `js/constants.js` (MOVES_DB) |
 | Modifier le coût d'une compétence | `game.js:5302` (SKILL_TREE) |
 | Modifier les récompenses de prestige | `game.js:5216` (PRESTIGE_REWARDS) |
 | Ajouter un succès | `game.js:5856` (ACHIEVEMENTS) |
@@ -85,8 +94,8 @@ Dernière mise à jour : 2026-06-09
 
 | Constante | Valeur | Localisation |
 |-----------|--------|--------------|
-| `SHINY_ODDS` | 256 (1/256) | `mechanics.js:46` |
-| `ZONE_KILL_NEEDED` | 10 | `game.js:1090` |
+| `SHINY_ODDS` | 256 (1/256) | `js/constants.js` (+ override `mechanics.js:46`) |
+| `ZONE_KILL_NEEDED` | 10 | `js/constants.js` |
 | `KILLS_PER_WAVE` | 10 | `game.js:1579` |
 | `REST_COOLDOWN` | 30 000 ms | `game.js:1846` |
 | `FARM_INTERVAL` | 2 200 ms | `game.js:2269` |
