@@ -1846,7 +1846,11 @@ function doExplore() {
     // Zone index : chaque groupe de 10 vagues = 1 zone
     // wave 1-9 → zone 0, wave 11-19 → zone 1, wave 21-29 → zone 2, etc.
     const bossesBeaten = player.lastBossWave || 0;
-    const zoneIdx = Math.min(bossesBeaten, ZONE_ORDER.length - 1);
+    const autoIdx = Math.min(bossesBeaten, ZONE_ORDER.length - 1);
+    // Respect player's zone picker selection if the chosen zone is unlocked
+    const selId   = player.selectedExploreZone;
+    const selIdx  = selId ? ZONE_ORDER.indexOf(selId) : -1;
+    const zoneIdx = (selId && selIdx !== -1 && selIdx <= bossesBeaten) ? selIdx : autoIdx;
     const zoneId  = ZONE_ORDER[zoneIdx];
     const zone    = ZONES[zoneId];
     const pool    = zone?.pokemon || [];
@@ -2949,6 +2953,7 @@ function checkRosterLevelUp(p) {
       p.maxHp += 20; p.hp = Math.min(p.maxHp, p.hp + 20);
       p.maxMp  = (p.maxMp||50) + 10; p.mp = Math.min(p.maxMp, p.mp + 10);
       p.atk += 5; p.def += 4; p.magic += 4;
+      if (p._baseStats) { p._baseStats.hp += 20; p._baseStats.atk += 5; p._baseStats.def += 4; p._baseStats.magic += 4; }
       chain = EVO_CHAINS[p.currentSpriteId];
     }
     // Pas de notify() ici — évite le spam pendant le farming
@@ -3022,6 +3027,9 @@ function checkEvolutionOnLoad() {
   }
   if (evolved) {
     syncActiveFromPlayer();
+    // Sync _baseStats on the active roster entry so talent re-roll uses post-evo values
+    const _evoLoadP = player.roster?.[player.activeRosterIdx||0];
+    if (_evoLoadP?._baseStats) { _evoLoadP._baseStats.atk = player.atk; _evoLoadP._baseStats.def = player.def; _evoLoadP._baseStats.hp = player.maxHp; _evoLoadP._baseStats.magic = player.magic; }
     updateHUD();
     notify(`🌟 ${player.currentName} — évolution appliquée !`);
     setMessage(`🌟 ${player.currentName} avait dépassé son niveau d\'évolution ! Évolution appliquée automatiquement.`);
@@ -3036,6 +3044,9 @@ function triggerEvolution(chain) {
   player.maxMp += 10; player.mp = player.maxMp;
   player.atk+=5; player.def+=4; player.magic+=4;
   syncActiveFromPlayer();
+  // Keep _baseStats in sync on the roster entry so talent re-roll preserves evo bonus
+  const _evoP = player.roster?.[player.activeRosterIdx||0];
+  if (_evoP?._baseStats) { _evoP._baseStats.hp += 20; _evoP._baseStats.atk += 5; _evoP._baseStats.def += 4; _evoP._baseStats.magic += 4; }
 
   const evoScreen = document.getElementById('evo-screen');
   document.getElementById('evo-sprite').src = SPRITE_FRONT(chain.next);
@@ -5574,7 +5585,19 @@ const SKILL_TREE = {
 
 function applySkillToTeam(fn) {
   if (!player) return;
-  [...(player.roster||[]), ...(player.box||[])].forEach(fn);
+  const applyWithBase = (p) => {
+    const before = { atk:p.atk, def:p.def, maxHp:p.maxHp, magic:p.magic, spd:p.spd };
+    fn(p);
+    // Propagate proportional change to _baseStats so talent re-roll doesn't erase skill bonuses
+    if (p._baseStats) {
+      if (before.atk   > 0 && p.atk   !== before.atk)   p._baseStats.atk   = Math.round(p._baseStats.atk   * (p.atk   / before.atk));
+      if (before.def   > 0 && p.def   !== before.def)   p._baseStats.def   = Math.round(p._baseStats.def   * (p.def   / before.def));
+      if (before.maxHp > 0 && p.maxHp !== before.maxHp) p._baseStats.hp    = Math.round(p._baseStats.hp    * (p.maxHp / before.maxHp));
+      if (before.magic > 0 && p.magic !== before.magic) p._baseStats.magic = Math.round(p._baseStats.magic * (p.magic / before.magic));
+      if (before.spd   > 0 && p.spd   !== before.spd)   p._baseStats.spd   = Math.round(p._baseStats.spd   * (p.spd   / before.spd));
+    }
+  };
+  [...(player.roster||[]), ...(player.box||[])].forEach(applyWithBase);
   if (player.level) {
     fn(player); syncActiveFromPlayer();
   }
@@ -6252,6 +6275,11 @@ function addAffinity(poke, amount=1) {
     // Apply incremental bonus (delta between new and old level)
     poke.atk   = Math.round(poke.atk   * (1 + delta));
     poke.magic = Math.round(poke.magic * (1 + delta));
+    // Keep _baseStats in sync so talent re-roll preserves affinity bonuses
+    if (poke._baseStats) {
+      poke._baseStats.atk   = Math.round(poke._baseStats.atk   * (1 + delta));
+      poke._baseStats.magic = Math.round(poke._baseStats.magic * (1 + delta));
+    }
   }
 }
 
@@ -6482,6 +6510,7 @@ function levelUpPokemon(p) {
   if (chain && p.level >= chain.level) {
     p.currentSpriteId = chain.next; p.currentName = chain.name;
     p.maxHp += 20; p.hp = p.maxHp; p.atk += 5; p.def += 4; p.magic += 4;
+    if (p._baseStats) { p._baseStats.hp += 20; p._baseStats.atk += 5; p._baseStats.def += 4; p._baseStats.magic += 4; }
     notify(`🌟 ${p.currentName} évolue ! (Super Bonbon)`);
   }
 }
