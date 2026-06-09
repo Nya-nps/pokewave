@@ -2898,14 +2898,16 @@ function throwBall(ballId) {
       catchBall.style.animation='captureFail 1s ease forwards';
       catchResult.textContent = `✗ ${enemy.name} s'est échappé ! (${Math.round(catchChance*100)}%)`;
       catchResult.style.color='var(--red)';
-      // Enemy counterattack after failed catch
-      const eDmg = Math.max(1, enemy.atk+Math.floor(Math.random()*5)-Math.floor(player.def/2));
+      // Enemy counterattack after failed catch (respects Écaille Mentale)
+      const _catchDefMult = getHeldItemCombatMults().defMult;
+      const eDmg = Math.max(1, Math.round((enemy.atk+Math.floor(Math.random()*5)-Math.floor(player.def/2)) / _catchDefMult));
       player.hp -= eDmg;
       setTimeout(()=>{
         catchDiv.classList.remove('active');
         disableBattleButtons(false);
         if (player.hp<=0){
           player.hp=Math.floor(player.maxHp*.2);
+          syncActiveFromPlayer(); // persist 20% HP to roster so reload doesn't grant free heal
           showScreen('game'); updateHUD(); setMessage(`${enemy.name} s'est échappé et vous a mis K.O. !`);
         } else {
           (_hud('battle-log')).textContent=`${enemy.name} s'échappe et attaque pour ${eDmg} dégâts !`;
@@ -2981,7 +2983,7 @@ function checkLevelUp() {
     player.maxMp += 8;  player.mp = player.maxMp;
     player.atk+=3; player.def+=1; player.magic+=2; player.spd+=1;
     if (player.spAtk !== undefined) player.spAtk += 2;
-    if (player.spDef !== undefined) player.spDef += 2;
+    if (player.spDef !== undefined) player.spDef += 1;
     player.moveUses = player.moveUsesMax || 6;
     player.mMoveUses = player.mMoveUsesMax || 4;
     // Keep pre-talent base stats in sync on the active roster entry
@@ -3748,6 +3750,7 @@ function _idbLoad(cb) {
 const _origSaveGame = saveGame;
 saveGame = function() {
   if (!player) return;
+  syncActiveFromPlayer(); // ensure roster mirrors current player state before serializing
   player._breedingSlots  = breedingSlots;
   player._activeEventId  = activeEvent?.id || null;
   player._eventEndTime   = eventEndTime;
@@ -3763,6 +3766,7 @@ saveGame = function() {
 let _autoSaveKillCounter = 0;
 function _silentSave() {
   if (!player) return;
+  syncActiveFromPlayer(); // ensure roster mirrors current player state before serializing
   // Utilise requestIdleCallback si disponible pour éviter de bloquer le thread principal
   const doSave = () => {
     try {
@@ -6580,14 +6584,14 @@ function renderWiki() {
     ]),
     section('⚡','MODE TRIAL','#a855f7',[
       '➤ Affronte des Pokémon Légendaires en échange de Points Trial (PT).',
-      '➤ 5 tiers de difficulté : Tier 1 (20 PT) → Tier 5 (85 PT).',
+      '➤ 5 tiers de difficulté — récompenses : Tier 1 (50 PT) → Tier 5 (300 PT).',
       '➤ Les PT s\'accumulent et servent dans la Boutique Trial exclusive.',
       '➤ Boutique Trial : Orbes invocateurs, Gemme Éclat — introuvables ailleurs.',
       '➤ Les Orbes permettent de déclencher un combat contre un légendaire capturable.',
       '➤ La capture est DÉSACTIVÉE pendant les défis Trial eux-mêmes.',
     ]),
     section('🌍','WORLD BOSS','#e63946',[
-      '➤ Apparaît toutes les 2 heures environ (timer en bas de l\'écran).',
+      '➤ Apparaît toutes les 5 minutes (timer en bas de l\'écran).',
       '➤ Pokémon légendaire extrêmement puissant — prépare ton meilleur combattant.',
       '➤ Récompense : or massif + bonus spéciaux selon le boss.',
       '➤ La capture est DÉSACTIVÉE contre le World Boss.',
@@ -6595,12 +6599,12 @@ function renderWiki() {
     ]),
     section('🥚','ÉLEVAGE','#ff88cc',[
       '➤ Sélectionne deux Pokémon compatibles pour créer un œuf.',
-      '➤ L\'œuf éclot après un certain nombre de pas (explorations).',
-      '➤ Le bébé hérite d\'un talent aléatoire parmi ceux de ses parents.',
+      '➤ L\'œuf éclot automatiquement après 30 secondes.',
+      '➤ Le bébé reçoit un niveau moyen des deux parents (±5 niveaux).',
       '➤ Chance de shiny (1/256) comme pour les captures sauvages.',
     ]),
     section('✨','TALENTS & COMPÉTENCES','#c77dff',[
-      '➤ Chaque Pokémon peut avoir jusqu\'à 3 talents passifs.',
+      '➤ Chaque Pokémon peut avoir 1 talent passif (re-tirage possible).',
       '➤ Les talents se débloquent avec des Jetons de Talent (victoires, succès).',
       '➤ Exemples : Vol-Santé (soin auto), Bouclier, Coup Critique…',
       '➤ L\'écran Compétences (📊) montre les bonus de ton Dresseur.',
