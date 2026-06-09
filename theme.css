@@ -1129,27 +1129,25 @@ body { background: var(--c-bg) !important; }
    VISUAL UPGRADE V4 — Style vivid global
    ════════════════════════════════════════════════════ */
 
-/* ── SMTILE — gradient 3D vivid via CSS vars ── */
+/* ── SMTILE — fond plein coloré via --bc (gradient défini dans le HTML) ── */
 .smtile {
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.2) 0%, transparent 45%),
-    linear-gradient(180deg, var(--bc), color-mix(in srgb, var(--bc) 65%, #000 35%)) !important;
-  border: 2px solid var(--brd) !important;
+  background: var(--bc) !important;
+  border: 2px solid rgba(255,255,255,.22) !important;
   border-radius: 14px !important;
   box-shadow:
-    0 3px 0 color-mix(in srgb, var(--brd) 40%, #000 60%),
-    0 6px 18px color-mix(in srgb, var(--bc) 22%, transparent 78%),
-    inset 0 1px 0 rgba(255,255,255,.25),
-    inset 0 -1px 0 rgba(0,0,0,.2) !important;
+    0 4px 0 var(--brd),
+    0 6px 18px rgba(0,0,0,.45),
+    inset 0 1px 0 rgba(255,255,255,.28),
+    inset 0 -1px 0 rgba(0,0,0,.22) !important;
   transition: transform .13s cubic-bezier(.34,1.56,.64,1), box-shadow .13s, filter .13s !important;
 }
 .smtile:hover {
   transform: translateY(-4px) scale(1.07) !important;
   filter: brightness(1.15) saturate(1.1) !important;
   box-shadow:
-    0 6px 0 color-mix(in srgb, var(--brd) 40%, #000 60%),
-    0 14px 28px color-mix(in srgb, var(--bc) 35%, transparent 65%),
-    inset 0 1px 0 rgba(255,255,255,.3) !important;
+    0 7px 0 var(--brd),
+    0 14px 28px rgba(0,0,0,.55),
+    inset 0 1px 0 rgba(255,255,255,.35) !important;
 }
 .smtile:active { transform: translateY(2px) scale(.97) !important; filter: brightness(.9) !important; }
 
