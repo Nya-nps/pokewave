@@ -1328,8 +1328,9 @@ function addCapturedToRoster(capturedData) {
   const _allPoke = (typeof ALL_POKEMON !== 'undefined') ? ALL_POKEMON : GEN1;
   const _allSpd  = (typeof ALL_SPD   !== 'undefined') ? ALL_SPD   : GEN1_SPD;
   const _pokeMap = (typeof ALL_POKEMON_MAP !== 'undefined') ? ALL_POKEMON_MAP : null;
-  const pData = _pokeMap ? _pokeMap.get(capturedData.id) : _allPoke.find(p=>p.id===capturedData.id);
-  const spd = _allSpd[capturedData.id] || 50;
+  const _statLookupId = capturedData._dataId || capturedData.id; // _dataId for legendaries with mismatched sprite/data IDs
+  const pData = _pokeMap ? _pokeMap.get(_statLookupId) : _allPoke.find(p=>p.id===_statLookupId);
+  const spd = _allSpd[_statLookupId] || 50;
   const lvl = capturedData.level || 1;
   const scale = 1 + lvl * 0.12;
   const newPoke = {
@@ -2250,8 +2251,9 @@ function setBattleTurn(turn) {
       const eMult = getEffectiveness(enemy.type, player.type);
       const eBase = Math.max(1, enemy.atk+Math.floor(Math.random()*5)-Math.floor(player.def/2));
       // Cap à 22% des PV max — 5 coups minimum pour mourir en endgame (28% = 4 coups, trop punitif)
-      // Écaille Mentale réduit les dégâts reçus de 25%
-      const _eDefMult = getHeldItemCombatMults().defMult;
+      // Écaille Mentale + synergies DEF réduisent les dégâts reçus
+      const _synDef = applySynergyBonuses().defMult;
+      const _eDefMult = getHeldItemCombatMults().defMult * _synDef;
       const eDmg  = Math.min(Math.round(eBase * eMult / _eDefMult), Math.floor((player.maxHp||100) * 0.22));
       const eEff  = getEffLabel(eMult);
       player.hp -= eDmg;
@@ -2880,7 +2882,7 @@ function throwBall(ballId) {
       catchResult.textContent = `✓ ${enemy.name} a été capturé !`;
       catchResult.style.color='var(--green)';
       const _capName = enemy.name, _capShiny = enemy.isShiny||false;
-      addCapturedToRoster({ name:enemy.name, id:enemy.id, type:enemy.type, hp:enemy.maxHp, maxHp:enemy.maxHp, level:enemy.level||1, isShiny:_capShiny });
+      addCapturedToRoster({ name:enemy.name, id:enemy.id, _dataId:enemy._dataId, type:enemy.type, hp:enemy.maxHp, maxHp:enemy.maxHp, level:enemy.level||1, isShiny:_capShiny });
       setTimeout(()=>{
         catchDiv.classList.remove('active');
         stopAutoBattle();
@@ -3125,7 +3127,8 @@ const ORB_POOLS = {
   'orb-space':   [{id:483,n:'Dialga',t:'Acier/Dragon'},{id:484,n:'Palkia',t:'Eau/Dragon'},{id:487,n:'Giratina',t:'Spectre/Dragon'}],
   'orb-mega':    [{id:150,n:'Mewtwo',t:'Psy'},{id:382,n:'Kyogre',t:'Eau'},{id:383,n:'Groudon',t:'Sol'}],
   'orb-ancient': [{id:800,n:'Necrozma',t:'Psy'},{id:792,n:'Lunala',t:'Psy/Spectre'},{id:791,n:'Solgaleo',t:'Acier/Psy'}],
-  'orb-ultra':   [{id:888,n:'Zacian',t:'Fée'},{id:889,n:'Zamazenta',t:'Combat'},{id:898,n:'Calyrex',t:'Psy/Glace'}],
+  // dataId = data.js ID for stat lookup (differs from PokeAPI sprite ID for Gen8 legendaries)
+  'orb-ultra':   [{id:888,n:'Zacian',t:'Fée',dataId:874},{id:889,n:'Zamazenta',t:'Combat',dataId:875},{id:898,n:'Calyrex',t:'Psy/Plante',dataId:884}],
 };
 
 function useOrb(orbId) {
@@ -3144,6 +3147,7 @@ function useOrb(orbId) {
   const legendEnemy = {
     name: pick.n,
     id: pick.id,
+    _dataId: pick.dataId || pick.id, // data.js ID for stat lookup on catch
     type: pick.t.includes('/') ? pick.t.split('/')[0] : pick.t,
     dualType: pick.t,
     hp: Math.round(120 * legendHpScale),
