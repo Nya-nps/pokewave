@@ -2461,6 +2461,12 @@ function stopAutoBattle() {
   if (autoBattleTimer) { clearTimeout(autoBattleTimer); autoBattleTimer = null; }
   const btn = document.getElementById('btn-auto');
   if (btn) { btn.style.background = 'linear-gradient(180deg,#888,#555)'; btn.style.boxShadow = '0 4px 0 #222'; btn.textContent = '🤖 AUTO'; btn.style.boxShadow = '0 4px 0 #222'; }
+  // Revert mega evolution after battle, then sync player stats
+  if (player?.roster) {
+    const hadMega = player.roster.some(p => p._isMega);
+    player.roster.forEach(p => { if (p._isMega) revertMegaEvo(p); });
+    if (hadMega) syncPlayerFromActive();
+  }
   // Si farm auto toujours actif, reprendre l'exploration rapidement
   if (farmAutoOn) {
     if (farmAutoTimer) { clearTimeout(farmAutoTimer); farmAutoTimer = null; }
@@ -5192,6 +5198,7 @@ function applyMegaEvo(p) {
   const id = p.currentSpriteId || p.spriteId;
   const mega = MEGA_EVOS[id];
   if (!mega || p._isMega) return;
+  p._preMegaStats = { atk:p.atk, def:p.def, maxHp:p.maxHp, spd:p.spd, name:p.currentName||p.name };
   p._isMega = true;
   p.maxHp = Math.round(p.maxHp * mega.mult.hp); p.hp = p.maxHp;
   p.atk   = Math.round(p.atk   * mega.mult.atk);
@@ -5202,6 +5209,19 @@ function applyMegaEvo(p) {
   if (player) player.megaCount = (player.megaCount||0) + 1;
   notify(`✨ ${oldName} → ${mega.name} !`);
   setMessage(`✨ MÉGA ÉVOLUTION ! ${mega.name} est libéré !`);
+}
+
+function revertMegaEvo(p) {
+  if (!p || !p._isMega || !p._preMegaStats) return;
+  const pre = p._preMegaStats;
+  p.atk   = pre.atk;
+  p.def   = pre.def;
+  p.maxHp = pre.maxHp;
+  p.spd   = pre.spd;
+  p.hp    = Math.min(p.hp, p.maxHp);
+  p.currentName = pre.name;
+  p._isMega = false;
+  delete p._preMegaStats;
 }
 
 // ══════════════════════════════════════════
