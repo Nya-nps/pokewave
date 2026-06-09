@@ -1424,7 +1424,7 @@ function _doUpdateHUD() {
   if (!player) return;
   // En écran battle, seul updateBattleHp est utile — skip le HUD de jeu
   if (currentScreen === 'battle') return;
-  _hud('player-name-hud').textContent = `${player.currentName} de ${player.name} ✦ Niv.${player.level}`;
+  _hud('player-name-hud').textContent = `${player.currentName||player.cls||'?'} de ${player.name} ✦ Niv.${player.level}`;
   _hud('gold-val').textContent = player.gold;
   setBar('bar-hp','val-hp', player.hp, player.maxHp);
   setBar('bar-xp','val-xp', player.xp, player.xpNext);
@@ -3584,6 +3584,7 @@ function loadGame() {
   if (!player.skills)                    player.skills           = [];
   if (player.skillPoints === undefined)  player.skillPoints      = 0;
   if (player.talentTokens === undefined) player.talentTokens     = 0;
+  if (!player.shards)                    player.shards           = {};
   if (player.prestigeXPMult   === undefined) player.prestigeXPMult   = 1;
   if (player.prestigeGoldMult === undefined) player.prestigeGoldMult = 1;
   if (player.prestigeShinyMult=== undefined) player.prestigeShinyMult= 1;
@@ -3774,6 +3775,9 @@ window._autoSaveInterval = setInterval(_silentSave, 180000);
 // ── Export — télécharge un fichier .pwsave (JSON) ──
 function exportSave() {
   if (!player) { notify('Aucune sauvegarde à exporter !'); return; }
+  player._breedingSlots = breedingSlots;
+  player._activeEventId = activeEvent?.id || null;
+  player._eventEndTime  = eventEndTime;
   const p = player;
   const pJson = JSON.stringify(p);
   const bundle = {
