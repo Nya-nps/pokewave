@@ -2202,6 +2202,7 @@ function getXpMultiplier() {
   if (player && player._globalXPBonus) mult *= (1 + player._globalXPBonus);
   if (player && player.prestigeXPMult) mult *= player.prestigeXPMult;
   mult *= getTrainerRank().bonus.xp;
+  mult *= getDayNightXPBonus();
   const ev = getActiveEventEffects();
   if (ev.xpMult) mult *= ev.xpMult;
   return mult;
@@ -2213,6 +2214,8 @@ function getEffectiveShinyOdds() {
     if (player.prestigeShinyMult) odds = Math.max(1, Math.round(odds / player.prestigeShinyMult));
     if ((player._luckyEggKills||0) > 0) odds = Math.max(1, Math.round(odds / 3));
   }
+  const dn = getTimeOfDay();
+  if (dn.shinyMult > 1) odds = Math.max(1, Math.round(odds / dn.shinyMult));
   const ev = getActiveEventEffects();
   if (ev.shinyMult) odds = Math.max(1, Math.round(odds / ev.shinyMult));
   return odds;
@@ -2657,7 +2660,7 @@ function battleAction(action) {
         notify(`🔁 Boss Vague ${bossWave} rejoué — entraînement accompli !`);
         setMessage(`🔁 Boss Vague ${bossWave} rejoué — aucune récompense (entraînement pur).`);
       } else {
-        const bonusGold = Math.round(200 * bossWave);
+        const bonusGold = Math.round(200 * bossWave * (player.prestigeBossMult||1));
         player.gold += bonusGold;
         updateHUD();
         notify(`🏆 Boss Vague ${bossWave} vaincu ! +${bonusGold}₽`);
@@ -3575,6 +3578,7 @@ function loadGame() {
   if (player.prestigeXPMult   === undefined) player.prestigeXPMult   = 1;
   if (player.prestigeGoldMult === undefined) player.prestigeGoldMult = 1;
   if (player.prestigeShinyMult=== undefined) player.prestigeShinyMult= 1;
+  if (player.prestigeBossMult === undefined) player.prestigeBossMult = 1;
   player._trialBattle = false; player._trialBattleTp = 0;
   // Recalibrer xpNext sur tous les Pokémon en cas d'ancienne courbe
   const _recalibrate = (p) => { if (p && p.level) { p.xpNext = xpForLevel(p.level); p.xp = Math.min(p.xp||0, p.xpNext - 1); } };
@@ -5264,7 +5268,8 @@ function handleWorldBossVictory(enemy) {
     player.shinyEggs++;
     rewards.push('🥚 Œuf Shiny Mystérieux');
     // Hatch immediately: random shiny pokemon
-    const randPoke = GEN1[Math.floor(Math.random()*GEN1.length)];
+    const _wbPool = (typeof ALL_POKEMON!=='undefined') ? ALL_POKEMON : GEN1;
+    const randPoke = _wbPool[Math.floor(Math.random()*_wbPool.length)];
     setTimeout(()=>{
       addCapturedToRoster({
         name:randPoke.n, id:randPoke.id, type:randPoke.t,
@@ -5423,16 +5428,19 @@ function doPrestige() {
   const prestigeLv = (player.prestigeLevel||0) + 1;
   const reward = PRESTIGE_REWARDS[Math.min(prestigeLv-1, PRESTIGE_REWARDS.length-1)];
 
-  // Keep: prestige level, dex, achievements, badges bonus
+  // Keep: prestige level, dex, achievements, permanent upgrades
   const keepFields = {
     name:player.name, prestigeLevel:prestigeLv,
-    prestigeXPMult: (player.prestigeXPMult||1) * (reward.mult.xp||1),
-    prestigeGoldMult:(player.prestigeGoldMult||1)*(reward.mult.gold||1),
-    prestigeShinyMult:(player.prestigeShinyMult||1)*(reward.mult.shiny||1),
+    prestigeXPMult:   (player.prestigeXPMult  ||1) * (reward.mult.xp   ||1),
+    prestigeGoldMult: (player.prestigeGoldMult||1) * (reward.mult.gold  ||1),
+    prestigeShinyMult:(player.prestigeShinyMult||1) * (reward.mult.shiny ||1),
+    prestigeBossMult: (player.prestigeBossMult ||1) * (reward.mult.boss  ||1),
     dexSeen: player.dexSeen,
     dexMilestonesGiven: player.dexMilestonesGiven,
     achievements: player.achievements,
     totalKillsAllTime: (player.totalKillsAllTime||0) + (player.totalKills||0),
+    prestigeUpgrades: player.prestigeUpgrades || [],
+    prestigeShopSpent: player.prestigeShopSpent || 0,
   };
 
   // Reset all progress
@@ -6538,11 +6546,12 @@ const TOUR_FLOOR_ENEMIES = floor => {
   const scale    = 1 + floor * 0.18;
   const defScale = Math.pow(scale, 0.65);
   const hpScale  = Math.pow(scale, 0.90);
-  const allIds = GEN1.filter(p => p.id <= 151);
+  const allIds = (typeof ALL_POKEMON !== 'undefined') ? ALL_POKEMON : GEN1;
+  const allSpdT  = (typeof ALL_SPD   !== 'undefined') ? ALL_SPD    : GEN1_SPD;
   // Pick random enemies, harder every floor
   const pool = allIds.filter(p => p.atk * scale >= 5);
   const pData = pool[Math.floor(Math.random() * pool.length)];
-  const spd = GEN1_SPD[pData.id] || 50;
+  const spd = allSpdT[pData.id] || 50;
   return {
     name: pData.n, id: pData.id,
     level: Math.max(1, Math.min(500, floor * 3 + Math.floor(Math.random() * 5))),
