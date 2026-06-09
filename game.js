@@ -2977,6 +2977,9 @@ function checkLevelUp() {
     if (player.spDef !== undefined) player.spDef += 2;
     player.moveUses = player.moveUsesMax || 6;
     player.mMoveUses = player.mMoveUsesMax || 4;
+    // Keep pre-talent base stats in sync on the active roster entry
+    const _activeP = player.roster?.[player.activeRosterIdx||0];
+    if (_activeP?._baseStats) { _activeP._baseStats.hp+=10; _activeP._baseStats.atk+=3; _activeP._baseStats.def+=1; _activeP._baseStats.magic+=2; _activeP._baseStats.spd+=1; }
     syncActiveFromPlayer();
     notify(`⬆ Niv.${player.level} ! +10PV +3ATQ +1DEF +2Mag +1Vit`);
     setMessage(`🌟 ${player.currentName} passe au Niveau ${player.level} ! ❤️+10PV  ⚔️+3ATQ  🛡️+1DEF  ✨+2Mag  ⚡+1Vit`);
@@ -6459,12 +6462,12 @@ function removeItemFromPokemon(source, idx) {
 function levelUpPokemon(p) {
   p.level++;
   p.xpNext = xpForLevel((p.level||1));
-  p.maxHp  += 12; p.hp = p.maxHp;
-  p.atk    += 2; p.def += 1; p.magic += 2; p.spd += 1;
+  p.maxHp  += 10; p.hp = p.maxHp;
+  p.atk    += 3; p.def += 1; p.magic += 2; p.spd += 1;
   if (p.spAtk !== undefined) p.spAtk += 2;
   if (p.spDef !== undefined) p.spDef += 1;
   // Keep pre-talent base stats in sync so talent re-roll resets correctly
-  if (p._baseStats) { p._baseStats.hp += 12; p._baseStats.atk += 2; p._baseStats.def += 1; p._baseStats.magic += 2; p._baseStats.spd += 1; }
+  if (p._baseStats) { p._baseStats.hp += 10; p._baseStats.atk += 3; p._baseStats.def += 1; p._baseStats.magic += 2; p._baseStats.spd += 1; }
   notify(`⬆ ${p.currentName||p.name} → Niveau ${p.level} ! (Super Bonbon)`);
   // Check evolution for the leveled pokemon
   let chain = EVO_CHAINS[p.currentSpriteId||p.spriteId];
