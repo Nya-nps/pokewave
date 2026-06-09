@@ -1,0 +1,61 @@
+{
+  "meta": {
+    "last_updated": "2026-06-09",
+    "sessions": 1
+  },
+  "stack": {
+    "language": "JavaScript vanilla",
+    "html": "HTML5 direct, pas de templates",
+    "css": "CSS vanilla + variables custom",
+    "frameworks": [],
+    "build_tools": [],
+    "confidence": 1.0
+  },
+  "file_structure": {
+    "preference": "fichiers_plats_peu_nombreux",
+    "confidence": 0.95,
+    "notes": "3 JS + 2 CSS + 1 HTML — pas de modules, pas de bundler"
+  },
+  "code_style": {
+    "naming_functions": "camelCase",
+    "naming_constants": "UPPER_SNAKE_CASE",
+    "naming_css_ids": "kebab-case",
+    "confidence": 0.9
+  },
+  "architecture": {
+    "pattern": "global_state_single_player_object",
+    "confidence": 1.0,
+    "notes": "Tout passe par l'objet global player, pas de classes"
+  },
+  "comments": {
+    "style": "sections_avec_bordures_═══",
+    "frequency": "sections_majeures_uniquement",
+    "confidence": 0.9
+  },
+  "patching": {
+    "preference": "monkey_patch_window_functions",
+    "confidence": 0.9,
+    "notes": "mechanics.js patche game.js via window.fn = ..., pattern établi"
+  },
+  "data_format": {
+    "pokemon_stats": "{id,n,t,hp,atk,def,xp,g}",
+    "confidence": 1.0,
+    "notes": "Format compact établi pour tous les Pokémon ennemis"
+  },
+  "loading_order": {
+    "value": "game.js → data.js → mechanics.js",
+    "confidence": 1.0,
+    "notes": "Ordre critique, data.js étend game.js, mechanics.js patche les deux"
+  },
+  "performance": {
+    "concerns": ["FPS", "lag", "tokens_consommés"],
+    "known_bottlenecks": [
+      "renderPokedex() — grille 300+ entrées",
+      "renderTeam() — DOM intense",
+      "updateHUD() — appelé très souvent (debounced)",
+      "playAttackAnim() — animations CSS",
+      "PARTICLE_COUNT — 8 mobile / 18 desktop"
+    ],
+    "confidence": 0.8
+  }
+}

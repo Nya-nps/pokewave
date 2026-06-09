@@ -1,0 +1,53 @@
+{
+  "meta": {
+    "last_updated": "2026-06-09",
+    "sessions": 1
+  },
+  "detected_patterns": [
+    {
+      "id": "PP001",
+      "pattern": "MISSION : [TITRE]\\n[objectif]\\n[règles]\\n[livrables]",
+      "frequency": "haute",
+      "meaning": "Tâche formelle complète — exécuter entièrement sans demander confirmation intermédiaire",
+      "response_strategy": "Livrer tout le système demandé, rapport final synthétique",
+      "confidence": 0.95
+    },
+    {
+      "id": "PP002",
+      "pattern": "[question de validation courte] ?",
+      "frequency": "moyenne",
+      "examples": ["ca pose probleme ?", "je peux crée 2 conversation ?"],
+      "meaning": "Vérification rapide avant action — pas une discussion, juste un feu vert",
+      "response_strategy": "Réponse directe oui/non + raison en 2-3 lignes max",
+      "confidence": 0.9
+    },
+    {
+      "id": "PP003",
+      "pattern": "Instruction directe sans mission formelle",
+      "frequency": "basse",
+      "meaning": "Action immédiate attendue",
+      "response_strategy": "Exécuter directement, pas de demande de clarification",
+      "confidence": 0.7
+    }
+  ],
+  "anti_patterns": [
+    {
+      "id": "AP001",
+      "description": "Sur-expliquer des concepts techniques évidents",
+      "consequence": "Gaspillage de tokens, réponse trop longue",
+      "rule": "Ne jamais expliquer ce que l'utilisateur sait déjà"
+    },
+    {
+      "id": "AP002",
+      "description": "Scanner tout le projet avant de répondre",
+      "consequence": "Consommation excessive de tokens",
+      "rule": "Utiliser .project-memory/ en premier"
+    },
+    {
+      "id": "AP003",
+      "description": "Livrer un prototype ou une ébauche",
+      "consequence": "L'utilisateur devra demander une version complète",
+      "rule": "Toujours livrer complet du premier coup"
+    }
+  ]
+}

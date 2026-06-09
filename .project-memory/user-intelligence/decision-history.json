@@ -1,0 +1,41 @@
+{
+  "meta": {
+    "last_updated": "2026-06-09",
+    "total_decisions": 3
+  },
+  "decisions": [
+    {
+      "date": "2026-06-09",
+      "session": 1,
+      "context": "Tâches parallèles sur même fichier",
+      "options_presented": [
+        "Lancer 2 conversations en parallèle",
+        "Faire les tâches séquentiellement"
+      ],
+      "decision": "séquentiel recommandé + git commit entre les deux",
+      "user_reaction": "accepté sans objection",
+      "lesson": "L'utilisateur accepte les contraintes techniques quand expliquées clairement"
+    },
+    {
+      "date": "2026-06-09",
+      "session": 1,
+      "context": "Création système mémoire projet",
+      "options_presented": ["N/A — mission directe"],
+      "decision": "8 fichiers .project-memory créés",
+      "user_reaction": "validé (demande suivante utilise directement le système)",
+      "lesson": "Les systèmes complets sont acceptés — pas besoin de prototypes"
+    },
+    {
+      "date": "2026-06-09",
+      "session": 1,
+      "context": "Balance combat vs optimisation FPS en parallèle",
+      "options_presented": [
+        "Possible mais risqué (même fichier game.js)",
+        "Séquentiel recommandé"
+      ],
+      "decision": "séquentiel recommandé",
+      "user_reaction": "question posée pour validation — décision acceptée implicitement",
+      "lesson": "L'utilisateur vérifie les risques avant d'agir"
+    }
+  ]
+}

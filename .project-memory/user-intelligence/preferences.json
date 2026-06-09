@@ -1,0 +1,47 @@
+{
+  "meta": {
+    "last_updated": "2026-06-09",
+    "sessions": 1,
+    "confidence_threshold_to_apply": 0.7
+  },
+  "language": {
+    "value": "français",
+    "confidence": 1.0,
+    "notes": "100% des interactions en français"
+  },
+  "response_length": {
+    "value": "courte_explication_livrable_complet",
+    "confidence": 0.9,
+    "notes": "Explications concises, mais livrables (fichiers, code) exhaustifs"
+  },
+  "documentation": {
+    "value": "structurée_markdown_avec_tables",
+    "confidence": 0.9,
+    "notes": "Préfère les tables, listes, blocs de code bien organisés"
+  },
+  "system_design": {
+    "value": "systèmes_complets_du_premier_coup",
+    "confidence": 0.85,
+    "notes": "Demande des systèmes entiers, pas des prototypes"
+  },
+  "token_efficiency": {
+    "value": "priorité_maximale",
+    "confidence": 0.95,
+    "notes": "A explicitement demandé un système pour réduire les tokens"
+  },
+  "emojis": {
+    "value": "non",
+    "confidence": 0.8,
+    "notes": "Aucun emoji dans ses propres messages, préfère ton professionnel"
+  },
+  "git_workflow": {
+    "value": "commits_fréquents_messages_descriptifs",
+    "confidence": 0.85,
+    "notes": "Historique git propre avec préfixes feat/fix/balance"
+  },
+  "parallel_tasks": {
+    "value": "conscient_des_conflits_prudent",
+    "confidence": 0.9,
+    "notes": "A posé la question avant de lancer des tâches parallèles"
+  }
+}

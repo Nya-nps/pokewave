@@ -1,0 +1,60 @@
+{
+  "meta": {
+    "last_updated": "2026-06-09",
+    "sessions": 1
+  },
+  "task_types": [
+    {
+      "type": "système_mémoire",
+      "occurrences": 2,
+      "description": "Créer/améliorer des systèmes de mémoire persistante",
+      "files_typically_touched": [".project-memory/"],
+      "confidence": 1.0
+    },
+    {
+      "type": "équilibrage_gameplay",
+      "occurrences": 1,
+      "description": "Modifier stats, zones, boss, formules de balance",
+      "files_typically_touched": ["game.js (ZONES, _bossFixedLevel, GEN1-9)", "data.js"],
+      "confidence": 0.9
+    },
+    {
+      "type": "optimisation_performance",
+      "occurrences": 1,
+      "description": "Réduire lag, améliorer FPS, optimiser les rendus",
+      "files_typically_touched": ["game.js (render*, updateHUD, animations)", "style.css"],
+      "confidence": 0.8
+    },
+    {
+      "type": "nouvelle_fonctionnalité",
+      "occurrences": 1,
+      "description": "Ajouter un nouveau système ou mécanisme de jeu",
+      "files_typically_touched": ["game.js", "index.html", "style.css"],
+      "confidence": 0.7
+    }
+  ],
+  "prompt_patterns": [
+    {
+      "pattern": "MISSION : [TITRE EN MAJUSCULES]",
+      "meaning": "Tâche formelle avec livrables attendus complets",
+      "confidence": 0.95
+    },
+    {
+      "pattern": "[question courte] ?",
+      "meaning": "Validation avant action — répondre clairement oui/non + raison",
+      "confidence": 0.9
+    },
+    {
+      "pattern": "je veux que tu [verbe d'action]",
+      "meaning": "Instruction directe, pas de discussion, exécuter",
+      "confidence": 0.85
+    }
+  ],
+  "meta_interests": [
+    "efficacité des tokens",
+    "systèmes persistants réutilisables",
+    "organisation structurée",
+    "balance gameplay précise",
+    "performances techniques"
+  ]
+}

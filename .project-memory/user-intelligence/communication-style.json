@@ -1,0 +1,40 @@
+{
+  "meta": {
+    "last_updated": "2026-06-09",
+    "sessions": 1
+  },
+  "prompt_format": {
+    "style": "mission_formelle",
+    "confidence": 0.95,
+    "characteristics": [
+      "Titre en majuscules (MISSION :)",
+      "Objectifs explicites",
+      "Liste de règles numérotées ou à puces",
+      "Livrables définis",
+      "Blocs de code pour exemples"
+    ]
+  },
+  "expected_response_structure": {
+    "explanations": "2-3 phrases max",
+    "code_or_files": "complet et directement utilisable",
+    "confirmation": "rapport final synthétique",
+    "confidence": 0.9
+  },
+  "questions_style": {
+    "type": "pratiques_avant_dagir",
+    "example": "ca pose probleme ?",
+    "notes": "Pose des questions courtes et directes pour valider avant d'agir",
+    "confidence": 0.85
+  },
+  "validation_signals": {
+    "positive": ["ok", "parfait", "bien", "merci", "oui"],
+    "negative": ["non", "pas ca", "evite", "stop"],
+    "confidence": 0.7,
+    "notes": "Peu d'interactions correctrices détectées encore"
+  },
+  "technical_level": {
+    "value": "expert",
+    "confidence": 0.9,
+    "notes": "Comprend les implications techniques sans explication, ne pas sur-expliquer"
+  }
+}

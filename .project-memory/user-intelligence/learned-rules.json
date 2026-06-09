@@ -1,0 +1,113 @@
+{
+  "meta": {
+    "last_updated": "2026-06-09",
+    "total_rules": 13
+  },
+  "rules": [
+    {
+      "id": "R001",
+      "rule": "Ne jamais lire un fichier entier — utiliser offset+limit ou grep ciblé",
+      "source": "demande_explicite",
+      "context": "game.js fait 6735 lignes / 131k tokens",
+      "confidence": 1.0,
+      "created": "2026-06-09"
+    },
+    {
+      "id": "R002",
+      "rule": "Consulter .project-memory/ avant d'ouvrir tout fichier source",
+      "source": "mission_mémoire",
+      "context": "Le système mémoire existe pour éviter les relectures",
+      "confidence": 1.0,
+      "created": "2026-06-09"
+    },
+    {
+      "id": "R003",
+      "rule": "Toujours répondre en français",
+      "source": "observation_directe",
+      "context": "100% des messages de l'utilisateur sont en français",
+      "confidence": 1.0,
+      "created": "2026-06-09"
+    },
+    {
+      "id": "R004",
+      "rule": "Ne pas modifier plusieurs systèmes dans game.js en parallèle depuis deux conversations",
+      "source": "question_utilisateur",
+      "context": "Risque de conflit d'écriture sur le même fichier",
+      "confidence": 0.95,
+      "created": "2026-06-09"
+    },
+    {
+      "id": "R005",
+      "rule": "Livrer des systèmes complets, pas des ébauches ni des TODO",
+      "source": "style_demandes",
+      "context": "L'utilisateur demande toujours des systèmes entiers avec tous leurs fichiers",
+      "confidence": 0.9,
+      "created": "2026-06-09"
+    },
+    {
+      "id": "R006",
+      "rule": "Ne pas sur-expliquer les concepts techniques — l'utilisateur est expert",
+      "source": "inférence_niveau",
+      "context": "Comprend git, conflits, order of execution, monkey-patching sans explication",
+      "confidence": 0.9,
+      "created": "2026-06-09"
+    },
+    {
+      "id": "R007",
+      "rule": "Toujours mettre à jour .project-memory/ après une modification de fichier",
+      "source": "mission_mémoire",
+      "context": "La mémoire doit rester cohérente avec le code",
+      "confidence": 1.0,
+      "created": "2026-06-09"
+    },
+    {
+      "id": "R008",
+      "rule": "Préférer les explications concises (2-3 phrases) sauf si livrable demandé",
+      "source": "style_communication",
+      "context": "L'utilisateur va droit au but dans ses demandes",
+      "confidence": 0.85,
+      "created": "2026-06-09"
+    },
+    {
+      "id": "R009",
+      "rule": "Ne pas ajouter de fonctionnalités non demandées (no gold-plating)",
+      "source": "règle_système",
+      "context": "Chaque demande a un scope précis, ne pas déborder",
+      "confidence": 0.9,
+      "created": "2026-06-09"
+    },
+    {
+      "id": "R010",
+      "rule": "Respecter l'ordre de chargement : game.js → data.js → mechanics.js",
+      "source": "architecture_projet",
+      "context": "Ordre critique pour les patches et extensions",
+      "confidence": 1.0,
+      "created": "2026-06-09"
+    },
+    {
+      "id": "R011",
+      "rule": "Pour une modification de balance, vérifier ZONE_LEVELS et _bossFixedLevel ensemble",
+      "source": "historique_commits",
+      "context": "Les zones et les boss sont rebalancés ensemble (commit 69825d2)",
+      "confidence": 0.85,
+      "created": "2026-06-09"
+    },
+    {
+      "id": "R012",
+      "rule": "Utiliser grep/glob ciblés plutôt qu'un scan complet du dépôt",
+      "source": "mission_mémoire",
+      "context": "Optimisation tokens — ne scanner que ce qui est nécessaire",
+      "confidence": 1.0,
+      "created": "2026-06-09"
+    },
+    {
+      "id": "R013",
+      "rule": "Exécuter UNIQUEMENT ce qui est demandé — jamais les étapes optionnelles d'un processus sans confirmation. Installer un skill = créer les fichiers + enregistrer. Stop.",
+      "source": "correction_explicite",
+      "context": "J'ai lancé 6 agents de test non demandés lors de l'installation d'un skill, consommant des tokens inutilement. L'utilisateur était mécontent.",
+      "confidence": 1.0,
+      "created": "2026-06-09",
+      "severity": "critique"
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "meta": {
+    "last_updated": "2026-06-09",
+    "notes": "Termes spécifiques à ce projet et à cet utilisateur"
+  },
+  "terms": {
+    "vague": "Cycle de 10 kills ennemis → débloque le boss de zone",
+    "boss": "Ennemi spécial généré après 10 kills, niveau fixe par vague",
+    "world boss": "Boss global cooldown 5min, récompenses spéciales",
+    "trial": "Mode end-game avec stats fixes, 5 tiers de difficulté",
+    "tour": "Mode arène par étages avec récompenses",
+    "roster": "Équipe active du joueur (max 6 Pokémon)",
+    "box": "Réserve PC (nombre illimité)",
+    "shiny": "Pokémon rare 1/256, stats boostées",
+    "talent": "Boost gacha assigné à un Pokémon (1 max), coût 1 jeton",
+    "prestige": "Reset avec bonus permanents",
+    "shard": "Ressource par type Pokémon gagnée en tuant des ennemis",
+    "CT": "Capacité Technique — move enseignable à un Pokémon",
+    "held item": "Objet tenu par un Pokémon pendant le combat",
+    "balancing": "Équilibrage des stats, zones, boss et formules de combat",
+    "monkey-patch": "Technique JS pour remplacer une fonction existante (mechanics.js)",
+    ".project-memory": "Dossier de mémoire persistante du projet",
+    "tokens": "Unité de consommation de contexte IA — à minimiser"
+  }
+}
