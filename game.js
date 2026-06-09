@@ -2597,7 +2597,7 @@ function battleAction(action) {
     if (hasPrestigeUpgrade('double-drop') && Math.random() < 0.20) { xpG *= 2; goldG *= 2; notify('💰 Double Récolte !'); }
     // Les replays de boss sont de l'entraînement pur : aucune récompense
     if (!player._bossBattle?.isReplay) { player.xp+=xpG; player.gold+=goldG; }
-    if (player._winStreak > 0 && player._winStreak % 5 === 0 && !player._bossBattle)
+    if (player._winStreak > 0 && player._winStreak % 5 === 0 && !player._bossBattle && player._winStreak <= 50)
       notify(`🔥 Streak ×${player._winStreak} — bonus or ×${streakBonus.toFixed(1)} !`);
     // XP pour tout le roster (50% au bench) + level-up silencieux
     if (player.roster) {
@@ -3637,8 +3637,22 @@ function loadGame() {
   startPeriodicHUD();
   checkAchievements();
   updateDayNightHUD();
+  // Restore breeding slots (eggs in progress survive reload)
+  breedingSlots = ((player._breedingSlots)||[null,null]).map(s=>s?({...s}):null);
+  while (breedingSlots.length < 2) breedingSlots.push(null);
+  updateBreedingHUD();
+  // Restore active event (if not yet expired)
+  if (player._activeEventId && player._eventEndTime > Date.now()) {
+    const _restoredEv = SPECIAL_EVENTS.find(e=>e.id===player._activeEventId);
+    if (_restoredEv) {
+      activeEvent = _restoredEv;
+      eventEndTime = player._eventEndTime;
+      const _evName = _restoredEv.name;
+      setTimeout(()=>{ activeEvent=null; updateEventHUD(); notify(`⏰ Événement "${_evName}" terminé.`); }, player._eventEndTime - Date.now());
+      updateEventHUD();
+    }
+  }
   setMessage(`Bienvenue de retour, Dresseur ${player.name} ! ${player.currentName} reprend l'aventure !`);
-  
 }
 
 // ══════════════════════════════════════════
@@ -3717,6 +3731,9 @@ function _idbLoad(cb) {
 const _origSaveGame = saveGame;
 saveGame = function() {
   if (!player) return;
+  player._breedingSlots  = breedingSlots;
+  player._activeEventId  = activeEvent?.id || null;
+  player._eventEndTime   = eventEndTime;
   const serialized = JSON.stringify(player);
   const wrapped = _wrapSave(serialized);
   localStorage.setItem(SAVE_KEY, wrapped);
@@ -3732,6 +3749,9 @@ function _silentSave() {
   // Utilise requestIdleCallback si disponible pour éviter de bloquer le thread principal
   const doSave = () => {
     try {
+      player._breedingSlots = breedingSlots;
+      player._activeEventId = activeEvent?.id || null;
+      player._eventEndTime  = eventEndTime;
       const serialized = JSON.stringify(player);
       const wrapped = _wrapSave(serialized);
       localStorage.setItem(SAVE_KEY, wrapped);
@@ -5324,7 +5344,7 @@ function renderQuests() {
       const pct = Math.min(100, Math.round(((q.progress||0)/q.goal)*100));
       const done = q.done;
       const r = q.reward;
-      const rewardStr = `+${r.gold}₽${r.candy?` · +${r.candy}🍬`:''}${r.tokens?` · +${r.tokens}🪙`:''}`;
+      const rewardStr = `+${r.gold||0}₽${r.candy?` · +${r.candy}🍬`:''}${r.tokens?` · +${r.tokens}🪙`:''}`;
       return `<div style="background:${done?'rgba(45,198,83,.1)':'rgba(255,255,255,.04)'};border:2px solid ${done?'#2dc653':'rgba(255,255,255,.12)'};border-radius:12px;padding:.9rem 1.1rem;display:flex;flex-direction:column;gap:.5rem">
         <div style="display:flex;align-items:center;gap:.6rem;justify-content:space-between">
           <div>
@@ -5461,6 +5481,10 @@ function doPrestige() {
     totalKillsAllTime: (player.totalKillsAllTime||0) + (player.totalKills||0),
     prestigeUpgrades: player.prestigeUpgrades || [],
     prestigeShopSpent: player.prestigeShopSpent || 0,
+    trainerLevel: player.trainerLevel || 1,
+    trainerXP: player.trainerXP || 0,
+    trainerXPNext: player.trainerXPNext || TRAINER_XP_PER_LEVEL(1),
+    talentTokens: player.talentTokens || 0,
   };
 
   // Reset all progress
@@ -6185,7 +6209,7 @@ function grantQuestReward(q) {
   if (r.candy)  { player.heldItemBag=player.heldItemBag||{}; player.heldItemBag['super-bonbon']=(player.heldItemBag['super-bonbon']||0)+r.candy; }
   if (r.tokens) { player.talentTokens=(player.talentTokens||0)+r.tokens; }
   updateHUD();
-  notify(`✅ Quête : ${q.title} ! +${r.gold}₽${r.candy?` +${r.candy}🍬`:''}${r.tokens?` +${r.tokens}🪙`:''}`);
+  notify(`✅ Quête : ${q.title} ! +${r.gold||0}₽${r.candy?` +${r.candy}🍬`:''}${r.tokens?` +${r.tokens}🪙`:''}`);
 }
 
 // ══════════════════════════════════════════
