@@ -21,10 +21,21 @@ function showScreen(id) {
     mapAnimFrame = null;
   }
 
-  // Ferme tous les overlays flottants
+  // Ferme tous les overlays flottants (side-menu avec animation slide-out)
   ['side-menu-overlay','catch-menu','zone-picker-overlay','pre-battle-menu'].forEach(ovId => {
     const el = document.getElementById(ovId);
-    if (el) el.style.display = 'none';
+    if (!el || el.style.display === 'none') return;
+    if (ovId === 'side-menu-overlay') {
+      const panel = document.getElementById('side-menu-panel');
+      if (panel) {
+        panel.classList.add('side-menu-closing');
+        setTimeout(() => { el.style.display = 'none'; panel.classList.remove('side-menu-closing'); }, 270);
+      } else {
+        el.style.display = 'none';
+      }
+    } else {
+      el.style.display = 'none';
+    }
   });
 
   if (typeof pendingEnemyData !== 'undefined') pendingEnemyData = null;

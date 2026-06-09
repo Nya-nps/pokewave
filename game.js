@@ -246,7 +246,13 @@ function toggleDropdown() {
   if (!overlay) return;
   const isOpen = overlay.style.display !== 'none';
   if (isOpen) {
-    overlay.style.display = 'none';
+    const panel = document.getElementById('side-menu-panel');
+    if (panel) {
+      panel.classList.add('side-menu-closing');
+      setTimeout(() => { overlay.style.display = 'none'; panel.classList.remove('side-menu-closing'); }, 270);
+    } else {
+      overlay.style.display = 'none';
+    }
   } else {
     // sync profil
     const nameEl = document.getElementById('side-player-name');

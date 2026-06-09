@@ -55,7 +55,8 @@ body { background: var(--c-bg) !important; }
 @keyframes drift    { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
 @keyframes pulse-glow { 0%,100%{opacity:.6} 50%{opacity:1} }
 @keyframes shimmer  { 0%{transform:translateX(-200%)} 100%{transform:translateX(300%)} }
-@keyframes slide-in-right { from{transform:translateX(100%);opacity:0} to{transform:translateX(0);opacity:1} }
+@keyframes slide-in-right  { from{transform:translateX(100%);opacity:0} to{transform:translateX(0);opacity:1} }
+@keyframes slide-out-right { from{transform:translateX(0);opacity:1} to{transform:translateX(100%);opacity:0} }
 @keyframes pop-in   { from{transform:scale(.85);opacity:0} to{transform:scale(1);opacity:1} }
 @keyframes glow-pulse { 0%,100%{box-shadow:0 0 12px currentColor} 50%{box-shadow:0 0 28px currentColor, 0 0 50px currentColor} }
 
@@ -492,6 +493,10 @@ body { background: var(--c-bg) !important; }
   -webkit-backdrop-filter: blur(30px) !important;
   box-shadow: -16px 0 60px rgba(0,0,0,.85), -4px 0 40px rgba(123,47,247,.2) !important;
   animation: slide-in-right .3s var(--ease-out) !important;
+}
+#side-menu-panel.side-menu-closing {
+  animation: slide-out-right .27s var(--ease-out) forwards !important;
+  pointer-events: none;
 }
 
 /* ── SCREENS THÉMATIQUES ── */
