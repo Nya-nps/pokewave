@@ -924,18 +924,8 @@ window.doExplore = function() {
 
 // Afficher l'heure dans le HUD
 function updateTimeHUD() {
-  let el = document.getElementById('time-indicator');
-  if (!el) {
-    el = document.createElement('div');
-    el.id = 'time-indicator';
-    el.style.cssText = 'font-family:"Press Start 2P",monospace;font-size:.38rem;opacity:.7;margin-left:.5rem;display:inline-block';
-    const hud = document.getElementById('player-name-hud');
-    if (hud) hud.after(el);
-  }
-  const h = new Date().getHours();
-  if (isNightTime())    el.textContent = '🌙 Nuit';
-  else if (isDawnDusk()) el.textContent = '🌅 Crépuscule';
-  else                  el.textContent = '☀️ Jour';
+  // Utilise time-of-day-hud (géré par updateDayNightHUD dans game.js)
+  // — pas de doublon, pas d'injection DOM
 }
 
 if (window._timeHUDInterval) clearInterval(window._timeHUDInterval);

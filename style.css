@@ -42,9 +42,9 @@ body.menu #bg-img{opacity:0.55;filter:blur(3px) brightness(.8)}
 .smtile:hover{transform:translateY(-2px);box-shadow:0 6px 0 var(--brd),0 8px 22px rgba(0,0,0,.5);filter:brightness(1.12)}
 .smtile:active{transform:translateY(3px);box-shadow:0 1px 0 var(--brd);filter:brightness(.95)}
 /* KILL COUNTER */
-#kill-counter-hud{font-family:'Press Start 2P',monospace;font-size:.55rem;color:var(--yellow);background:rgba(10,10,30,.8);border:2px solid rgba(255,214,10,.35);border-radius:8px;padding:.35rem .8rem;display:flex;align-items:center;gap:.5rem}
-#kill-bar-track{width:100px;height:8px;background:rgba(0,0,0,.4);border-radius:999px;overflow:hidden;border:1px solid rgba(255,214,10,.2)}
-#kill-bar-fill{height:100%;background:linear-gradient(90deg,#e63946,#ff9a3c);border-radius:999px;transition:width .3s}
+#kill-counter-hud{font-family:'Press Start 2P',monospace;font-size:.38rem;color:var(--yellow);background:rgba(255,214,10,.07);border:1px solid rgba(255,214,10,.28);border-radius:20px;padding:.22rem .6rem;display:flex;align-items:center;gap:.35rem;white-space:nowrap}
+#kill-bar-track{width:44px;height:5px;background:rgba(0,0,0,.5);border-radius:999px;overflow:hidden;border:none}
+#kill-bar-fill{height:100%;background:linear-gradient(90deg,#ff9a3c,#ffd60a);border-radius:999px;transition:width .3s}
 @keyframes floatStar{0%{transform:translateY(100vh) scale(0);opacity:0}10%{opacity:1}90%{opacity:.7}100%{transform:translateY(-10vh) scale(1.5);opacity:0}}
 
 /* ── POKEBALL LOGO DECORATION ── */
@@ -108,14 +108,19 @@ body.menu #bg-img{opacity:0.55;filter:blur(3px) brightness(.8)}
 #hud.visible{opacity:1;pointer-events:all}
 #hud-top{position:absolute;top:0;left:0;right:0;padding:.7rem 1rem;display:flex;justify-content:space-between;align-items:flex-start;background:linear-gradient(to bottom,rgba(7,7,16,.85),transparent)}
 .hud-card{background:rgba(10,10,30,.92);border:2px solid var(--border);border-radius:10px;padding:.55rem .9rem}
-.stat-name-hud{font-family:'Press Start 2P',monospace;font-size:.55rem;letter-spacing:.12em;color:var(--yellow);text-transform:uppercase;margin-bottom:.3rem}
-.bar-wrap{width:220px;height:22px;background:rgba(0,0,0,.55);border-radius:999px;overflow:hidden;border:2px solid rgba(255,255,255,.22);box-shadow:inset 0 3px 6px rgba(0,0,0,.6)}
-.bar-fill{height:100%;border-radius:999px;transition:width .3s ease;box-shadow:0 0 6px currentColor;will-change:width;position:relative;overflow:hidden}
-.bar-fill.hp{background:linear-gradient(90deg,#e63946,#ff6b9d)}
+.stat-name-hud{font-family:'Press Start 2P',monospace;font-size:.48rem;letter-spacing:.1em;color:rgba(255,255,255,.55);text-transform:uppercase;margin-bottom:0}
+.bar-wrap{width:220px;height:14px;background:rgba(0,0,0,.5);border-radius:999px;overflow:hidden;border:1px solid rgba(255,255,255,.14);box-shadow:inset 0 2px 4px rgba(0,0,0,.5)}
+.bar-fill{height:100%;border-radius:999px;transition:width .3s ease;will-change:width;position:relative;overflow:hidden}
+.bar-fill.hp{background:linear-gradient(90deg,#2dc653,#06d6a0)}
 .bar-fill.mp{background:linear-gradient(90deg,#4cc9f0,#c77dff)}
 .bar-fill.xp{background:linear-gradient(90deg,#ffd60a,#ff9a3c)}
-.stat-val{font-size:.68rem;color:rgba(255,255,255,.75);margin-top:.2rem;font-family:'Press Start 2P',monospace}
-#player-name-hud{font-family:'Press Start 2P',monospace;font-size:.65rem;color:var(--yellow);text-shadow:1px 1px 0 #000;margin-bottom:.5rem;line-height:1.6;background:rgba(10,10,30,.95);border:2px solid rgba(255,214,10,.5);border-radius:8px;padding:.4rem .8rem;box-shadow:0 0 12px rgba(255,214,10,.2),inset 0 1px 0 rgba(255,255,255,.07)}
+.stat-val{font-size:.48rem;color:rgba(255,255,255,.7);font-family:'Press Start 2P',monospace}
+.hud-stat-block{display:flex;flex-direction:column;gap:.25rem}
+.hud-stat-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:.1rem}
+.hud-chips-row{display:flex;gap:.3rem;flex-wrap:wrap;align-items:center}
+#time-of-day-hud{font-family:'Press Start 2P',monospace;font-size:.38rem;color:rgba(255,255,255,.7);background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:.22rem .6rem;white-space:nowrap}
+#rank-hud{font-family:'Press Start 2P',monospace;font-size:.38rem;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:.22rem .6rem;white-space:nowrap}
+#player-name-hud{font-family:'Press Start 2P',monospace;font-size:.58rem;color:#fff;text-shadow:1px 1px 0 rgba(0,0,0,.6);line-height:1.7;background:linear-gradient(135deg,rgba(30,10,60,.95),rgba(15,5,40,.98));border:1px solid rgba(120,60,220,.45);border-radius:10px;padding:.4rem .75rem;box-shadow:0 2px 10px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.06)}
 #gold-display{font-family:'Press Start 2P',monospace;font-size:.6rem;color:var(--yellow);display:flex;align-items:center;gap:.3rem;background:rgba(0,0,0,.4);padding:.35rem .8rem;border-radius:999px;border:1px solid rgba(255,214,10,.35)}
 #zone-label{position:absolute;top:46%;left:50%;transform:translate(-50%,-50%);font-family:'Press Start 2P',monospace;font-size:clamp(.8rem,2vw,1.1rem);color:var(--white);text-align:center;background:rgba(10,10,30,.85);padding:.6rem 2rem;border-radius:8px;border:2px solid var(--yellow);opacity:0;pointer-events:none;transition:opacity .4s;text-shadow:2px 2px 0 #000}
 #zone-label.show{opacity:1}
@@ -507,13 +512,13 @@ body { background: #07071a !important; }
 .hud-card { background: linear-gradient(135deg,rgba(20,15,45,.9),rgba(10,10,35,.85)) !important;
             border-color: rgba(199,125,255,.3) !important;
             box-shadow: 0 0 16px rgba(123,47,247,.2), inset 0 1px 0 rgba(255,255,255,.06) !important; }
-#player-name-hud { background: linear-gradient(135deg,rgba(20,10,50,.9),rgba(10,10,35,.85)) !important;
-                   border-color: rgba(255,214,10,.6) !important;
-                   box-shadow: 0 0 18px rgba(255,214,10,.25), inset 0 1px 0 rgba(255,255,255,.07) !important; }
+#player-name-hud { background: linear-gradient(135deg,rgba(28,12,60,.95),rgba(14,6,42,.98)) !important;
+                   border-color: rgba(140,70,240,.5) !important;
+                   box-shadow: 0 2px 12px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.06) !important; }
 #gold-display { background: linear-gradient(135deg,rgba(40,30,5,.85),rgba(20,15,5,.8)) !important;
                 border-color: rgba(255,214,10,.55) !important;
                 box-shadow: 0 0 12px rgba(255,214,10,.2) !important; }
-.bar-fill.hp  { background: linear-gradient(90deg,#ff3060,#ff6b9d) !important; }
+.bar-fill.hp  { background: linear-gradient(90deg,#2dc653,#06d6a0) !important; }
 .bar-fill.mp  { background: linear-gradient(90deg,#4cc9f0,#c77dff) !important; }
 .bar-fill.xp  { background: linear-gradient(90deg,#ffd60a,#ff9a3c) !important; }
 /* Shimmer GPU-accéléré via transform (compositor layer) — au lieu de background-position */
@@ -742,8 +747,9 @@ input, select, textarea { font-size: 16px !important; }
   #trainer-xp-val { font-size: .28rem !important; }
   /* Barres HP/XP moins larges */
   .bar-wrap { width: clamp(100px, 38vw, 200px) !important; height: 14px !important; }
-  /* Kill bar */
-  #kill-bar-track { width: clamp(55px, 22vw, 100px) !important; }
+  /* Kill bar chip */
+  #kill-bar-track { width: 36px !important; }
+  .hud-chips-row { gap: .2rem !important; }
   /* Minimap */
   #minimap { width: 55px !important; height: 42px !important; }
 

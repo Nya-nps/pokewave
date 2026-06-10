@@ -115,37 +115,44 @@
 <!-- ══ HUD ══ -->
 <div id="hud">
   <div id="hud-top">
-    <div style="display:flex;flex-direction:column;gap:.4rem">
+    <div style="display:flex;flex-direction:column;gap:.5rem">
+      <!-- Pokémon actif : nom + niveau -->
       <div id="player-name-hud">—</div>
-      <!-- TRAINER LEVEL moved to right avatar panel -->
-      <!-- KILL COUNTER -->
-      <div id="kill-counter-hud">
-        <span id="kill-wave-label">🌊 Vague 1</span>
-        <span id="kill-count-label">0/10</span>
-        <div id="kill-bar-track"><div id="kill-bar-fill" style="width:0%"></div></div>
-        <span id="kill-diff-label" style="font-size:.38rem;color:rgba(255,200,100,.8)">×1.0</span>
+      <!-- Chips contexte : zone · heure · rang -->
+      <div class="hud-chips-row">
+        <div id="kill-counter-hud">
+          <span id="kill-wave-label">🌊 V1</span>
+          <div id="kill-bar-track"><div id="kill-bar-fill" style="width:0%"></div></div>
+          <span id="kill-count-label">0/10</span>
+          <span id="kill-diff-label">×1.0</span>
+        </div>
+        <div id="time-of-day-hud"></div>
+        <div id="rank-hud"></div>
       </div>
-      <!-- TIME OF DAY -->
-      <div id="time-of-day-hud" style="font-family:'Press Start 2P',monospace;font-size:.45rem;color:rgba(255,255,255,.6);background:rgba(10,10,30,.7);border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:.25rem .6rem"></div>
-      <!-- ACTIVE EVENT -->
-      <div id="event-hud" style="display:none;font-family:'Press Start 2P',monospace;font-size:.4rem;color:#ffd700;background:rgba(255,214,10,.12);border:2px solid rgba(255,214,10,.4);border-radius:6px;padding:.25rem .7rem;animation:bossPulse 2s infinite"></div>
-      <!-- BREEDING eggs -->
-      <div id="breeding-hud" style="display:none;font-family:'Press Start 2P',monospace;font-size:.35rem;background:rgba(255,136,204,.1);border:1px solid rgba(255,136,204,.3);border-radius:6px;padding:.25rem .6rem;flex-direction:column;gap:.1rem"></div>
-      <!-- RANK -->
-      <div id="rank-hud" style="font-family:'Press Start 2P',monospace;font-size:.42rem;background:rgba(10,10,30,.7);border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:.25rem .6rem"></div>
-      <div style="display:flex;flex-direction:column;gap:.2rem">
-        <div class="stat-name-hud">PV</div>
+      <!-- Événement actif (caché par défaut) -->
+      <div id="event-hud" style="display:none;font-family:'Press Start 2P',monospace;font-size:.38rem;color:#ffd700;background:rgba(255,214,10,.1);border:1px solid rgba(255,214,10,.35);border-radius:20px;padding:.2rem .65rem;animation:bossPulse 2s infinite"></div>
+      <!-- Élevage (caché par défaut) -->
+      <div id="breeding-hud" style="display:none;font-family:'Press Start 2P',monospace;font-size:.33rem;background:rgba(255,136,204,.08);border:1px solid rgba(255,136,204,.25);border-radius:20px;padding:.2rem .65rem;flex-direction:column;gap:.1rem"></div>
+      <!-- PV -->
+      <div class="hud-stat-block">
+        <div class="hud-stat-header">
+          <span class="stat-name-hud">PV</span>
+          <span class="stat-val" id="val-hp">100 / 100</span>
+        </div>
         <div class="bar-wrap"><div class="bar-fill hp" id="bar-hp" style="width:100%"></div></div>
-        <div class="stat-val" id="val-hp">100 / 100</div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:.2rem">
+      <!-- Attaques -->
+      <div class="hud-stat-block">
         <div class="stat-name-hud">Attaques</div>
-        <div id="atk-uses-display" style="display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.1rem"></div>
+        <div id="atk-uses-display" style="display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.15rem"></div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:.2rem">
-        <div class="stat-name-hud">XP</div>
+      <!-- XP -->
+      <div class="hud-stat-block">
+        <div class="hud-stat-header">
+          <span class="stat-name-hud">XP</span>
+          <span class="stat-val" id="val-xp">0 / 100</span>
+        </div>
         <div class="bar-wrap"><div class="bar-fill xp" id="bar-xp" style="width:0%"></div></div>
-        <div class="stat-val" id="val-xp">0 / 100</div>
       </div>
     </div>
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:.5rem">
