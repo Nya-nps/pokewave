@@ -5247,11 +5247,11 @@ const SEASON_PASS = {
     {
       id:'collector', name:'Collecteur', icon:'📦', color:'#06d6a0',
       milestones:[
-        { pts:5,   label:'5 captures',   reward:{gold:600} },
-        { pts:15,  label:'15 captures',  reward:{gold:1400, candy:2} },
-        { pts:30,  label:'30 captures',  reward:{tokens:3} },
-        { pts:60,  label:'60 captures',  reward:{gold:4500, candy:4} },
-        { pts:100, label:'100 captures', reward:{gold:12000, tokens:6}, ultimate:true },
+        { pts:10,  label:'10 captures',  reward:{gold:600} },
+        { pts:30,  label:'30 captures',  reward:{gold:1400, candy:2} },
+        { pts:70,  label:'70 captures',  reward:{tokens:3} },
+        { pts:150, label:'150 captures', reward:{gold:4500, candy:4} },
+        { pts:300, label:'300 captures', reward:{gold:12000, tokens:6}, ultimate:true },
       ],
       pointTypes:['catches'],
     },
