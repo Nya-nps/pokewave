@@ -226,13 +226,7 @@ body { background: var(--c-bg) !important; }
   pointer-events: none;
 }
 
-#player-name-hud {
-  background: linear-gradient(135deg,#1a0a3e,#120832) !important;
-  border: 1px solid rgba(150,80,255,.55) !important;
-  border-radius: 8px !important;
-  box-shadow: 0 0 0 1px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.08) !important;
-  backdrop-filter: none !important;
-}
+/* player-name-hud : géré par style.css — pas d'override ici */
 
 #gold-display {
   background: rgba(30,22,5,.75) !important;
@@ -251,26 +245,7 @@ body { background: var(--c-bg) !important; }
   font-size: .9rem !important;
 }
 
-/* Kill counter chip */
-#kill-counter-hud {
-  background: rgba(255,214,10,.07) !important;
-  border: 1px solid rgba(255,214,10,.28) !important;
-  border-radius: 20px !important;
-  backdrop-filter: blur(14px) !important;
-}
-
-/* Context chips */
-#time-of-day-hud {
-  background: rgba(255,255,255,.07) !important;
-  border: 1px solid rgba(255,255,255,.15) !important;
-  border-radius: 20px !important;
-  backdrop-filter: blur(12px) !important;
-}
-#rank-hud {
-  background: rgba(255,255,255,.07) !important;
-  border-radius: 20px !important;
-  backdrop-filter: blur(12px) !important;
-}
+/* kill-counter-hud / time-of-day-hud / rank-hud : gérés par style.css */
 
 /* ── MENU PANEL (setup/titre) — glassmorphism ── */
 .menu-panel {
@@ -982,15 +957,13 @@ body { background: var(--c-bg) !important; }
 }
 /* Compenser par un fond légèrement plus opaque */
 .hud-card         { background: rgba(14,10,40,.96) !important; }
-#player-name-hud  { background: linear-gradient(135deg,#1a0a3e,#120832) !important; }
 #gold-display     { background: rgba(30,22,5,.94) !important; }
 #message-box      { background: rgba(10,8,30,.96) !important; }
-#kill-counter-hud { background: rgba(255,214,10,.08) !important; }
 .combatant        { background: rgba(10,8,30,.96) !important; }
 #side-menu-panel  { background: rgba(8,5,24,.97) !important; }
 #battle-log       { background: rgba(10,8,30,.97) !important; }
 /* contain:paint — isole les repaints internes, n'affecte pas le reste de la page */
-#kill-counter-hud, #message-box, #gold-display { contain: layout style paint; }
+#message-box, #gold-display { contain: layout style paint; }
 /* Désactiver shimmer sur mobile */
 @media (max-width: 900px) { .bar-fill::after { display: none !important; } }
 
@@ -1075,11 +1048,7 @@ body { background: var(--c-bg) !important; }
 #btn-world-boss { will-change: filter !important; }
 #event-hud      { will-change: filter !important; }
 
-/* ── PLAYER NAME HUD — renforcement ── */
-#player-name-hud {
-  border-color: rgba(150,80,255,.55) !important;
-  box-shadow: 0 0 0 1px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.08) !important;
-}
+/* player-name-hud géré par style.css uniquement */
 
 /* ── DIFF LABEL — badge amélioré ── */
 #kill-diff-label {

@@ -116,10 +116,8 @@
 <div id="hud">
   <div id="hud-top">
     <div class="hud-panel">
-      <!-- Pokémon actif : nom + niveau -->
       <div id="player-name-hud">—</div>
-      <!-- Chips contexte : vague · heure · rang -->
-      <div class="hud-chips-row">
+      <div class="hud-meta">
         <div id="kill-counter-hud">
           <span id="kill-wave-label">🌊 V1</span>
           <div id="kill-bar-track"><div id="kill-bar-fill" style="width:0%"></div></div>
@@ -129,30 +127,18 @@
         <div id="time-of-day-hud"></div>
         <div id="rank-hud"></div>
       </div>
-      <!-- Événement actif (caché par défaut) -->
-      <div id="event-hud" style="display:none;font-family:'Press Start 2P',monospace;font-size:.38rem;color:#ffd700;background:rgba(255,214,10,.12);border:1px solid rgba(255,214,10,.35);border-radius:20px;padding:.2rem .65rem;animation:bossPulse 2s infinite"></div>
-      <!-- Élevage (caché par défaut) -->
-      <div id="breeding-hud" style="display:none;font-family:'Press Start 2P',monospace;font-size:.33rem;background:rgba(255,136,204,.08);border:1px solid rgba(255,136,204,.25);border-radius:20px;padding:.2rem .65rem;flex-direction:column;gap:.1rem"></div>
-      <!-- PV -->
-      <div class="hud-stat-block">
-        <div class="hud-stat-header">
-          <span class="stat-name-hud">PV</span>
-          <span class="stat-val" id="val-hp">100 / 100</span>
-        </div>
+      <div id="event-hud" style="display:none;font-family:'Press Start 2P',monospace;font-size:.36rem;color:#ffd700;background:rgba(255,214,10,.1);border:1px solid rgba(255,214,10,.3);border-radius:20px;padding:.18rem .55rem;animation:bossPulse 2s infinite"></div>
+      <div id="breeding-hud" style="display:none;font-family:'Press Start 2P',monospace;font-size:.33rem;background:rgba(255,136,204,.08);border:1px solid rgba(255,136,204,.22);border-radius:20px;padding:.18rem .55rem;flex-direction:column;gap:.1rem"></div>
+      <div class="hud-bar-row">
+        <span class="hud-bar-label">PV</span>
         <div class="bar-wrap"><div class="bar-fill hp" id="bar-hp" style="width:100%"></div></div>
+        <span class="hud-bar-val" id="val-hp">100 / 100</span>
       </div>
-      <!-- Attaques -->
-      <div class="hud-stat-block">
-        <div class="stat-name-hud">Attaques</div>
-        <div id="atk-uses-display" style="display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.15rem"></div>
-      </div>
-      <!-- XP -->
-      <div class="hud-stat-block">
-        <div class="hud-stat-header">
-          <span class="stat-name-hud">XP</span>
-          <span class="stat-val" id="val-xp">0 / 100</span>
-        </div>
+      <div id="atk-uses-display"></div>
+      <div class="hud-bar-row">
+        <span class="hud-bar-label">XP</span>
         <div class="bar-wrap"><div class="bar-fill xp" id="bar-xp" style="width:0%"></div></div>
+        <span class="hud-bar-val" id="val-xp">0 / 100</span>
       </div>
     </div>
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:.5rem">

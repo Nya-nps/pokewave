@@ -106,22 +106,99 @@ body.menu #bg-img{opacity:0.55;filter:blur(3px) brightness(.8)}
 /* ── HUD ── */
 #hud{position:fixed;inset:0;z-index:5;pointer-events:none;opacity:0;transition:opacity .5s}
 #hud.visible{opacity:1;pointer-events:all}
-#hud-top{position:absolute;top:0;left:0;right:0;padding:.7rem 1rem;display:flex;justify-content:space-between;align-items:flex-start;background:linear-gradient(to bottom,rgba(7,7,16,.85),transparent)}
+#hud-top{position:absolute;top:0;left:0;right:0;padding:.7rem 1rem;display:flex;justify-content:space-between;align-items:flex-start}
 .hud-card{background:rgba(10,10,30,.92);border:2px solid var(--border);border-radius:10px;padding:.55rem .9rem}
-.stat-name-hud{font-family:'Press Start 2P',monospace;font-size:.48rem;letter-spacing:.1em;color:rgba(255,255,255,.55);text-transform:uppercase;margin-bottom:0}
-.bar-wrap{width:220px;height:14px;background:rgba(0,0,0,.5);border-radius:999px;overflow:hidden;border:1px solid rgba(255,255,255,.14);box-shadow:inset 0 2px 4px rgba(0,0,0,.5)}
+
+/* ── HUD PANEL GAUCHE ── */
+.hud-panel{
+  background:#0d0b1f;
+  border:1px solid rgba(110,70,220,.4);
+  border-radius:14px;
+  padding:.65rem .8rem;
+  display:flex;
+  flex-direction:column;
+  gap:.5rem;
+  min-width:230px;
+  box-shadow:0 4px 24px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.04)
+}
+
+/* Nom du Pokémon actif */
+#player-name-hud{
+  font-family:'Press Start 2P',monospace;
+  font-size:.52rem;
+  color:#e8daff;
+  line-height:1.8;
+  padding-bottom:.45rem;
+  border-bottom:1px solid rgba(110,70,220,.25);
+  background:none!important;
+  border-top:none!important;border-left:none!important;border-right:none!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  padding-top:0!important;padding-left:0!important;padding-right:0!important
+}
+
+/* Ligne chips : vague · heure · rang */
+.hud-meta{display:flex;gap:.3rem;align-items:center;flex-wrap:nowrap}
+
+/* Kill counter chip */
+#kill-counter-hud{
+  font-family:'Press Start 2P',monospace;
+  font-size:.36rem;
+  color:#ffd60a;
+  display:flex;align-items:center;gap:.28rem;
+  background:rgba(255,214,10,.08);
+  border:1px solid rgba(255,214,10,.28);
+  border-radius:20px;
+  padding:.2rem .5rem;
+  white-space:nowrap
+}
+#kill-bar-track{width:28px;height:4px;background:rgba(0,0,0,.6);border-radius:999px;overflow:hidden;flex-shrink:0}
+#kill-bar-fill{height:100%;background:linear-gradient(90deg,#ff9a3c,#ffd60a);border-radius:999px;transition:width .3s}
+#kill-diff-label{font-family:'Press Start 2P',monospace!important;font-size:.34rem;color:#ff9a3c}
+
+/* Heure chip */
+#time-of-day-hud{
+  font-family:'Press Start 2P',monospace;
+  font-size:.36rem;
+  color:rgba(255,255,255,.6);
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:20px;
+  padding:.2rem .5rem;
+  white-space:nowrap
+}
+
+/* Rang chip */
+#rank-hud{
+  font-family:'Press Start 2P',monospace;
+  font-size:.36rem;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:20px;
+  padding:.2rem .5rem;
+  white-space:nowrap
+}
+
+/* Lignes PV / XP : label | barre | valeur */
+.hud-bar-row{display:grid;grid-template-columns:16px 1fr auto;gap:.35rem;align-items:center}
+.hud-bar-label{font-family:'Press Start 2P',monospace;font-size:.38rem;color:rgba(255,255,255,.4);text-transform:uppercase}
+.hud-bar-val{font-family:'Press Start 2P',monospace;font-size:.38rem;color:rgba(255,255,255,.55);white-space:nowrap}
+
+/* Barres */
+.bar-wrap{height:10px;background:rgba(0,0,0,.55);border-radius:999px;overflow:hidden;border:none;box-shadow:none}
 .bar-fill{height:100%;border-radius:999px;transition:width .3s ease;will-change:width;position:relative;overflow:hidden}
-.bar-fill.hp{background:linear-gradient(90deg,#2dc653,#06d6a0)}
+.bar-fill.hp{background:linear-gradient(90deg,#1fc75a,#06d6a0)}
 .bar-fill.mp{background:linear-gradient(90deg,#4cc9f0,#c77dff)}
 .bar-fill.xp{background:linear-gradient(90deg,#ffd60a,#ff9a3c)}
-.stat-val{font-size:.48rem;color:rgba(255,255,255,.7);font-family:'Press Start 2P',monospace}
-.hud-panel{display:flex;flex-direction:column;gap:.45rem;background:rgba(8,6,24,.93);border:1px solid rgba(100,60,200,.35);border-radius:14px;padding:.6rem .8rem;backdrop-filter:blur(4px);box-shadow:0 4px 20px rgba(0,0,0,.5)}
-.hud-stat-block{display:flex;flex-direction:column;gap:.22rem}
-.hud-stat-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:.05rem}
-.hud-chips-row{display:flex;gap:.3rem;align-items:center;flex-wrap:nowrap}
-#time-of-day-hud{font-family:'Press Start 2P',monospace;font-size:.38rem;color:rgba(255,255,255,.7);background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:.22rem .6rem;white-space:nowrap}
-#rank-hud{font-family:'Press Start 2P',monospace;font-size:.38rem;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:.22rem .6rem;white-space:nowrap}
-#player-name-hud{font-family:'Press Start 2P',monospace;font-size:.56rem;color:#f0e8ff;text-shadow:0 1px 3px rgba(0,0,0,.8);line-height:1.7;background:linear-gradient(135deg,#1a0a3e,#120832);border:1px solid rgba(150,80,255,.55);border-radius:8px;padding:.38rem .7rem;box-shadow:0 0 0 1px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.08)}
+
+/* Attaques */
+#atk-uses-display{display:flex;gap:.35rem;flex-wrap:wrap}
+.atk-use-label{font-family:'Press Start 2P',monospace;font-size:.36rem;color:rgba(255,255,255,.55)}
+.atk-use-pip{width:8px;height:8px;border-radius:2px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.12);transition:all .2s;display:inline-block}
+.atk-use-pip.available{background:#ffd60a;border-color:#ffd60a;box-shadow:0 0 4px rgba(255,214,10,.5)}
+.atk-use-pip.magic{background:#c77dff;border-color:#c77dff;box-shadow:0 0 4px rgba(199,125,255,.5)}
+
+/* ── Reste du HUD ── */
 #gold-display{font-family:'Press Start 2P',monospace;font-size:.6rem;color:var(--yellow);display:flex;align-items:center;gap:.3rem;background:rgba(0,0,0,.4);padding:.35rem .8rem;border-radius:999px;border:1px solid rgba(255,214,10,.35)}
 #zone-label{position:absolute;top:46%;left:50%;transform:translate(-50%,-50%);font-family:'Press Start 2P',monospace;font-size:clamp(.8rem,2vw,1.1rem);color:var(--white);text-align:center;background:rgba(10,10,30,.85);padding:.6rem 2rem;border-radius:8px;border:2px solid var(--yellow);opacity:0;pointer-events:none;transition:opacity .4s;text-shadow:2px 2px 0 #000}
 #zone-label.show{opacity:1}
@@ -133,6 +210,9 @@ body.menu #bg-img{opacity:0.55;filter:blur(3px) brightness(.8)}
 #action-btns .btn{font-size:.55rem;padding:.55rem .95rem}
 #minimap{width:85px;height:65px;border:2px solid rgba(255,255,255,.25);background:rgba(10,10,30,.95);overflow:hidden;border-radius:8px}
 #minimap canvas{width:100%;height:100%}
+/* classes legacy gardées pour compatibilité screens autres que hud */
+.stat-name-hud{font-family:'Press Start 2P',monospace;font-size:.46rem;color:rgba(255,255,255,.5);text-transform:uppercase}
+.stat-val{font-family:'Press Start 2P',monospace;font-size:.46rem;color:rgba(255,255,255,.65)}
 
 /* ── BATTLE ── */
 #screen-battle{flex-direction:column;justify-content:center;align-items:center;padding:0;background:rgba(7,7,16,.5)}
@@ -429,7 +509,6 @@ body.menu #bg-img{opacity:0.55;filter:blur(3px) brightness(.8)}
 #map-btns .btn { font-size: var(--fs-md) !important; padding: var(--pad-btn-sm) !important; }
 
 /* — Noms joueur / pokémon — */
-#player-name-hud   { font-size: var(--fs-lg) !important; }
 .combatant-name    { font-size: var(--fs-lg) !important; }
 .poke-card-name    { font-size: var(--fs-md) !important; }
 .team-row-name     { font-size: var(--fs-md) !important; }
@@ -475,8 +554,9 @@ body.menu #bg-img{opacity:0.55;filter:blur(3px) brightness(.8)}
 .pokemon-card { border-radius: var(--radius-card) !important; }
 .team-row-card{ border-radius: var(--radius-card) !important; padding: .65rem .9rem !important; }
 
-/* — Barres HP/XP — uniformes 18px — */
+/* — Barres HP/XP — uniformes 18px (hors panel HUD) — */
 .bar-wrap        { height: 18px !important; }
+.hud-panel .bar-wrap { height: 10px !important; }
 .hp-battle       { height: 16px !important; }
 .stat-bar-track  { height: 12px !important; }
 .team-row-hp-bar { height: 7px !important; }
