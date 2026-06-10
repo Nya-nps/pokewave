@@ -1259,12 +1259,12 @@ function battleAction(action) {
     if (totalHeal > 0) {
       let heal=0, used='';
       if ((player.bag.maxrevif||0)>0 && player.hp < player.maxHp * 0.4){ heal=player.maxHp; player.bag.maxrevif--; used='Max Revif'; }
-      else if ((player.bag.hyperpotion||0)>0){ heal=250; player.bag.hyperpotion--; used='Hyper Potion'; }
-      else if ((player.bag.superpotion||0)>0){ heal=120; player.bag.superpotion--; used='Super Potion'; }
-      else if ((player.bag.potion||0)>0){ heal=50; player.bag.potion--; used='Potion'; }
+      else if ((player.bag.hyperpotion||0)>0){ heal=Math.round(player.maxHp*1.00); player.bag.hyperpotion--; used='Hyper Potion'; }
+      else if ((player.bag.superpotion||0)>0){ heal=Math.round(player.maxHp*0.50); player.bag.superpotion--; used='Super Potion'; }
+      else if ((player.bag.potion||0)>0){ heal=Math.round(player.maxHp*0.25); player.bag.potion--; used='Potion'; }
       else { heal=player.maxHp; player.bag.maxrevif--; used='Max Revif'; }
       player.hp = Math.min(player.maxHp, player.hp+heal);
-      log=`🧪 ${used} utilisée sur ${player.currentName} ! +${Math.min(heal,player.maxHp)} PV. `;
+      log=`🧪 ${used} utilisée sur ${player.currentName} ! +${heal} PV. `;
     } else if (totalPP > 0) {
       let used='', restore=0;
       if ((player.bag.maxelixir||0)>0){ player.bag.maxelixir--; used='Max Élixir'; restore=-1; }
