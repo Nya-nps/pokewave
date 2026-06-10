@@ -137,9 +137,9 @@ const SHOP_ITEMS = [
   { id:'superball',   name:'Super Ball',   desc:'Taux de capture: 1.5×',  price:600,   catchRate:1.5, img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/great-ball.png',  type:'ball' },
   { id:'hyperball',   name:'Hyper Ball',   desc:'Taux de capture: 2×',    price:1200,  catchRate:2,   img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/ultra-ball.png',  type:'ball' },
   { id:'masterball',  name:'Master Ball',  desc:'Capture garantie !',     price:150000,catchRate:999, img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/master-ball.png', type:'ball' },
-  { id:'potion',      name:'Potion',       desc:'Restaure 50 PV',         price:200,   heal:50,       img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/potion.png',     type:'heal' },
-  { id:'superpotion', name:'Super Potion', desc:'Restaure 120 PV',        price:500,   heal:120,      img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/super-potion.png',type:'heal' },
-  { id:'hyperpotion', name:'Hyper Potion', desc:'Restaure 250 PV',        price:900,   heal:250,      img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/hyper-potion.png',type:'heal' },
+  { id:'potion',      name:'Potion',       desc:'Restaure 25% des PV max', price:200,   healPct:0.25,  img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/potion.png',     type:'heal' },
+  { id:'superpotion', name:'Super Potion', desc:'Restaure 50% des PV max', price:500,   healPct:0.50,  img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/super-potion.png',type:'heal' },
+  { id:'hyperpotion', name:'Hyper Potion', desc:'Restaure 100% des PV max',price:900,   healPct:1.00,  img:'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/hyper-potion.png',type:'heal' },
 ];
 
 // ── Taux de capture officiels (1-255, 3=légendaire) ───────

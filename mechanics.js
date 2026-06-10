@@ -445,9 +445,9 @@ window.battleAction = function(action) {
     const totalPotions = (player.bag.potion||0)+(player.bag.superpotion||0)+(player.bag.hyperpotion||0);
     if (totalPotions > 0) {
       let heal = 0, used = '';
-      if ((player.bag.hyperpotion||0) > 0) { heal=120; player.bag.hyperpotion--; used='Hyper Potion'; }
-      else if ((player.bag.superpotion||0) > 0) { heal=60; player.bag.superpotion--; used='Super Potion'; }
-      else { heal=30; player.bag.potion--; used='Potion'; }
+      if ((player.bag.hyperpotion||0) > 0) { heal=Math.round(player.maxHp*1.00); player.bag.hyperpotion--; used='Hyper Potion'; }
+      else if ((player.bag.superpotion||0) > 0) { heal=Math.round(player.maxHp*0.50); player.bag.superpotion--; used='Super Potion'; }
+      else { heal=Math.round(player.maxHp*0.25); player.bag.potion--; used='Potion'; }
       player.hp = Math.min(player.maxHp, player.hp + heal);
       log = `🧪 ${used} utilisée sur ${player.currentName} ! +${heal} PV.`;
     } else {
