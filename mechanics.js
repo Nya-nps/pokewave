@@ -545,7 +545,7 @@ window.battleAction = function(action) {
     const xpG  = Math.round((enemy.xp||10) * 3 * lvRatio * badgeBonus);
     const goldG= Math.round(((enemy.gold||5) + Math.floor(Math.random()*10)) * getGoldMultiplier());
     player.xp += xpG; player.gold += goldG;
-    if (player.roster) player.roster.forEach((p,i)=>{ if(i!==(player.activeRosterIdx||0) && p.hp>0){ p.xp=(p.xp||0)+Math.floor(xpG*0.5); }});
+    if (player.roster) player.roster.forEach((p,i)=>{ if(i!==(player.activeRosterIdx||0) && p.hp>0){ p.xp=(p.xp||0)+xpG; }});
     if (!player.zoneKills) player.zoneKills = {};
     const curZ = player.currentZone || 'bourg-palette';
     player.zoneKills[curZ] = (player.zoneKills[curZ]||0)+1;

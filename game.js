@@ -1332,12 +1332,12 @@ function battleAction(action) {
     if (!player._bossBattle?.isReplay) { player.xp+=xpG; player.gold+=goldG; }
     if (player._winStreak > 0 && player._winStreak % 5 === 0 && !player._bossBattle)
       notify(`🔥 Streak ×${player._winStreak} — bonus or ×${streakBonus.toFixed(1)} !`);
-    // XP pour tout le roster (50% au bench) + level-up silencieux
+    // XP pour tout le roster (100% pour tous) + level-up silencieux
     if (player.roster) {
       const leveledNames = [];
       player.roster.forEach((p,i)=>{
         if(i!==(player.activeRosterIdx||0) && p.hp>0){
-          p.xp=(p.xp||0)+Math.floor(xpG*0.5);
+          p.xp=(p.xp||0)+xpG;
           if (checkRosterLevelUp(p)) leveledNames.push(`${p.currentName||p.name} Niv.${p.level}`);
         }
       });
