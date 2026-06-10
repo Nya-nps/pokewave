@@ -1,0 +1,27 @@
+{
+  "data.js": {
+    "mtime": 1781073734.481747,
+    "ast_hash": "a9fc076c28145546d49e8d72e16aa997",
+    "semantic_hash": "a9fc076c28145546d49e8d72e16aa997"
+  },
+  "game.js": {
+    "mtime": 1781086705.6648955,
+    "ast_hash": "bf8cc10b3baecc7bac50facf26d99aae",
+    "semantic_hash": "bf8cc10b3baecc7bac50facf26d99aae"
+  },
+  "js/constants.js": {
+    "mtime": 1781084961.45512,
+    "ast_hash": "31114cb08ec3e2ea82cd1725933be9b3",
+    "semantic_hash": "31114cb08ec3e2ea82cd1725933be9b3"
+  },
+  "js/state.js": {
+    "mtime": 1781084961.4271202,
+    "ast_hash": "061654584332fa8f2a33915c5d1f1484",
+    "semantic_hash": "061654584332fa8f2a33915c5d1f1484"
+  },
+  "mechanics.js": {
+    "mtime": 1781086705.6648955,
+    "ast_hash": "21fdd0526138c52ef90e8984dab16c09",
+    "semantic_hash": "21fdd0526138c52ef90e8984dab16c09"
+  }
+}
