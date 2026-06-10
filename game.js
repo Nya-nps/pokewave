@@ -358,16 +358,31 @@ function _updateZonePickerBtn() {
 // ══════════════════════════════════════════
 const KILLS_PER_WAVE = 10;
 
+function getActiveExploreZone() {
+  if (!player) return ZONE_ORDER[0];
+  const bossesBeaten = player.lastBossWave || 0;
+  const autoIdx = Math.min(bossesBeaten, ZONE_ORDER.length - 1);
+  const selId   = player.selectedExploreZone;
+  const selIdx  = selId ? ZONE_ORDER.indexOf(selId) : -1;
+  return (selId && (selIdx === -1 || selIdx <= bossesBeaten)) ? selId : ZONE_ORDER[autoIdx];
+}
+
 function getWaveState() {
-  if (!player) return { wave:1, killsInWave:0, bossReady:false, diffMult:1 };
-  const totalKills     = player.totalKills  || 0;
-  const bossesBeaten   = player.lastBossWave || 0;
-  const killsSinceBoss = totalKills - bossesBeaten * KILLS_PER_WAVE;
-  const bossReady      = killsSinceBoss >= KILLS_PER_WAVE;
-  const wave           = bossesBeaten + 1;
-  const killsInWave    = killsSinceBoss % KILLS_PER_WAVE;
-  const diffMult       = parseFloat(Math.min(10.0, 1 + bossesBeaten * 0.15).toFixed(2));
-  return { wave, killsInWave, bossReady, diffMult, totalKills, killsSinceBoss };
+  if (!player) return { wave:1, killsInWave:0, bossReady:false, diffMult:1, activeZoneId: ZONE_ORDER[0] };
+  const totalKills   = player.totalKills || 0;
+  const bossesBeaten = player.lastBossWave || 0;
+  const wave         = bossesBeaten + 1;
+  const diffMult     = parseFloat(Math.min(10.0, 1 + bossesBeaten * 0.15).toFixed(2));
+
+  // Boss = 1 par zone : prêt quand la zone courante a ≥10 kills ET son boss n'est pas encore battu
+  const activeZoneId      = getActiveExploreZone();
+  const zoneKills         = (player.zoneKills || {})[activeZoneId] || 0;
+  const bossAlreadyBeaten = !!(player.zoneBossBeaten || {})[activeZoneId];
+  const bossReady         = zoneKills >= KILLS_PER_WAVE && !bossAlreadyBeaten;
+  const killsSinceBoss    = zoneKills; // pour l'affichage HUD (kills dans la zone courante)
+  const killsInWave       = zoneKills % KILLS_PER_WAVE;
+
+  return { wave, killsInWave, bossReady, diffMult, totalKills, killsSinceBoss, activeZoneId };
 }
 
 function getWaveEnemyScale() { return getWaveState().diffMult; }
@@ -381,7 +396,8 @@ function updateKillHUD() {
 function _doUpdateKillHUD() {
   _killHudPending = false;
   if (!player) return;
-  const { wave, killsInWave, bossReady, diffMult, killsSinceBoss } = getWaveState();
+  const { wave, bossReady, diffMult, killsSinceBoss, activeZoneId } = getWaveState();
+  const bossAlreadyBeaten = !!(player.zoneBossBeaten || {})[activeZoneId];
   const display = Math.min(killsSinceBoss, KILLS_PER_WAVE);
   const wl = _hud('kill-wave-label');
   const kl = _hud('kill-count-label');
@@ -389,19 +405,18 @@ function _doUpdateKillHUD() {
   const dl = _hud('kill-diff-label');
   const bb = _hud('btn-boss');
   if (wl) {
-    const bossesBeaten = player.lastBossWave || 0;
-    const autoIdx  = Math.min(bossesBeaten, ZONE_ORDER.length - 1);
-    const selId    = player.selectedExploreZone;
-    const selIdx   = selId ? ZONE_ORDER.indexOf(selId) : -1;
-    const activeId = (selId && (selIdx === -1 || selIdx <= bossesBeaten))
-      ? selId : ZONE_ORDER[autoIdx];
-    const zoneName = ZONES[activeId]?.name || '';
+    const zoneName = ZONES[activeZoneId]?.name || '';
     wl.textContent = bossReady ? '💀' : `🌊 V${wave}`;
-    wl.title = bossReady ? 'Boss disponible !' : `Vague ${wave} — ${zoneName}`;
+    wl.title = bossReady
+      ? `Boss de ${zoneName} disponible !`
+      : bossAlreadyBeaten
+        ? `${zoneName} — Boss déjà vaincu ✓`
+        : `Zone ${zoneName} — ${display}/${KILLS_PER_WAVE}`;
   }
   _updateZonePickerBtn();
-  if (kl) kl.textContent = bossReady ? 'Prêt !' : `${display}/${KILLS_PER_WAVE}`;
-  if (bf) bf.style.width = `${Math.min(100,(display/KILLS_PER_WAVE)*100)}%`;
+  if (kl) kl.textContent = bossReady ? 'Prêt !' : bossAlreadyBeaten ? '✓' : `${display}/${KILLS_PER_WAVE}`;
+  if (bf) bf.style.width = bossAlreadyBeaten ? '100%' : `${Math.min(100,(display/KILLS_PER_WAVE)*100)}%`;
+  if (bf) bf.style.background = bossAlreadyBeaten ? 'linear-gradient(90deg,#2dc653,#06d6a0)' : '';
   if (dl) dl.textContent = `×${diffMult}`;
   if (bb) bb.style.display = bossReady ? 'inline-block' : 'none';
   const brp = _hud('btn-boss-replay');
@@ -498,14 +513,14 @@ function generateBossEnemy() {
 
 function challengeBoss() {
   if (!player) return;
-  const { bossReady, wave } = getWaveState();
+  const { bossReady, wave, activeZoneId } = getWaveState();
   if (!bossReady) { notify('Pas encore prêt !'); return; }
   const boss = generateBossEnemy();
   if (!boss) return;
   const multLabel = boss._statMult ? `×${boss._statMult.toFixed(1)} stats` : '';
   notify(`💀 Boss V.${wave} — Niv.${boss.level} ${multLabel}`);
   setMessage(`💀 Boss Vague ${wave} : ${boss.name} Niv.${boss.level} surgit ! Stats boostées ${multLabel} — +${boss.xp} XP / +${boss.gold}₽`);
-  player._bossBattle = { wave };
+  player._bossBattle = { wave, zoneId: activeZoneId };
   startBattle(boss);
 }
 
@@ -1389,14 +1404,16 @@ function battleAction(action) {
 
     // Boss battle victory
     if (player._bossBattle) {
-      const bossWave = (player._bossBattle && player._bossBattle.wave) ? player._bossBattle.wave : getWaveState().wave;
-      const wasReplay = !!player._bossBattle.isReplay;
+      const bossWave  = player._bossBattle.wave  || getWaveState().wave;
+      const bossZoneId = player._bossBattle.zoneId || null;
+      const wasReplay  = !!player._bossBattle.isReplay;
       player._bossBattle = null;
       if (!wasReplay) {
-        // Boss classique : avancer lastBossWave et réinitialiser le compteur de kills
-        // (empêche l'enchaînement immédiat de plusieurs boss)
+        // Marquer le boss de cette zone comme battu (1 boss par zone)
+        if (!player.zoneBossBeaten) player.zoneBossBeaten = {};
+        if (bossZoneId) player.zoneBossBeaten[bossZoneId] = true;
+        // Avancer lastBossWave pour la difficulté et débloquer la zone suivante
         if (!player.lastBossWave || player.lastBossWave < bossWave) player.lastBossWave = bossWave;
-        // Forcer totalKills à bossWave × 10 pour repartir de 0/10
         player.totalKills = bossWave * KILLS_PER_WAVE;
       }
       updateKillHUD();
@@ -1408,8 +1425,9 @@ function battleAction(action) {
         const bonusGold = Math.round(200 * bossWave * getPrestigeMults().boss);
         player.gold += bonusGold;
         updateHUD();
-        notify(`🏆 Boss Vague ${bossWave} vaincu ! +${bonusGold}₽`);
-        setMessage(`🏆 Boss vaincu ! Vague ${bossWave+1} commence — difficulté +15% ! +${bonusGold}₽`);
+        const zoneName = bossZoneId ? (ZONES[bossZoneId]?.name || bossZoneId) : `Zone ${bossWave}`;
+        notify(`🏆 Boss de ${zoneName} vaincu ! +${bonusGold}₽`);
+        setMessage(`🏆 ${zoneName} conquise ! Zone suivante débloquée — difficulté +15% ! +${bonusGold}₽`);
         updateGlobalStats('boss_kills');
         gainSkillPoints(3 + bossWave);
         checkAchievements();
