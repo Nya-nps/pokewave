@@ -1111,6 +1111,10 @@ let farmAutoTimer = null;
 const FARM_INTERVAL = 2200; // ms entre chaque exploration auto
 
 function toggleFarmAuto() {
+  if (!farmAutoOn && (player?.lastBossWave||0) < 1) {
+    notify('🔒 Farm Auto débloqué après le 1er Boss de vague !');
+    return;
+  }
   farmAutoOn = !farmAutoOn;
   const btn = _hud('btn-farm-auto');
   if (farmAutoOn) {
@@ -1275,11 +1279,12 @@ function battleAction(action) {
     return;
   } else {
     let dmg=0;
+    const _synDmg = applySynergyBonuses();
     if (action==='magic') {
       const atkType = player.mMoveElem || player.type;
       const mult = getEffectiveness(atkType, enemy.type);
       const effInfo = getEffLabel(mult);
-      const base = Math.max(1, player.magic + Math.floor(Math.random()*8) - Math.floor(enemy.def/2));
+      const base = Math.max(1, Math.round(player.magic * _synDmg.magicMult) + Math.floor(Math.random()*8) - Math.floor(enemy.def/2));
       dmg = Math.round(base * mult);
       player.mMoveUses = Math.max(0, (player.mMoveUses||0) - 1);
       if (player.mMoveUses === 0) player.mMoveUses = player.mMoveUsesMax || 4;
@@ -1292,7 +1297,7 @@ function battleAction(action) {
       const atkType = player.moveElem || player.type;
       const mult = getEffectiveness(atkType, enemy.type);
       const effInfo = getEffLabel(mult);
-      const base = Math.max(1, player.atk + Math.floor(Math.random()*6) - enemy.def);
+      const base = Math.max(1, Math.round(player.atk * _synDmg.atkMult) + Math.floor(Math.random()*6) - enemy.def);
       dmg = Math.round(base * mult);
       player.moveUses = Math.max(0, (player.moveUses||0) - 1);
       if (player.moveUses === 0) player.moveUses = player.moveUsesMax || 6;
@@ -1319,8 +1324,9 @@ function battleAction(action) {
     player._winStreak = (player._winStreak||0) + 1;
     const streakBonus = player._bossBattle ? 1.0 : Math.min(2.0, 1 + Math.floor(player._winStreak / 5) * 0.1);
     // XP = niveau ennemi × 20 (indépendant de l'espèce)
-    const xpG         = Math.round(enemyLv * 20 * lvRatio * badgeBonus * getXpMultiplier());
-    const goldG       = Math.round((enemy.gold + Math.floor(Math.random() * Math.max(1, enemy.gold * 0.4))) * getGoldMultiplier() * streakBonus);
+    const _syn        = applySynergyBonuses();
+    const xpG         = Math.round(enemyLv * 20 * lvRatio * badgeBonus * getXpMultiplier() * _syn.xpMult);
+    const goldG       = Math.round((enemy.gold + Math.floor(Math.random() * Math.max(1, enemy.gold * 0.4))) * getGoldMultiplier() * streakBonus * _syn.goldMult);
     // Les replays de boss sont de l'entraînement pur : aucune récompense
     if (!player._bossBattle?.isReplay) { player.xp+=xpG; player.gold+=goldG; }
     if (player._winStreak > 0 && player._winStreak % 5 === 0 && !player._bossBattle)
@@ -1363,6 +1369,14 @@ function battleAction(action) {
 
     // Record kill for wave system
     if (!player._bossBattle) recordKill();
+
+    // Prestige Legendary victory
+    if (player._prestigeLegBattle) {
+      disableBattleButtons(true);
+      handlePrestigeLegVictory(enemy);
+      setTimeout(()=>{ stopAutoBattle(); disableBattleButtons(false); syncActiveFromPlayer(); openCatchMenu(); }, 1800);
+      return;
+    }
 
     // World Boss victory
     if (player._worldBossBattle) {
@@ -1564,8 +1578,8 @@ function throwBall(ballId) {
   disableBattleButtons(true);
   (_hud('battle-log')).textContent = `⚽ Vous lancez une ${item.name} sur ${enemy.name} !`;
 
-  // Calcul taux de capture — basé sur les taux officiels Pokémon
-  const catchRate = getEnemyCatchRate(enemy.id || 0);
+  // Calcul taux de capture — Sanctuaire Prestige utilise un taux boosté
+  const catchRate = enemy._prestigeCatchRate !== undefined ? enemy._prestigeCatchRate : getEnemyCatchRate(enemy.id || 0);
   // Formule officielle simplifiée : facteur PV (1/3 pleine vie → 1 presque KO)
   const hpFactor = (3 * (enemy.maxHp||1) - 2 * Math.max(0,enemy.hp)) / (3 * (enemy.maxHp||1));
   const ballBonus = item.catchRate;
@@ -1610,14 +1624,27 @@ function throwBall(ballId) {
       catchResult.textContent = `✗ ${enemy.name} s'est échappé ! (${Math.round(catchChance*100)}%)`;
       catchResult.style.color='var(--red)';
       // Enemy counterattack after failed catch
-      const eDmg = Math.max(1, enemy.atk+Math.floor(Math.random()*5)-Math.floor(player.def/2));
-      player.hp -= eDmg;
+      const eDmg = enemy._isPrestigeLeg ? 0 : Math.max(1, enemy.atk+Math.floor(Math.random()*5)-Math.floor(player.def/2));
+      if (eDmg > 0) player.hp -= eDmg;
       setTimeout(()=>{
         catchDiv.classList.remove('active');
         disableBattleButtons(false);
         if (player.hp<=0){
           player.hp=Math.floor(player.maxHp*.2);
           showScreen('game'); updateHUD(); setMessage(`${enemy.name} s'est échappé et vous a mis K.O. !`);
+        } else if (enemy._isPrestigeLeg) {
+          // Légendaire prestige : relancer le menu capture tant que le joueur a des balls
+          const hasBalls = Object.values(player.balls||{}).some(v=>v>0);
+          if (hasBalls) {
+            (_hud('battle-log')).textContent = `🏛️ ${enemy.name} résiste ! Réessayez !`;
+            openCatchMenu();
+          } else {
+            notify('Plus de Poké Balls ! Le légendaire s\'échappe...');
+            battleBusy = false;
+            enemy = null;
+            showScreen('game'); updateHUD();
+            setMessage('🏛️ Pas de balls — le légendaire s\'est enfui. Revenez mieux équipé !');
+          }
         } else {
           (_hud('battle-log')).textContent=`${enemy.name} s'échappe et attaque pour ${eDmg} dégâts !`;
           updateBattleHp(); updateHUD();
@@ -1964,8 +1991,29 @@ function renderTeam() {
     }).join('');
   }
 
+  // ── SYNERGIES PANEL ──
+  renderSynergyBadges();
+
   // ── RIGHT PANEL: Box ──
   renderBox();
+}
+
+function renderSynergyBadges() {
+  const el = document.getElementById('team-synergy-panel');
+  if (!el) return;
+  const active = getActiveSynergies();
+  if (active.length === 0) {
+    el.innerHTML = '<div style="font-size:.58rem;color:rgba(255,255,255,.3);text-align:center;padding:.4rem 0">Aucune synergie active</div>';
+    return;
+  }
+  el.innerHTML = active.map(s => `
+    <div title="${s.desc}" style="display:flex;align-items:center;gap:.35rem;background:rgba(255,255,255,.06);border:1px solid ${s.color}55;border-radius:8px;padding:.28rem .5rem;cursor:default">
+      <span style="font-size:.85rem">${s.icon}</span>
+      <div>
+        <div style="font-family:'Press Start 2P',monospace;font-size:.28rem;color:${s.color}">${s.name}</div>
+        <div style="font-size:.5rem;color:rgba(255,255,255,.5)">${s.desc}</div>
+      </div>
+    </div>`).join('');
 }
 
 let _boxDirtyKey = null;
@@ -3911,6 +3959,82 @@ function applyMegaEvo(p) {
 // ══════════════════════════════════════════
 const WORLD_BOSS_COOLDOWN = 5 * 60 * 1000; // 5 minutes
 
+// ══════════════════════════════════════════
+// SANCTUAIRE PRESTIGE — Légendaires exclusifs
+// ══════════════════════════════════════════
+const PRESTIGE_LEGENDARY_POOL = [
+  { minP:1, id:144, name:'Artikodin',  type:'Glace',    gold:5000, catchRate:0.08, shinyChance:0.03 },
+  { minP:1, id:145, name:'Électhor',   type:'Électrik', gold:5200, catchRate:0.08, shinyChance:0.03 },
+  { minP:1, id:146, name:'Sulfura',    type:'Feu',      gold:5100, catchRate:0.08, shinyChance:0.03 },
+  { minP:2, id:149, name:'Dracolosse', type:'Dragon',   gold:6500, catchRate:0.06, shinyChance:0.04 },
+  { minP:2, id:150, name:'Mewtwo',     type:'Psy',      gold:8000, catchRate:0.04, shinyChance:0.03 },
+  { minP:3, id:151, name:'Mew',        type:'Normal',   gold:7000, catchRate:0.05, shinyChance:0.08 },
+  { minP:5, id:249, name:'Lugia',      type:'Psy',      gold:10000, catchRate:0.04, shinyChance:0.05 },
+  { minP:5, id:250, name:'Ho-Oh',      type:'Feu',      gold:10000, catchRate:0.04, shinyChance:0.05 },
+  { minP:8, id:384, name:'Rayquaza',   type:'Dragon',   gold:15000, catchRate:0.03, shinyChance:0.08 },
+  { minP:10,id:483, name:'Dialga',     type:'Acier',    gold:18000, catchRate:0.02, shinyChance:0.10 },
+];
+const PRESTIGE_HUNT_DAILY_LIMIT = 3;
+
+function getAvailablePrestigeLegendaries() {
+  const lv = player?.prestigeLevel || 0;
+  return PRESTIGE_LEGENDARY_POOL.filter(p => p.minP <= lv);
+}
+
+function challengePrestigeLegendary(legendaryId) {
+  if (!player) return;
+  const lv = player.prestigeLevel || 0;
+  if (lv < 1) { notify('⭐ Prestige 1 requis pour accéder au Sanctuaire !'); return; }
+  const today = new Date().toDateString();
+  if (player._prestigeHuntDate !== today) { player._prestigeHuntDate = today; player._prestigeHuntCount = 0; }
+  if ((player._prestigeHuntCount||0) >= PRESTIGE_HUNT_DAILY_LIMIT) {
+    notify(`🏛️ Limite journalière atteinte (${PRESTIGE_HUNT_DAILY_LIMIT} chasses/jour)`);
+    return;
+  }
+  const pool = getAvailablePrestigeLegendaries();
+  const leg = legendaryId ? pool.find(p=>p.id===legendaryId) : pool[Math.floor(Math.random()*pool.length)];
+  if (!leg) { notify('Légendaire introuvable.'); return; }
+  player._prestigeHuntCount = (player._prestigeHuntCount||0) + 1;
+  const scale = 1 + lv * 0.3;
+  const isShiny = Math.random() < leg.shinyChance * (player.prestigeShinyMult||1);
+  const lvBoss = Math.max(60, Math.min(600, (player.level||1) + 40 + lv*10));
+  const boss = {
+    name:`🏛️ ${isShiny?'✨ ':''} ${leg.name}`, id:leg.id, level:lvBoss,
+    hp:   Math.round(player.maxHp * 6 * scale),
+    maxHp:Math.round(player.maxHp * 6 * scale),
+    atk:  Math.round(player.atk * 1.2 * scale),
+    def:  Math.round(player.atk * 0.7 * scale),
+    spd:  100 + lv*5,
+    type: leg.type,
+    xp:   lvBoss * 80,
+    gold: Math.round(leg.gold * (player.prestigeGoldMult||1) * scale),
+    _isPrestigeLeg: true,
+    _prestigeLegData: { ...leg, isShiny },
+    _prestigeCatchRate: Math.round(leg.catchRate * 255),
+    isShiny,
+  };
+  notify(`🏛️ ${leg.name} Niv.${lvBoss} surgit du Sanctuaire !`);
+  setMessage(`🏛️ LÉGENDAIRE PRESTIGE ! ${boss.name} — Chasse ${player._prestigeHuntCount}/${PRESTIGE_HUNT_DAILY_LIMIT} aujourd'hui`);
+  player._prestigeLegBattle = true;
+  startBattle(boss);
+  showScreen('battle');
+}
+
+function handlePrestigeLegVictory(enemy) {
+  player._prestigeLegBattle = false;
+  const d = enemy._prestigeLegData;
+  if (!d) return;
+  player.gold += enemy.gold;
+  const r = [`+${enemy.gold}₽`];
+  // 30% chance d'une Méga Pierre
+  if (Math.random() < 0.30) { player.heldItemBag=player.heldItemBag||{}; player.heldItemBag['mega-stone']=(player.heldItemBag['mega-stone']||0)+1; r.push('💎 Pierre Méga'); }
+  // Capture possible (bouton dans l'UI de combat — on force direct ici via catch menu)
+  player._pendingPrestigeCatch = { ...d, level: enemy.level, isShiny: d.isShiny };
+  updateHUD();
+  notify(`🏛️ Victoire ! ${r.join(' · ')} — Tentez la capture !`);
+  checkAchievements();
+}
+
 const WORLD_BOSS_POOL = [
   { id:150, n:'Mewtwo Primordial', hp:5000, atk:180, def:80,  spd:150, type:'Psy',      gold:8000 },
   { id:146, n:'Sulfura Ardent',    hp:5500, atk:190, def:70,  spd:140, type:'Feu',      gold:8500 },
@@ -4303,7 +4427,7 @@ function hasPrestigeUpgrade(id) { return (player?.prestigeUpgrades||[]).includes
 // ══════════════════════════════════════════
 // ÉLEVAGE / BREEDING
 // ══════════════════════════════════════════
-const BREEDING_TIME = 30000; // 30 secondes
+const BREEDING_TIME = 300000; // 5 minutes
 let breedingSlots = [null, null]; // up to 2 eggs incubating
 
 function startBreeding(rosterIdx1, rosterIdx2) {
@@ -4419,12 +4543,22 @@ function updateEventHUD() {
 // SYNERGIES D'ÉQUIPE
 // ══════════════════════════════════════════
 const TEAM_SYNERGIES = [
-  { id:'mono-fire',  name:'Brigade de Feu',   desc:'+25% ATK si 3+ Feu dans équipe',     check:r=>r.filter(p=>p.type==='Feu').length>=3,     bonus:{atk:1.25} },
-  { id:'mono-water', name:'Torrent',           desc:'+25% DEF si 3+ Eau dans équipe',     check:r=>r.filter(p=>p.type==='Eau').length>=3,     bonus:{def:1.25} },
-  { id:'all-diff',   name:'Équipe Diverse',    desc:'+15% tout si 6 types différents',    check:r=>new Set(r.map(p=>p.type)).size>=6,          bonus:{all:1.15} },
-  { id:'all-same',   name:'Meute Unifiée',     desc:'+40% ATK si tous même type',         check:r=>new Set(r.map(p=>p.type)).size===1&&r.length>=3, bonus:{atk:1.40} },
-  { id:'dragon-duo', name:'Duo Dragon',        desc:'+50% ATK Spé si 2+ Dragons',         check:r=>r.filter(p=>p.type==='Dragon').length>=2,   bonus:{spAtk:1.50} },
-  { id:'legendary',  name:'Équipe Légendaire', desc:'+30% tout si Pokémon Légendaire',    check:r=>r.some(p=>[144,145,146,149,150,151].includes(p.spriteId||p.currentSpriteId)), bonus:{all:1.30} },
+  // Synergies originales
+  { id:'mono-fire',      name:'Brigade de Feu',    desc:'+25% ATK si 3+ Feu',              check:r=>r.filter(p=>p.type==='Feu').length>=3,                                    bonus:{atk:1.25},        icon:'🔥', color:'#ff6030' },
+  { id:'mono-water',     name:'Torrent',            desc:'+25% DEF si 3+ Eau',              check:r=>r.filter(p=>p.type==='Eau').length>=3,                                    bonus:{def:1.25},        icon:'💧', color:'#4488ff' },
+  { id:'all-diff',       name:'Équipe Diverse',     desc:'+15% tout si 6 types différents', check:r=>new Set(r.map(p=>p.type)).size>=6,                                        bonus:{all:1.15},        icon:'🌈', color:'#ff88ff' },
+  { id:'all-same',       name:'Meute Unifiée',      desc:'+40% ATK si tous même type',      check:r=>new Set(r.map(p=>p.type)).size===1&&r.length>=3,                          bonus:{atk:1.40},        icon:'🤝', color:'#ffcc00' },
+  { id:'dragon-duo',     name:'Duo Dragon',         desc:'+50% ATK Spé si 2+ Dragons',      check:r=>r.filter(p=>p.type==='Dragon').length>=2,                                 bonus:{magic:1.50},      icon:'🐉', color:'#7038f8' },
+  { id:'legendary',      name:'Équipe Légendaire',  desc:'+30% tout si Pokémon Légendaire', check:r=>r.some(p=>[144,145,146,149,150,151].includes(p.spriteId||p.currentSpriteId)), bonus:{all:1.30},   icon:'⭐', color:'#ffd700' },
+  // Nouvelles synergies
+  { id:'ghost-trio',     name:'Trio Fantôme',       desc:'+30% VIT si 3+ Spectre',          check:r=>r.filter(p=>p.type==='Spectre').length>=3,                                bonus:{spd:1.30},        icon:'👻', color:'#7766bb' },
+  { id:'steel-fort',     name:'Forteresse Acier',   desc:'+35% DEF si 3+ Acier',            check:r=>r.filter(p=>p.type==='Acier').length>=3,                                  bonus:{def:1.35},        icon:'🛡️', color:'#aaaacc' },
+  { id:'psychic-duo',    name:'Duo Psychique',       desc:'+35% ATK Spé si 2+ Psy',         check:r=>r.filter(p=>p.type==='Psy').length>=2,                                    bonus:{magic:1.35},      icon:'🔮', color:'#ff44aa' },
+  { id:'ice-cold',       name:'Glaciation',          desc:'+20% ATK si 3+ Glace',            check:r=>r.filter(p=>p.type==='Glace').length>=3,                                  bonus:{atk:1.20},        icon:'❄️', color:'#88ccff' },
+  { id:'fighting-break', name:'Brise-Bouclier',      desc:'+25% ATK si 2+ Combat',           check:r=>r.filter(p=>p.type==='Combat').length>=2,                                 bonus:{atk:1.25},        icon:'🥊', color:'#994422' },
+  { id:'poison-cloud',   name:'Nuage Toxique',       desc:'+20% tout si 2+ Poison',          check:r=>r.filter(p=>p.type==='Poison').length>=2,                                 bonus:{all:1.20},        icon:'☠️', color:'#aa44bb' },
+  { id:'full-kanto',     name:'Équipe Kanto',        desc:'+20% XP si équipe 100% Gen1',     check:r=>r.length>=4&&r.every(p=>(p.spriteId||p.currentSpriteId||0)<=151),        bonus:{xp:1.20},         icon:'🎮', color:'#ff4444' },
+  { id:'shiny-team',     name:'Équipe Brillante',    desc:'+50% Or si 3+ Shiny',             check:r=>r.filter(p=>p.isShiny).length>=3,                                         bonus:{gold:1.50},       icon:'✨', color:'#ffd700' },
 ];
 
 function getActiveSynergies() {
@@ -4434,13 +4568,18 @@ function getActiveSynergies() {
 
 function applySynergyBonuses() {
   const active = getActiveSynergies();
-  if (active.length === 0) return 1;
-  let atkMult = 1, defMult = 1;
+  if (active.length === 0) return { atkMult:1, defMult:1, magicMult:1, spdMult:1, goldMult:1, xpMult:1 };
+  let atkMult=1, defMult=1, magicMult=1, spdMult=1, goldMult=1, xpMult=1;
   active.forEach(s => {
-    if (s.bonus.atk)  atkMult *= s.bonus.atk;
-    if (s.bonus.all)  { atkMult *= s.bonus.all; defMult *= s.bonus.all; }
+    if (s.bonus.atk)   atkMult   *= s.bonus.atk;
+    if (s.bonus.def)   defMult   *= s.bonus.def;
+    if (s.bonus.magic) magicMult *= s.bonus.magic;
+    if (s.bonus.spd)   spdMult   *= s.bonus.spd;
+    if (s.bonus.gold)  goldMult  *= s.bonus.gold;
+    if (s.bonus.xp)    xpMult    *= s.bonus.xp;
+    if (s.bonus.all)   { atkMult*=s.bonus.all; defMult*=s.bonus.all; magicMult*=s.bonus.all; goldMult*=s.bonus.all; xpMult*=s.bonus.all; }
   });
-  return { atkMult, defMult };
+  return { atkMult, defMult, magicMult, spdMult, goldMult, xpMult };
 }
 
 // ══════════════════════════════════════════
@@ -4527,8 +4666,38 @@ function renderPrestigeScreen() {
     <div style="font-family:'Press Start 2P',monospace;font-size:.5rem;color:#ffd700;margin-bottom:.5rem">Niveau Prestige : ${pl}</div>
     <div style="font-size:.68rem;color:rgba(255,255,255,.65);line-height:1.7;margin-bottom:.5rem">Le Prestige remet le jeu à zéro en échange de bonus <strong>permanents</strong>. Pokédex et Succès conservés.<br>Prochaine récompense : <span style="color:#ffd700">${next?.bonus||'Max atteint'}</span></div>
     <div style="font-size:.65rem;color:${can?'#2dc653':'rgba(255,100,100,.8)'}">
-      ${can?'✅ Conditions remplies !':`🔒 Requis : Boss Vague 20 (actuel: ${player.lastBossWave||0}) et Niveau 50 (actuel: ${player.level||1})`}</div>
+      ${can?'✅ Conditions remplies !':`🔒 Requis : Boss Vague 20 (actuel: ${player.lastBossWave||0}) et Niveau 100 (actuel: ${player.level||1})`}</div>
     ${can?`<button class="btn yellow" onclick="if(confirm('Prestige ? Tout sauf Pokédex/Succès sera réinitialisé.'))doPrestige()" style="margin-top:.8rem;font-size:.5rem">⭐ ACTIVER LE PRESTIGE</button>`:''}`;
+
+  // ── Sanctuaire Prestige ──
+  const sanctuaryEl = document.getElementById('prestige-sanctuary');
+  if (sanctuaryEl) {
+    if (pl < 1) {
+      sanctuaryEl.innerHTML = `<div style="font-family:'Press Start 2P',monospace;font-size:.4rem;color:rgba(255,255,255,.3);text-align:center;padding:1rem">🔒 Débloqué après Prestige 1</div>`;
+    } else {
+      const pool = getAvailablePrestigeLegendaries();
+      const today = new Date().toDateString();
+      const huntsLeft = PRESTIGE_HUNT_DAILY_LIMIT - (player._prestigeHuntDate===today ? (player._prestigeHuntCount||0) : 0);
+      const typeColors={Glace:'#88ccff',Électrik:'#ffcc00',Feu:'#ff6030',Dragon:'#7038f8',Psy:'#ff44aa',Normal:'#9999aa',Acier:'#aaaacc'};
+      const cards = pool.map(leg => {
+        const tc = typeColors[leg.type]||'#888';
+        const clickFn = huntsLeft > 0 ? 'challengePrestigeLegendary(' + leg.id + ')' : "notify('Limite atteinte !')";
+        const shinyBadge = leg.shinyChance >= 0.05 ? '<div style="font-size:.45rem;color:#ffd700">✨ Shiny ' + Math.round(leg.shinyChance*100) + '%</div>' : '';
+        return '<div onclick="' + clickFn + '" style="background:rgba(0,0,0,.4);border:2px solid ' + tc + '44;border-radius:10px;padding:.6rem;text-align:center;cursor:' + (huntsLeft>0?'pointer':'not-allowed') + ';transition:all .15s;' + (huntsLeft>0?'':'opacity:.5') + '">'
+          + '<img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/' + leg.id + '.png" style="width:48px;height:48px;image-rendering:pixelated" onerror="this.style.display=\'none\'"/>'
+          + '<div style="font-family:\'Press Start 2P\',monospace;font-size:.3rem;color:' + tc + ';margin-top:.2rem">' + leg.name + '</div>'
+          + '<div style="font-size:.5rem;color:rgba(255,255,255,.4);margin-top:.1rem">' + leg.type + ' · P' + leg.minP + '+</div>'
+          + '<div style="font-family:\'Press Start 2P\',monospace;font-size:.28rem;color:#ffd700;margin-top:.2rem">+' + leg.gold + '₽</div>'
+          + shinyBadge + '</div>';
+      }).join('');
+      sanctuaryEl.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.7rem">
+          <div style="font-family:'Press Start 2P',monospace;font-size:.42rem;color:#c77dff">🏛️ Sanctuaire — ${pool.length} Légendaires disponibles</div>
+          <div style="font-family:'Press Start 2P',monospace;font-size:.38rem;color:rgba(255,255,255,.5)">🎯 ${huntsLeft}/${PRESTIGE_HUNT_DAILY_LIMIT} chasses aujourd'hui</div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:.5rem">${cards}</div>`;
+    }
+  }
   renderPrestigeShop();
 }
 
@@ -4975,6 +5144,7 @@ function updateGlobalStats(type, amount=1) {
   if (!player.stats) player.stats = {};
   player.stats[type] = (player.stats[type]||0) + amount;
   updateDailyProgress(type, amount);
+  updateSeasonProgress(type, amount);
   if ((player.stats.kills||0) % 10 === 0 || type !== 'kills') checkAchievements();
 }
 // Version batch : évite 3× updateDailyProgress/frame pour un seul kill
@@ -4984,8 +5154,145 @@ function updateGlobalStatsBatch(map) {
   Object.entries(map).forEach(([type, amount]) => {
     player.stats[type] = (player.stats[type]||0) + amount;
     updateDailyProgress(type, amount);
+    updateSeasonProgress(type, amount);
   });
   if ((player.stats.kills||0) % 10 === 0) checkAchievements();
+}
+
+// ══════════════════════════════════════════
+// PASS DE SAISON — reset hebdomadaire
+// ══════════════════════════════════════════
+const SEASON_PASS = {
+  tracks: [
+    {
+      id:'combat', name:'Combattant', icon:'⚔️', color:'#e63946',
+      milestones:[
+        { pts:20,  label:'20 combats',  reward:{gold:500} },
+        { pts:60,  label:'60 combats',  reward:{gold:1200, candy:1} },
+        { pts:120, label:'120 combats', reward:{tokens:2} },
+        { pts:250, label:'250 combats', reward:{gold:4000, candy:3} },
+        { pts:500, label:'500 combats', reward:{gold:10000, tokens:5}, ultimate:true },
+      ],
+      pointTypes:['kills','boss_kills','battles','world_boss'],
+    },
+    {
+      id:'explorer', name:'Explorateur', icon:'🗺️', color:'#4cc9f0',
+      milestones:[
+        { pts:15,  label:'15 explorations',  reward:{gold:400} },
+        { pts:40,  label:'40 explorations',  reward:{gold:900, candy:1} },
+        { pts:80,  label:'80 explorations',  reward:{tokens:2} },
+        { pts:150, label:'150 explorations', reward:{gold:2800, candy:2} },
+        { pts:300, label:'300 explorations', reward:{gold:7000, tokens:4}, ultimate:true },
+      ],
+      pointTypes:['explores','rests','level_ups'],
+    },
+    {
+      id:'collector', name:'Collecteur', icon:'📦', color:'#06d6a0',
+      milestones:[
+        { pts:5,   label:'5 captures',   reward:{gold:600} },
+        { pts:15,  label:'15 captures',  reward:{gold:1400, candy:2} },
+        { pts:30,  label:'30 captures',  reward:{tokens:3} },
+        { pts:60,  label:'60 captures',  reward:{gold:4500, candy:4} },
+        { pts:100, label:'100 captures', reward:{gold:12000, tokens:6}, ultimate:true },
+      ],
+      pointTypes:['catches','earn_gold'],
+    },
+  ],
+};
+
+function _seasonKey() {
+  const d = new Date();
+  const start = new Date(d.getFullYear(), 0, 1);
+  const week = Math.ceil(((d - start) / 86400000 + start.getDay() + 1) / 7);
+  return `${d.getFullYear()}-W${week}`;
+}
+
+function initSeasonPass() {
+  if (!player) return;
+  const key = _seasonKey();
+  if (player.seasonKey !== key) {
+    player.seasonKey = key;
+    player.seasonProgress = {};
+    player.seasonClaimed  = {};
+    notify('🎫 Nouveau Pass Saisonnier disponible !');
+  }
+}
+
+function updateSeasonProgress(type, amount=1) {
+  if (!player) return;
+  initSeasonPass();
+  SEASON_PASS.tracks.forEach(t => {
+    if (t.pointTypes.includes(type)) {
+      if (!player.seasonProgress) player.seasonProgress = {};
+      player.seasonProgress[t.id] = (player.seasonProgress[t.id]||0) + amount;
+    }
+  });
+}
+
+function claimSeasonReward(trackId, milestoneIdx) {
+  if (!player) return;
+  initSeasonPass();
+  const track = SEASON_PASS.tracks.find(t=>t.id===trackId);
+  if (!track) return;
+  const ms = track.milestones[milestoneIdx];
+  if (!ms) return;
+  const pts = player.seasonProgress?.[trackId]||0;
+  if (pts < ms.pts) { notify('⛔ Palier pas encore atteint !'); return; }
+  const key = `${trackId}-${milestoneIdx}`;
+  if (player.seasonClaimed?.[key]) { notify('✅ Déjà réclamé !'); return; }
+  if (!player.seasonClaimed) player.seasonClaimed = {};
+  player.seasonClaimed[key] = true;
+  const r = ms.reward;
+  if (r.gold)   player.gold += r.gold;
+  if (r.candy)  { player.heldItemBag=player.heldItemBag||{}; player.heldItemBag['super-bonbon']=(player.heldItemBag['super-bonbon']||0)+r.candy; }
+  if (r.tokens) player.talentTokens=(player.talentTokens||0)+r.tokens;
+  updateHUD();
+  const parts=[r.gold?`+${r.gold}₽`:'',r.candy?`+${r.candy}🍬`:'',r.tokens?`+${r.tokens}🪙`:''].filter(Boolean).join(' ');
+  notify(`🎫 Pass Saisonnier : ${parts} !`);
+  renderSeasonPass();
+}
+
+function renderSeasonPass() {
+  const el = document.getElementById('season-pass-content');
+  if (!el || !player) return;
+  initSeasonPass();
+  const typeColors={gold:'#ffd60a',candy:'#ff88cc',tokens:'#c77dff'};
+  el.innerHTML = SEASON_PASS.tracks.map(track => {
+    const pts = player.seasonProgress?.[track.id]||0;
+    const maxPts = track.milestones[track.milestones.length-1].pts;
+    const pct = Math.min(100, Math.round(pts/maxPts*100));
+    const milestonesHTML = track.milestones.map((ms, i) => {
+      const reached = pts >= ms.pts;
+      const claimed = player.seasonClaimed?.[`${track.id}-${i}`];
+      const canClaim = reached && !claimed;
+      const rewardStr = Object.entries(ms.reward).map(([k,v])=>`<span style="color:${typeColors[k]||'#fff'};font-size:.55rem">${k==='gold'?`+${v}₽`:k==='candy'?`+${v}🍬`:`+${v}🪙`}</span>`).join(' ');
+      return `<div style="display:flex;flex-direction:column;align-items:center;gap:.2rem;min-width:80px">
+        <div style="font-family:'Press Start 2P',monospace;font-size:.3rem;color:rgba(255,255,255,.4)">${ms.label}</div>
+        <button onclick="claimSeasonReward('${track.id}',${i})" ${!canClaim?'disabled':''}
+          style="width:44px;height:44px;border-radius:50%;border:2px solid ${claimed?'#2dc653':reached?track.color:'rgba(255,255,255,.15)'};
+          background:${claimed?'rgba(45,198,83,.2)':reached?`${track.color}22`:'rgba(0,0,0,.4)'};
+          cursor:${canClaim?'pointer':'default'};font-size:1rem;transition:all .15s;
+          ${canClaim?`box-shadow:0 0 10px ${track.color}66`:''}">
+          ${claimed?'✅':reached?'🎁':'🔒'}
+        </button>
+        <div style="text-align:center">${rewardStr}</div>
+        ${ms.ultimate?`<div style="font-family:'Press Start 2P',monospace;font-size:.25rem;color:${track.color};margin-top:.1rem">★ MAX</div>`:''}
+      </div>`;
+    }).join('<div style="flex:1;height:2px;background:rgba(255,255,255,.1);margin-top:22px;align-self:center"></div>');
+    return `<div style="background:rgba(255,255,255,.03);border:2px solid ${track.color}44;border-radius:14px;padding:1rem 1.2rem;display:flex;flex-direction:column;gap:.7rem">
+      <div style="display:flex;align-items:center;gap:.6rem;justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:.5rem">
+          <span style="font-size:1.4rem">${track.icon}</span>
+          <div style="font-family:'Press Start 2P',monospace;font-size:.5rem;color:${track.color}">${track.name}</div>
+        </div>
+        <div style="font-family:'Press Start 2P',monospace;font-size:.38rem;color:rgba(255,255,255,.5)">${pts} / ${maxPts} pts</div>
+      </div>
+      <div style="height:8px;background:rgba(0,0,0,.4);border-radius:999px;overflow:hidden;border:1px solid rgba(255,255,255,.1)">
+        <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,${track.color},${track.color}88);border-radius:999px;transition:width .4s"></div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:.3rem">${milestonesHTML}</div>
+    </div>`;
+  }).join('');
 }
 
 // ══════════════════════════════════════════

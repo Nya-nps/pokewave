@@ -69,6 +69,13 @@ function showScreen(id) {
     case 'trial':        document.getElementById('screen-trial').classList.add('active');                                            break;
     case 'saves':        document.getElementById('screen-saves').classList.add('active');      renderSaveManager();                  break;
     case 'wiki':         document.getElementById('screen-wiki').classList.add('active');       renderWiki();                         break;
+    case 'season': {
+      document.getElementById('screen-season').classList.add('active');
+      const wl = document.getElementById('season-week-label');
+      if (wl) { const d=new Date(); wl.textContent=`Semaine du ${d.toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}`; }
+      renderSeasonPass();
+      break;
+    }
   }
 
   currentScreen = id;

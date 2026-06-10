@@ -1,5 +1,5 @@
 # MAP_QUICKREF — Réponses rapides "Où est X ?"
-Dernière mise à jour : 2026-06-09 (refactor Phase 1 — constants.js + state.js extraits)
+Dernière mise à jour : 2026-06-10 (audit + 3 nouvelles features : synergies actives, season pass, prestige sanctuary)
 
 ## Fichiers modules créés
 | Fichier | Contenu | Lignes |
@@ -55,7 +55,10 @@ Dernière mise à jour : 2026-06-09 (refactor Phase 1 — constants.js + state.j
 | Où est la capture ? | `game.js:2666-2779` (openCatchMenu, throwBall) |
 | Où est l'exploration ? | `game.js:1792-1845` (doExplore) — patchée par mechanics.js |
 | Où sont les événements spéciaux ? | `game.js:5481-5526` (SPECIAL_EVENTS, triggerRandomEvent) |
-| Où sont les synergies d'équipe ? | `game.js:5527-5554` (TEAM_SYNERGIES, getActiveSynergies) |
+| Où sont les synergies d'équipe ? | `game.js:5527-5554` (TEAM_SYNERGIES × 14 entrées, getActiveSynergies, applySynergyBonuses, renderSynergyBadges) |
+| Où est le Season Pass ? | `game.js` (après updateGlobalStatsBatch) — SEASON_PASS, initSeasonPass, updateSeasonProgress, claimSeasonReward, renderSeasonPass |
+| Où est le Sanctuaire Prestige ? | `game.js` (avant WORLD_BOSS_POOL) — PRESTIGE_LEGENDARY_POOL, challengePrestigeLegendary, handlePrestigeLegVictory |
+| Où est l'écran Season Pass ? | `index.html` (#screen-season) + `state.js` (case 'season') |
 | Où est le rang entraîneur ? | `game.js:5358-5392` (TRAINER_RANKS, getTrainerRank) |
 | Où est l'XP entraîneur ? | `game.js:6092-6133` (TRAINER_XP_PER_LEVEL, addTrainerXP) |
 | Où sont les items tenus ? | `game.js:6134-6201` (HELD_ITEMS, assignItemToPokemon) |
@@ -77,7 +80,7 @@ Dernière mise à jour : 2026-06-09 (refactor Phase 1 — constants.js + state.j
 | Modifier les stats des boss | `game.js` (_bossFixedLevel + _bossStatMult) |
 | Ajouter une capacité (ability) | `mechanics.js:80` (ABILITIES_DB) |
 | Modifier la formule XP | `game.js:2139` (xpForLevel) |
-| Ajouter un écran | `index.html` (div) + `game.js:1102` (showScreen) |
+| Ajouter un écran | `index.html` (div) + `js/state.js` (showScreen switch/case) |
 | Modifier les taux de catch | `js/constants.js` (POKE_CATCH_RATES) |
 | Ajouter un move | `js/constants.js` (MOVES_DB) |
 | Modifier le coût d'une compétence | `game.js:5302` (SKILL_TREE) |
@@ -99,7 +102,7 @@ Dernière mise à jour : 2026-06-09 (refactor Phase 1 — constants.js + state.j
 | `KILLS_PER_WAVE` | 10 | `game.js:1579` |
 | `REST_COOLDOWN` | 30 000 ms | `game.js:1846` |
 | `FARM_INTERVAL` | 2 200 ms | `game.js:2269` |
-| `BREEDING_TIME` | 30 000 ms | `game.js:5412` |
+| `BREEDING_TIME` | 300 000 ms (5 min) | `game.js:5412` |
 | `WORLD_BOSS_COOLDOWN` | 300 000 ms (5 min) | `game.js:5029` |
 | `SAVE_VERSION` | '2.1' | `game.js:3476` |
 | `SAVE_KEY` | 'pokemonRPG_save_v2' | `game.js:3477` |
