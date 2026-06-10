@@ -588,6 +588,19 @@ window.battleAction = function(action) {
         else { setMessage(`🏆 Étage ${player.tourFloor} complété !`); notify(`🏆 Étage ${player.tourFloor} ✓`); showTourMode(); }
       }, 1800); return;
     }
+    if (player._trialBattle) {
+      const trialTp = player._trialBattleTp || 20;
+      player._trialBattle = false;
+      player._trialBattleTp = 0;
+      player.trialPoints = (player.trialPoints||0) + trialTp;
+      player.trialWins   = (player.trialWins||0) + 1;
+      setTimeout(()=>{
+        stopAutoBattle(); disableBattleButtons(false); syncActiveFromPlayer();
+        notify(`⚡ Victoire Trial ! +${trialTp} PT — Total : ${player.trialPoints} PT`);
+        saveGame(); showScreen('trial'); updateHUD();
+      }, 1800);
+      return;
+    }
     setTimeout(()=>{ stopAutoBattle(); disableBattleButtons(false); syncActiveFromPlayer(); showScreen('game'); updateHUD(); setMessage(`${player.currentName} a mis K.O. le ${enemy.name} !`); }, 1800);
     return;
   }
@@ -759,6 +772,11 @@ window.setBattleTurn = function(turn) {
             } else if (player._tourBattle) {
               player._tourBattle = false; tourState = null; player.tourFloor = 0;
               showScreen('game'); updateHUD(); notify('💀 Défaite dans la Tour !');
+            } else if (player._trialBattle) {
+              player._trialBattle = false; player._trialBattleTp = 0;
+              showScreen('game'); updateHUD();
+              notify('💀 Défaite en Trial — aucun PT gagné.');
+              setMessage('💀 Votre Pokémon a été vaincu en Trial. Réessayez !');
             } else if (player._gymBattle) {
               player._gymBattle = null;
               showScreen('game'); updateHUD(); notify('💀 Défaite au Gym !');

@@ -5674,14 +5674,14 @@ function _refreshTrialPool() {
 
 // Trial Shop catalog — prix calibrés sur les nouveaux PT (Tier5 = 300 PT/victoire)
 const TRIAL_SHOP = [
-  {id:'orb-bird',    name:'Orbe Oiseau',    legendaries:'Artikodin · Électhor · Sulfura',    cost:160,  img:ITEM_DISPLAY['orb-bird']?.img},
-  {id:'orb-beast',   name:'Orbe Bête',      legendaries:'Raikou · Entei · Suicune',          cost:160,  img:ITEM_DISPLAY['orb-beast']?.img},
-  {id:'orb-golem',   name:'Orbe Golem',     legendaries:'Regirock · Regice · Registeel',     cost:160,  img:ITEM_DISPLAY['orb-golem']?.img},
-  {id:'orb-dragon',  name:'Orbe Dragon',    legendaries:'Latias · Latios · Rayquaza',        cost:280,  img:ITEM_DISPLAY['orb-dragon']?.img},
-  {id:'orb-space',   name:'Orbe Espace',    legendaries:'Dialga · Palkia · Giratina',        cost:380,  img:ITEM_DISPLAY['orb-space']?.img},
-  {id:'orb-ancient', name:'Orbe Ancestral', legendaries:'Solgaleo · Lunala · Necrozma',      cost:600,  img:ITEM_DISPLAY['orb-ancient']?.img},
-  {id:'orb-mega',    name:'Orbe Méga',      legendaries:'Mewtwo · Kyogre · Groudon',         cost:900,  img:ITEM_DISPLAY['orb-mega']?.img},
-  {id:'orb-ultra',   name:'Orbe Ultime',    legendaries:'Zacian · Zamazenta · Koraidon...',   cost:1500, img:ITEM_DISPLAY['orb-ultra']?.img},
+  {id:'orb-bird',    name:'Orbe Oiseau',    legendaries:'Artikodin · Électhor · Sulfura',    cost:1600,  img:ITEM_DISPLAY['orb-bird']?.img},
+  {id:'orb-beast',   name:'Orbe Bête',      legendaries:'Raikou · Entei · Suicune',          cost:1600,  img:ITEM_DISPLAY['orb-beast']?.img},
+  {id:'orb-golem',   name:'Orbe Golem',     legendaries:'Regirock · Regice · Registeel',     cost:1600,  img:ITEM_DISPLAY['orb-golem']?.img},
+  {id:'orb-dragon',  name:'Orbe Dragon',    legendaries:'Latias · Latios · Rayquaza',        cost:2800,  img:ITEM_DISPLAY['orb-dragon']?.img},
+  {id:'orb-space',   name:'Orbe Espace',    legendaries:'Dialga · Palkia · Giratina',        cost:3800,  img:ITEM_DISPLAY['orb-space']?.img},
+  {id:'orb-ancient', name:'Orbe Ancestral', legendaries:'Solgaleo · Lunala · Necrozma',      cost:6000,  img:ITEM_DISPLAY['orb-ancient']?.img},
+  {id:'orb-mega',    name:'Orbe Méga',      legendaries:'Mewtwo · Kyogre · Groudon',         cost:9000,  img:ITEM_DISPLAY['orb-mega']?.img},
+  {id:'orb-ultra',   name:'Orbe Ultime',    legendaries:'Zacian · Zamazenta · Koraidon...',   cost:15000, img:ITEM_DISPLAY['orb-ultra']?.img},
   {id:'shiny-gem',   name:'Gemme Éclat',    legendaries:'Rend un Pokémon Shiny (+15% stats)', cost:2500, img:ITEM_DISPLAY['shiny-gem']?.img},
 ];
 
