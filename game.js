@@ -2310,6 +2310,58 @@ function saveGame() {
   notify('Partie sauvegardée !');
   setMessage('💾 Votre aventure a été sauvegardée.');
 }
+// ══════════════════════════════════════════
+// SANITIZE LEVEL CAP — détecte et corrige
+// tout Pokémon dont le niveau dépasse 500
+// (manipulation directe de la sauvegarde)
+// ══════════════════════════════════════════
+const _LEVEL_CAP = 500;
+
+function sanitizeLevelCap() {
+  if (!player) return;
+  const _allPoke = (typeof ALL_POKEMON !== 'undefined') ? ALL_POKEMON : GEN1;
+  const _allSpd  = (typeof ALL_SPD     !== 'undefined') ? ALL_SPD     : GEN1_SPD;
+  const _pokeMap = (typeof ALL_POKEMON_MAP !== 'undefined') ? ALL_POKEMON_MAP : null;
+
+  const _fixPoke = (p) => {
+    if (!p || (p.level || 0) <= _LEVEL_CAP) return false;
+    const sid   = p.currentSpriteId || p.spriteId || 0;
+    const pData = _pokeMap ? _pokeMap.get(sid) : _allPoke.find(x => x.id === sid);
+    const scale = 1 + _LEVEL_CAP * 0.12; // 61 — équivaut à une capture au niveau cap
+    p.maxHp  = Math.round((pData?.hp  || 45) * scale);
+    p.hp     = p.maxHp;
+    p.atk    = Math.round((pData?.atk || 10) * scale);
+    p.def    = Math.round((pData?.def ||  5) * scale);
+    p.magic  = Math.round((pData?.atk ||  8) * scale * 0.8);
+    p.spd    = Math.round((_allSpd[sid] || pData?.spd || 50) * (1 + _LEVEL_CAP * 0.02));
+    if (p.spAtk !== undefined) p.spAtk = Math.round((pData?.atk || 8) * scale * 0.9);
+    if (p.spDef !== undefined) p.spDef = Math.round((pData?.def || 5) * scale * 0.9);
+    // MP : 50 de base + 8 par niveau (identique à checkRosterLevelUp)
+    p.maxMp  = 50 + (_LEVEL_CAP - 1) * 8;
+    p.mp     = p.maxMp;
+    p.level  = _LEVEL_CAP;
+    p.xp     = 0;
+    p.xpNext = xpForLevel(_LEVEL_CAP);
+    return true;
+  };
+
+  let fixed = 0;
+  (player.roster || []).forEach(p => { if (_fixPoke(p)) fixed++; });
+  (player.box    || []).forEach(p => { if (_fixPoke(p)) fixed++; });
+
+  // Filet de sécurité : corrige aussi l'objet player directement
+  if ((player.level || 0) > _LEVEL_CAP) {
+    _fixPoke(player);
+    fixed++;
+  }
+
+  if (fixed > 0) {
+    console.warn(`[PokéWave] ${fixed} Pokémon hors limite remis au Niv.${_LEVEL_CAP}`);
+    notify(`⚠️ ${fixed} Pokémon hors limite remis au Niv.${_LEVEL_CAP} !`);
+    setMessage(`⚠️ Limite de niveau : ${fixed} Pokémon au-delà du Niv.${_LEVEL_CAP} ont été réinitialisés avec les stats correspondantes.`);
+  }
+}
+
 function loadGame() {
   const _raw = localStorage.getItem(SAVE_KEY);
   if (!_raw){ notify('Aucune sauvegarde !'); return; }
@@ -2345,6 +2397,8 @@ function loadGame() {
   if (!player.stats)            player.stats            = {};
   if (!player.achievements)     player.achievements     = [];
   player._trialBattle = false; player._trialBattleTp = 0;
+  // Plafond de niveau — remet à 500 tout Pokémon modifié manuellement
+  sanitizeLevelCap();
   // Recalibrer xpNext sur tous les Pokémon en cas d'ancienne courbe
   const _recalibrate = (p) => { if (p && p.level) { p.xpNext = xpForLevel(p.level); p.xp = Math.min(p.xp||0, p.xpNext - 1); } };
   (player.roster||[]).forEach(_recalibrate);
