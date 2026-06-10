@@ -741,6 +741,7 @@ window.setBattleTurn = function(turn) {
             if (autoBattleOn) {
               const switched = switchToRosterPoke(aliveIdx, true);
               if (switched) {
+                refreshBattlePlayerUI();
                 battleBusy = false; // libère le verrou bloqué par la mort en contre-attaque
                 document.getElementById('battle-log').textContent = `💀 K.O. ! 🤖 Auto-switch → ${player.currentName} !`;
                 setBattleTurn('player');

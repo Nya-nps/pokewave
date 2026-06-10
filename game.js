@@ -1027,6 +1027,7 @@ function setBattleTurn(turn) {
             if (autoBattleOn) {
               const switched = switchToRosterPoke(aliveIdx, true);
               if (switched) {
+                refreshBattlePlayerUI();
                 battleBusy = false; // libère le verrou bloqué par la mort en contre-attaque
                 (_hud('battle-log')).textContent = `💀 K.O. ! 🤖 Auto-switch → ${player.currentName} !`;
                 setBattleTurn('player');
@@ -3482,6 +3483,32 @@ document.getElementById('map-canvas').addEventListener('mouseleave',()=>{
 // ══════════════════════════════════════════
 let switchForcedAfterKO = false;
 
+function refreshBattlePlayerUI() {
+  const activePoke = getActivePoke();
+  document.getElementById('player-battle-img').src = activePoke?.isShiny ? SPRITE_SHINY(player.currentSpriteId) : SPRITE_FRONT(player.currentSpriteId);
+  const shinyLabel = activePoke?.isShiny ? ' ✨' : '';
+  document.getElementById('b-player-name').textContent = player.currentName + shinyLabel;
+  document.getElementById('b-player-level').textContent = 'Niv.'+player.level;
+  const pSpdEl = document.getElementById('b-player-spd');
+  if (pSpdEl) pSpdEl.textContent = '⚡'+player.spd;
+  const pTypeBadge = document.getElementById('b-player-type');
+  const dual = player.dualType || getPokeType(player.currentSpriteId, player.type);
+  if (dual.includes('/')) {
+    const [t1,t2] = dual.split('/');
+    pTypeBadge.innerHTML = `<span class="poke-type-badge type-${t1}" style="margin-right:2px">${t1}</span><span class="poke-type-badge type-${t2}">${t2}</span>`;
+    pTypeBadge.className = '';
+  } else {
+    pTypeBadge.textContent = dual;
+    pTypeBadge.className = 'poke-type-badge type-'+dual;
+  }
+  const _ba = _hud('btn-attack'); const _bm = _hud('btn-magic');
+  const _ah = `⚔ ${player.move} <span class="atk-elem-badge elem-${player.moveElem||player.type}">${player.moveElem||player.type}</span>`;
+  const _mh = `✨ ${player.mMove} <span class="atk-elem-badge elem-${player.mMoveElem||player.type}">${player.mMoveElem||player.type}</span>`;
+  if (_ba) { _ba.innerHTML = _ah; _ba._cachedHtml = _ah; }
+  if (_bm) { _bm.innerHTML = _mh; _bm._cachedHtml = _mh; }
+  updateBattleHp(); updateHUD();
+}
+
 function openSwitchMenu(forced=false) {
   const hasAlive = (player?.roster||[]).some((p,i) => i !== (player.activeRosterIdx||0) && p.hp > 0);
   if (!hasAlive) {
@@ -3552,30 +3579,7 @@ function confirmSwitch(idx) {
   _sm.classList.remove('active');
   switchForcedAfterKO = false;
 
-  // Update battle UI
-  const activePoke = getActivePoke();
-  document.getElementById('player-battle-img').src = activePoke?.isShiny ? SPRITE_SHINY(player.currentSpriteId) : SPRITE_FRONT(player.currentSpriteId);
-  const shinyLabel = activePoke?.isShiny ? ' ✨' : '';
-  document.getElementById('b-player-name').textContent = player.currentName + shinyLabel;
-  document.getElementById('b-player-level').textContent = 'Niv.'+player.level;
-  const pSpdEl = document.getElementById('b-player-spd');
-  if(pSpdEl) pSpdEl.textContent = '⚡'+player.spd;
-  const pTypeBadge = document.getElementById('b-player-type');
-  const dual = player.dualType || getPokeType(player.currentSpriteId, player.type);
-  if (dual.includes('/')) {
-    const [t1,t2] = dual.split('/');
-    pTypeBadge.innerHTML = `<span class="poke-type-badge type-${t1}" style="margin-right:2px">${t1}</span><span class="poke-type-badge type-${t2}">${t2}</span>`;
-    pTypeBadge.className = '';
-  } else {
-    pTypeBadge.textContent = dual;
-    pTypeBadge.className = 'poke-type-badge type-'+dual;
-  }
-  const _sw_ba = _hud('btn-attack'); const _sw_bm = _hud('btn-magic');
-  const _sw_ah = `⚔ ${player.move} <span class="atk-elem-badge elem-${player.moveElem||player.type}">${player.moveElem||player.type}</span>`;
-  const _sw_mh = `✨ ${player.mMove} <span class="atk-elem-badge elem-${player.mMoveElem||player.type}">${player.mMoveElem||player.type}</span>`;
-  if (_sw_ba) { _sw_ba.innerHTML = _sw_ah; _sw_ba._cachedHtml = _sw_ah; }
-  if (_sw_bm) { _sw_bm.innerHTML = _sw_mh; _sw_bm._cachedHtml = _sw_mh; }
-  updateBattleHp(); updateHUD();
+  refreshBattlePlayerUI();
   (_hud('battle-log')).textContent = `⇄ Go, ${player.currentName} !`;
 
   // Enemy gets a free attack on switch
