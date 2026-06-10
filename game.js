@@ -1111,6 +1111,10 @@ let farmAutoTimer = null;
 const FARM_INTERVAL = 2200; // ms entre chaque exploration auto
 
 function toggleFarmAuto() {
+  if (!farmAutoOn && (player?.lastBossWave||0) < 1) {
+    notify('🔒 Farm Auto débloqué après le 1er Boss de vague !');
+    return;
+  }
   farmAutoOn = !farmAutoOn;
   const btn = _hud('btn-farm-auto');
   if (farmAutoOn) {
@@ -1574,8 +1578,8 @@ function throwBall(ballId) {
   disableBattleButtons(true);
   (_hud('battle-log')).textContent = `⚽ Vous lancez une ${item.name} sur ${enemy.name} !`;
 
-  // Calcul taux de capture — basé sur les taux officiels Pokémon
-  const catchRate = getEnemyCatchRate(enemy.id || 0);
+  // Calcul taux de capture — Sanctuaire Prestige utilise un taux boosté
+  const catchRate = enemy._prestigeCatchRate !== undefined ? enemy._prestigeCatchRate : getEnemyCatchRate(enemy.id || 0);
   // Formule officielle simplifiée : facteur PV (1/3 pleine vie → 1 presque KO)
   const hpFactor = (3 * (enemy.maxHp||1) - 2 * Math.max(0,enemy.hp)) / (3 * (enemy.maxHp||1));
   const ballBonus = item.catchRate;
@@ -1620,14 +1624,27 @@ function throwBall(ballId) {
       catchResult.textContent = `✗ ${enemy.name} s'est échappé ! (${Math.round(catchChance*100)}%)`;
       catchResult.style.color='var(--red)';
       // Enemy counterattack after failed catch
-      const eDmg = Math.max(1, enemy.atk+Math.floor(Math.random()*5)-Math.floor(player.def/2));
-      player.hp -= eDmg;
+      const eDmg = enemy._isPrestigeLeg ? 0 : Math.max(1, enemy.atk+Math.floor(Math.random()*5)-Math.floor(player.def/2));
+      if (eDmg > 0) player.hp -= eDmg;
       setTimeout(()=>{
         catchDiv.classList.remove('active');
         disableBattleButtons(false);
         if (player.hp<=0){
           player.hp=Math.floor(player.maxHp*.2);
           showScreen('game'); updateHUD(); setMessage(`${enemy.name} s'est échappé et vous a mis K.O. !`);
+        } else if (enemy._isPrestigeLeg) {
+          // Légendaire prestige : relancer le menu capture tant que le joueur a des balls
+          const hasBalls = Object.values(player.balls||{}).some(v=>v>0);
+          if (hasBalls) {
+            (_hud('battle-log')).textContent = `🏛️ ${enemy.name} résiste ! Réessayez !`;
+            openCatchMenu();
+          } else {
+            notify('Plus de Poké Balls ! Le légendaire s\'échappe...');
+            battleBusy = false;
+            enemy = null;
+            showScreen('game'); updateHUD();
+            setMessage('🏛️ Pas de balls — le légendaire s\'est enfui. Revenez mieux équipé !');
+          }
         } else {
           (_hud('battle-log')).textContent=`${enemy.name} s'échappe et attaque pour ${eDmg} dégâts !`;
           updateBattleHp(); updateHUD();
@@ -3993,6 +4010,7 @@ function challengePrestigeLegendary(legendaryId) {
     gold: Math.round(leg.gold * (player.prestigeGoldMult||1) * scale),
     _isPrestigeLeg: true,
     _prestigeLegData: { ...leg, isShiny },
+    _prestigeCatchRate: Math.round(leg.catchRate * 255),
     isShiny,
   };
   notify(`🏛️ ${leg.name} Niv.${lvBoss} surgit du Sanctuaire !`);
@@ -4409,7 +4427,7 @@ function hasPrestigeUpgrade(id) { return (player?.prestigeUpgrades||[]).includes
 // ══════════════════════════════════════════
 // ÉLEVAGE / BREEDING
 // ══════════════════════════════════════════
-const BREEDING_TIME = 30000; // 30 secondes
+const BREEDING_TIME = 300000; // 5 minutes
 let breedingSlots = [null, null]; // up to 2 eggs incubating
 
 function startBreeding(rosterIdx1, rosterIdx2) {
