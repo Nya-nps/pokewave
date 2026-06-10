@@ -1,0 +1,4 @@
+*.md
+*.html
+.project-memory/
+serve.py
