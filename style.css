@@ -113,22 +113,22 @@ body.menu #bg-img{opacity:0.55;filter:blur(3px) brightness(.8)}
 .hud-panel{
   background:#0d0b1f;
   border:1px solid rgba(110,70,220,.4);
-  border-radius:16px;
-  padding:.9rem 1rem;
+  border-radius:18px;
+  padding:1.1rem 1.2rem;
   display:flex;
   flex-direction:column;
-  gap:.65rem;
-  min-width:270px;
+  gap:.8rem;
+  min-width:320px;
   box-shadow:0 4px 24px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.04)
 }
 
 /* Nom du Pokémon actif */
 #player-name-hud{
   font-family:'Press Start 2P',monospace;
-  font-size:.65rem;
+  font-size:.82rem;
   color:#e8daff;
   line-height:1.8;
-  padding-bottom:.5rem;
+  padding-bottom:.6rem;
   border-bottom:1px solid rgba(110,70,220,.25);
   background:none!important;
   border-top:none!important;border-left:none!important;border-right:none!important;
@@ -138,51 +138,51 @@ body.menu #bg-img{opacity:0.55;filter:blur(3px) brightness(.8)}
 }
 
 /* Ligne chips : vague · heure · rang */
-.hud-meta{display:flex;gap:.4rem;align-items:center;flex-wrap:nowrap}
+.hud-meta{display:flex;gap:.5rem;align-items:center;flex-wrap:nowrap}
 
 /* Kill counter chip */
 #kill-counter-hud{
   font-family:'Press Start 2P',monospace;
-  font-size:.46rem;
+  font-size:.58rem;
   color:#ffd60a;
-  display:flex;align-items:center;gap:.35rem;
+  display:flex;align-items:center;gap:.45rem;
   background:rgba(255,214,10,.08);
   border:1px solid rgba(255,214,10,.28);
   border-radius:20px;
-  padding:.28rem .65rem;
+  padding:.35rem .8rem;
   white-space:nowrap
 }
-#kill-bar-track{width:36px;height:5px;background:rgba(0,0,0,.6);border-radius:999px;overflow:hidden;flex-shrink:0}
+#kill-bar-track{width:48px;height:6px;background:rgba(0,0,0,.6);border-radius:999px;overflow:hidden;flex-shrink:0}
 #kill-bar-fill{height:100%;background:linear-gradient(90deg,#ff9a3c,#ffd60a);border-radius:999px;transition:width .3s}
-#kill-diff-label{font-family:'Press Start 2P',monospace!important;font-size:.42rem;color:#ff9a3c}
+#kill-diff-label{font-family:'Press Start 2P',monospace!important;font-size:.54rem;color:#ff9a3c}
 
 /* Heure chip */
 #time-of-day-hud{
   font-family:'Press Start 2P',monospace;
-  font-size:.46rem;
+  font-size:.58rem;
   color:rgba(255,255,255,.6);
   background:rgba(255,255,255,.06);
   border:1px solid rgba(255,255,255,.12);
   border-radius:20px;
-  padding:.28rem .65rem;
+  padding:.35rem .8rem;
   white-space:nowrap
 }
 
 /* Rang chip */
 #rank-hud{
   font-family:'Press Start 2P',monospace;
-  font-size:.46rem;
+  font-size:.58rem;
   background:rgba(255,255,255,.06);
   border:1px solid rgba(255,255,255,.12);
   border-radius:20px;
-  padding:.28rem .65rem;
+  padding:.35rem .8rem;
   white-space:nowrap
 }
 
 /* Lignes PV / XP : label | barre | valeur */
-.hud-bar-row{display:grid;grid-template-columns:20px 1fr auto;gap:.45rem;align-items:center}
-.hud-bar-label{font-family:'Press Start 2P',monospace;font-size:.48rem;color:rgba(255,255,255,.4);text-transform:uppercase}
-.hud-bar-val{font-family:'Press Start 2P',monospace;font-size:.46rem;color:rgba(255,255,255,.55);white-space:nowrap}
+.hud-bar-row{display:grid;grid-template-columns:24px 1fr auto;gap:.55rem;align-items:center}
+.hud-bar-label{font-family:'Press Start 2P',monospace;font-size:.6rem;color:rgba(255,255,255,.4);text-transform:uppercase}
+.hud-bar-val{font-family:'Press Start 2P',monospace;font-size:.58rem;color:rgba(255,255,255,.55);white-space:nowrap}
 
 /* Barres */
 .bar-wrap{height:10px;background:rgba(0,0,0,.55);border-radius:999px;overflow:hidden;border:none;box-shadow:none}
@@ -556,7 +556,7 @@ body.menu #bg-img{opacity:0.55;filter:blur(3px) brightness(.8)}
 
 /* — Barres HP/XP — uniformes 18px (hors panel HUD) — */
 .bar-wrap        { height: 18px !important; }
-.hud-panel .bar-wrap { height: 13px !important; }
+.hud-panel .bar-wrap { height: 16px !important; }
 .hp-battle       { height: 16px !important; }
 .stat-bar-track  { height: 12px !important; }
 .team-row-hp-bar { height: 7px !important; }
