@@ -227,11 +227,11 @@ body { background: var(--c-bg) !important; }
 }
 
 #player-name-hud {
-  background: linear-gradient(135deg,rgba(28,12,60,.9),rgba(14,6,42,.95)) !important;
-  border: 1px solid rgba(140,70,240,.48) !important;
-  border-radius: 10px !important;
-  box-shadow: 0 2px 14px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.07) !important;
-  backdrop-filter: blur(16px) !important;
+  background: linear-gradient(135deg,#1a0a3e,#120832) !important;
+  border: 1px solid rgba(150,80,255,.55) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.08) !important;
+  backdrop-filter: none !important;
 }
 
 #gold-display {
@@ -982,7 +982,7 @@ body { background: var(--c-bg) !important; }
 }
 /* Compenser par un fond légèrement plus opaque */
 .hud-card         { background: rgba(14,10,40,.96) !important; }
-#player-name-hud  { background: linear-gradient(135deg,rgba(28,12,60,.96),rgba(14,6,42,.99)) !important; }
+#player-name-hud  { background: linear-gradient(135deg,#1a0a3e,#120832) !important; }
 #gold-display     { background: rgba(30,22,5,.94) !important; }
 #message-box      { background: rgba(10,8,30,.96) !important; }
 #kill-counter-hud { background: rgba(255,214,10,.08) !important; }
@@ -1077,8 +1077,8 @@ body { background: var(--c-bg) !important; }
 
 /* ── PLAYER NAME HUD — renforcement ── */
 #player-name-hud {
-  border-color: rgba(150,80,255,.5) !important;
-  box-shadow: 0 2px 14px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.06) !important;
+  border-color: rgba(150,80,255,.55) !important;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.08) !important;
 }
 
 /* ── DIFF LABEL — badge amélioré ── */

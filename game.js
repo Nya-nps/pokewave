@@ -396,7 +396,7 @@ function _doUpdateKillHUD() {
     const activeId = (selId && (selIdx === -1 || selIdx <= bossesBeaten))
       ? selId : ZONE_ORDER[autoIdx];
     const zoneName = ZONES[activeId]?.name || '';
-    wl.textContent = bossReady ? '💀 BOSS !' : `🌊 ${zoneName}`;
+    wl.textContent = bossReady ? '💀' : `🌊 V${wave}`;
     wl.title = bossReady ? 'Boss disponible !' : `Vague ${wave} — ${zoneName}`;
   }
   _updateZonePickerBtn();

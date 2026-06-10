@@ -115,12 +115,13 @@ body.menu #bg-img{opacity:0.55;filter:blur(3px) brightness(.8)}
 .bar-fill.mp{background:linear-gradient(90deg,#4cc9f0,#c77dff)}
 .bar-fill.xp{background:linear-gradient(90deg,#ffd60a,#ff9a3c)}
 .stat-val{font-size:.48rem;color:rgba(255,255,255,.7);font-family:'Press Start 2P',monospace}
-.hud-stat-block{display:flex;flex-direction:column;gap:.25rem}
-.hud-stat-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:.1rem}
-.hud-chips-row{display:flex;gap:.3rem;flex-wrap:wrap;align-items:center}
+.hud-panel{display:flex;flex-direction:column;gap:.45rem;background:rgba(8,6,24,.93);border:1px solid rgba(100,60,200,.35);border-radius:14px;padding:.6rem .8rem;backdrop-filter:blur(4px);box-shadow:0 4px 20px rgba(0,0,0,.5)}
+.hud-stat-block{display:flex;flex-direction:column;gap:.22rem}
+.hud-stat-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:.05rem}
+.hud-chips-row{display:flex;gap:.3rem;align-items:center;flex-wrap:nowrap}
 #time-of-day-hud{font-family:'Press Start 2P',monospace;font-size:.38rem;color:rgba(255,255,255,.7);background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:.22rem .6rem;white-space:nowrap}
 #rank-hud{font-family:'Press Start 2P',monospace;font-size:.38rem;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:.22rem .6rem;white-space:nowrap}
-#player-name-hud{font-family:'Press Start 2P',monospace;font-size:.58rem;color:#fff;text-shadow:1px 1px 0 rgba(0,0,0,.6);line-height:1.7;background:linear-gradient(135deg,rgba(30,10,60,.95),rgba(15,5,40,.98));border:1px solid rgba(120,60,220,.45);border-radius:10px;padding:.4rem .75rem;box-shadow:0 2px 10px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.06)}
+#player-name-hud{font-family:'Press Start 2P',monospace;font-size:.56rem;color:#f0e8ff;text-shadow:0 1px 3px rgba(0,0,0,.8);line-height:1.7;background:linear-gradient(135deg,#1a0a3e,#120832);border:1px solid rgba(150,80,255,.55);border-radius:8px;padding:.38rem .7rem;box-shadow:0 0 0 1px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.08)}
 #gold-display{font-family:'Press Start 2P',monospace;font-size:.6rem;color:var(--yellow);display:flex;align-items:center;gap:.3rem;background:rgba(0,0,0,.4);padding:.35rem .8rem;border-radius:999px;border:1px solid rgba(255,214,10,.35)}
 #zone-label{position:absolute;top:46%;left:50%;transform:translate(-50%,-50%);font-family:'Press Start 2P',monospace;font-size:clamp(.8rem,2vw,1.1rem);color:var(--white);text-align:center;background:rgba(10,10,30,.85);padding:.6rem 2rem;border-radius:8px;border:2px solid var(--yellow);opacity:0;pointer-events:none;transition:opacity .4s;text-shadow:2px 2px 0 #000}
 #zone-label.show{opacity:1}
