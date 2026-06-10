@@ -1605,7 +1605,10 @@ function throwBall(ballId) {
       catchResult.textContent = `✓ ${enemy.name} a été capturé !`;
       catchResult.style.color='var(--green)';
       const _capName = enemy.name, _capShiny = enemy.isShiny||false;
-      addCapturedToRoster({ name:enemy.name, id:enemy.id, type:enemy.type, hp:enemy.maxHp, maxHp:enemy.maxHp, level:enemy.level||1, isShiny:_capShiny });
+      const _capCleanName = enemy._prestigeLegData?.name || enemy.name;
+      addCapturedToRoster({ name:_capCleanName, id:enemy.id, type:enemy.type, hp:enemy.maxHp, maxHp:enemy.maxHp, level:enemy.level||1, isShiny:_capShiny });
+      updateGlobalStats('catches', 1);
+      player._pendingPrestigeCatch = null;
       setTimeout(()=>{
         catchDiv.classList.remove('active');
         stopAutoBattle();
@@ -1616,8 +1619,8 @@ function throwBall(ballId) {
         showScreen('game');
         updateHUD();
         const shinyCapture = _capShiny ? ' ✨ Et en plus il est SHINY !' : '';
-        setMessage(`🎉 Félicitations ! Vous avez capturé ${_capName} ! (${Math.round(catchChance*100)}% de chance)${shinyCapture}`);
-        notify(`${_capName} capturé !${_capShiny?' ✨':''}`);
+        setMessage(`🎉 Félicitations ! Vous avez capturé ${_capCleanName} ! (${Math.round(catchChance*100)}% de chance)${shinyCapture}`);
+        notify(`${_capCleanName} capturé !${_capShiny?' ✨':''}`);
       }, 1800);
     } else {
       catchBall.style.animation='captureFail 1s ease forwards';
@@ -1641,6 +1644,7 @@ function throwBall(ballId) {
           } else {
             notify('Plus de Poké Balls ! Le légendaire s\'échappe...');
             battleBusy = false;
+            player._pendingPrestigeCatch = null;
             enemy = null;
             showScreen('game'); updateHUD();
             setMessage('🏛️ Pas de balls — le légendaire s\'est enfui. Revenez mieux équipé !');
@@ -2306,6 +2310,58 @@ function saveGame() {
   notify('Partie sauvegardée !');
   setMessage('💾 Votre aventure a été sauvegardée.');
 }
+// ══════════════════════════════════════════
+// SANITIZE LEVEL CAP — détecte et corrige
+// tout Pokémon dont le niveau dépasse 500
+// (manipulation directe de la sauvegarde)
+// ══════════════════════════════════════════
+const _LEVEL_CAP = 500;
+
+function sanitizeLevelCap() {
+  if (!player) return;
+  const _allPoke = (typeof ALL_POKEMON !== 'undefined') ? ALL_POKEMON : GEN1;
+  const _allSpd  = (typeof ALL_SPD     !== 'undefined') ? ALL_SPD     : GEN1_SPD;
+  const _pokeMap = (typeof ALL_POKEMON_MAP !== 'undefined') ? ALL_POKEMON_MAP : null;
+
+  const _fixPoke = (p) => {
+    if (!p || (p.level || 0) <= _LEVEL_CAP) return false;
+    const sid   = p.currentSpriteId || p.spriteId || 0;
+    const pData = _pokeMap ? _pokeMap.get(sid) : _allPoke.find(x => x.id === sid);
+    const scale = 1 + _LEVEL_CAP * 0.12; // 61 — équivaut à une capture au niveau cap
+    p.maxHp  = Math.round((pData?.hp  || 45) * scale);
+    p.hp     = p.maxHp;
+    p.atk    = Math.round((pData?.atk || 10) * scale);
+    p.def    = Math.round((pData?.def ||  5) * scale);
+    p.magic  = Math.round((pData?.atk ||  8) * scale * 0.8);
+    p.spd    = Math.round((_allSpd[sid] || pData?.spd || 50) * (1 + _LEVEL_CAP * 0.02));
+    if (p.spAtk !== undefined) p.spAtk = Math.round((pData?.atk || 8) * scale * 0.9);
+    if (p.spDef !== undefined) p.spDef = Math.round((pData?.def || 5) * scale * 0.9);
+    // MP : 50 de base + 8 par niveau (identique à checkRosterLevelUp)
+    p.maxMp  = 50 + (_LEVEL_CAP - 1) * 8;
+    p.mp     = p.maxMp;
+    p.level  = _LEVEL_CAP;
+    p.xp     = 0;
+    p.xpNext = xpForLevel(_LEVEL_CAP);
+    return true;
+  };
+
+  let fixed = 0;
+  (player.roster || []).forEach(p => { if (_fixPoke(p)) fixed++; });
+  (player.box    || []).forEach(p => { if (_fixPoke(p)) fixed++; });
+
+  // Filet de sécurité : corrige aussi l'objet player directement
+  if ((player.level || 0) > _LEVEL_CAP) {
+    _fixPoke(player);
+    fixed++;
+  }
+
+  if (fixed > 0) {
+    console.warn(`[PokéWave] ${fixed} Pokémon hors limite remis au Niv.${_LEVEL_CAP}`);
+    notify(`⚠️ ${fixed} Pokémon hors limite remis au Niv.${_LEVEL_CAP} !`);
+    setMessage(`⚠️ Limite de niveau : ${fixed} Pokémon au-delà du Niv.${_LEVEL_CAP} ont été réinitialisés avec les stats correspondantes.`);
+  }
+}
+
 function loadGame() {
   const _raw = localStorage.getItem(SAVE_KEY);
   if (!_raw){ notify('Aucune sauvegarde !'); return; }
@@ -2341,6 +2397,8 @@ function loadGame() {
   if (!player.stats)            player.stats            = {};
   if (!player.achievements)     player.achievements     = [];
   player._trialBattle = false; player._trialBattleTp = 0;
+  // Plafond de niveau — remet à 500 tout Pokémon modifié manuellement
+  sanitizeLevelCap();
   // Recalibrer xpNext sur tous les Pokémon en cas d'ancienne courbe
   const _recalibrate = (p) => { if (p && p.level) { p.xpNext = xpForLevel(p.level); p.xp = Math.min(p.xp||0, p.xpNext - 1); } };
   (player.roster||[]).forEach(_recalibrate);
@@ -3999,7 +4057,7 @@ function challengePrestigeLegendary(legendaryId) {
   const isShiny = Math.random() < leg.shinyChance * (player.prestigeShinyMult||1);
   const lvBoss = Math.max(60, Math.min(600, (player.level||1) + 40 + lv*10));
   const boss = {
-    name:`🏛️ ${isShiny?'✨ ':''} ${leg.name}`, id:leg.id, level:lvBoss,
+    name:`🏛️ ${isShiny?'✨ ':''}${leg.name}`, id:leg.id, level:lvBoss,
     hp:   Math.round(player.maxHp * 6 * scale),
     maxHp:Math.round(player.maxHp * 6 * scale),
     atk:  Math.round(player.atk * 1.2 * scale),
@@ -5189,13 +5247,13 @@ const SEASON_PASS = {
     {
       id:'collector', name:'Collecteur', icon:'📦', color:'#06d6a0',
       milestones:[
-        { pts:5,   label:'5 captures',   reward:{gold:600} },
-        { pts:15,  label:'15 captures',  reward:{gold:1400, candy:2} },
-        { pts:30,  label:'30 captures',  reward:{tokens:3} },
-        { pts:60,  label:'60 captures',  reward:{gold:4500, candy:4} },
-        { pts:100, label:'100 captures', reward:{gold:12000, tokens:6}, ultimate:true },
+        { pts:10,  label:'10 captures',  reward:{gold:600} },
+        { pts:30,  label:'30 captures',  reward:{gold:1400, candy:2} },
+        { pts:70,  label:'70 captures',  reward:{tokens:3} },
+        { pts:150, label:'150 captures', reward:{gold:4500, candy:4} },
+        { pts:300, label:'300 captures', reward:{gold:12000, tokens:6}, ultimate:true },
       ],
-      pointTypes:['catches','earn_gold'],
+      pointTypes:['catches'],
     },
   ],
 };
@@ -5616,14 +5674,14 @@ function _refreshTrialPool() {
 
 // Trial Shop catalog — prix calibrés sur les nouveaux PT (Tier5 = 300 PT/victoire)
 const TRIAL_SHOP = [
-  {id:'orb-bird',    name:'Orbe Oiseau',    legendaries:'Artikodin · Électhor · Sulfura',    cost:160,  img:ITEM_DISPLAY['orb-bird']?.img},
-  {id:'orb-beast',   name:'Orbe Bête',      legendaries:'Raikou · Entei · Suicune',          cost:160,  img:ITEM_DISPLAY['orb-beast']?.img},
-  {id:'orb-golem',   name:'Orbe Golem',     legendaries:'Regirock · Regice · Registeel',     cost:160,  img:ITEM_DISPLAY['orb-golem']?.img},
-  {id:'orb-dragon',  name:'Orbe Dragon',    legendaries:'Latias · Latios · Rayquaza',        cost:280,  img:ITEM_DISPLAY['orb-dragon']?.img},
-  {id:'orb-space',   name:'Orbe Espace',    legendaries:'Dialga · Palkia · Giratina',        cost:380,  img:ITEM_DISPLAY['orb-space']?.img},
-  {id:'orb-ancient', name:'Orbe Ancestral', legendaries:'Solgaleo · Lunala · Necrozma',      cost:600,  img:ITEM_DISPLAY['orb-ancient']?.img},
-  {id:'orb-mega',    name:'Orbe Méga',      legendaries:'Mewtwo · Kyogre · Groudon',         cost:900,  img:ITEM_DISPLAY['orb-mega']?.img},
-  {id:'orb-ultra',   name:'Orbe Ultime',    legendaries:'Zacian · Zamazenta · Koraidon...',   cost:1500, img:ITEM_DISPLAY['orb-ultra']?.img},
+  {id:'orb-bird',    name:'Orbe Oiseau',    legendaries:'Artikodin · Électhor · Sulfura',    cost:1600,  img:ITEM_DISPLAY['orb-bird']?.img},
+  {id:'orb-beast',   name:'Orbe Bête',      legendaries:'Raikou · Entei · Suicune',          cost:1600,  img:ITEM_DISPLAY['orb-beast']?.img},
+  {id:'orb-golem',   name:'Orbe Golem',     legendaries:'Regirock · Regice · Registeel',     cost:1600,  img:ITEM_DISPLAY['orb-golem']?.img},
+  {id:'orb-dragon',  name:'Orbe Dragon',    legendaries:'Latias · Latios · Rayquaza',        cost:2800,  img:ITEM_DISPLAY['orb-dragon']?.img},
+  {id:'orb-space',   name:'Orbe Espace',    legendaries:'Dialga · Palkia · Giratina',        cost:3800,  img:ITEM_DISPLAY['orb-space']?.img},
+  {id:'orb-ancient', name:'Orbe Ancestral', legendaries:'Solgaleo · Lunala · Necrozma',      cost:6000,  img:ITEM_DISPLAY['orb-ancient']?.img},
+  {id:'orb-mega',    name:'Orbe Méga',      legendaries:'Mewtwo · Kyogre · Groudon',         cost:9000,  img:ITEM_DISPLAY['orb-mega']?.img},
+  {id:'orb-ultra',   name:'Orbe Ultime',    legendaries:'Zacian · Zamazenta · Koraidon...',   cost:15000, img:ITEM_DISPLAY['orb-ultra']?.img},
   {id:'shiny-gem',   name:'Gemme Éclat',    legendaries:'Rend un Pokémon Shiny (+15% stats)', cost:2500, img:ITEM_DISPLAY['shiny-gem']?.img},
 ];
 
