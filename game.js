@@ -1605,7 +1605,10 @@ function throwBall(ballId) {
       catchResult.textContent = `✓ ${enemy.name} a été capturé !`;
       catchResult.style.color='var(--green)';
       const _capName = enemy.name, _capShiny = enemy.isShiny||false;
-      addCapturedToRoster({ name:enemy.name, id:enemy.id, type:enemy.type, hp:enemy.maxHp, maxHp:enemy.maxHp, level:enemy.level||1, isShiny:_capShiny });
+      const _capCleanName = enemy._prestigeLegData?.name || enemy.name;
+      addCapturedToRoster({ name:_capCleanName, id:enemy.id, type:enemy.type, hp:enemy.maxHp, maxHp:enemy.maxHp, level:enemy.level||1, isShiny:_capShiny });
+      updateGlobalStats('catches', 1);
+      player._pendingPrestigeCatch = null;
       setTimeout(()=>{
         catchDiv.classList.remove('active');
         stopAutoBattle();
@@ -1616,8 +1619,8 @@ function throwBall(ballId) {
         showScreen('game');
         updateHUD();
         const shinyCapture = _capShiny ? ' ✨ Et en plus il est SHINY !' : '';
-        setMessage(`🎉 Félicitations ! Vous avez capturé ${_capName} ! (${Math.round(catchChance*100)}% de chance)${shinyCapture}`);
-        notify(`${_capName} capturé !${_capShiny?' ✨':''}`);
+        setMessage(`🎉 Félicitations ! Vous avez capturé ${_capCleanName} ! (${Math.round(catchChance*100)}% de chance)${shinyCapture}`);
+        notify(`${_capCleanName} capturé !${_capShiny?' ✨':''}`);
       }, 1800);
     } else {
       catchBall.style.animation='captureFail 1s ease forwards';
@@ -1641,6 +1644,7 @@ function throwBall(ballId) {
           } else {
             notify('Plus de Poké Balls ! Le légendaire s\'échappe...');
             battleBusy = false;
+            player._pendingPrestigeCatch = null;
             enemy = null;
             showScreen('game'); updateHUD();
             setMessage('🏛️ Pas de balls — le légendaire s\'est enfui. Revenez mieux équipé !');
@@ -3999,7 +4003,7 @@ function challengePrestigeLegendary(legendaryId) {
   const isShiny = Math.random() < leg.shinyChance * (player.prestigeShinyMult||1);
   const lvBoss = Math.max(60, Math.min(600, (player.level||1) + 40 + lv*10));
   const boss = {
-    name:`🏛️ ${isShiny?'✨ ':''} ${leg.name}`, id:leg.id, level:lvBoss,
+    name:`🏛️ ${isShiny?'✨ ':''}${leg.name}`, id:leg.id, level:lvBoss,
     hp:   Math.round(player.maxHp * 6 * scale),
     maxHp:Math.round(player.maxHp * 6 * scale),
     atk:  Math.round(player.atk * 1.2 * scale),
@@ -5195,7 +5199,7 @@ const SEASON_PASS = {
         { pts:60,  label:'60 captures',  reward:{gold:4500, candy:4} },
         { pts:100, label:'100 captures', reward:{gold:12000, tokens:6}, ultimate:true },
       ],
-      pointTypes:['catches','earn_gold'],
+      pointTypes:['catches'],
     },
   ],
 };
