@@ -2338,12 +2338,14 @@ function setBattleTurn(turn) {
               notify('💀 Défaite en Trial — aucun PT gagné.');
               setMessage('💀 Votre Pokémon a été vaincu en Trial. Réessayez !');
             } else if (player._tourBattle) {
+              const _wasReplay = !!tourState?.isReplay;
+              const _lostFloor = tourState?.floor;
               player._tourBattle = false;
               tourState = null;
-              player.tourFloor = 0;
+              if (!_wasReplay) player.tourFloor = 0;
               showScreen('game'); updateHUD();
-              notify('💀 Défaite dans la Tour — retour à l\'Étage 1 !');
-              setMessage('💀 Votre Pokémon s\'est évanoui dans la Tour… Vous repartez de l\'Étage 1 !');
+              notify(_wasReplay ? `💀 Défaite au replay de l'Étage ${_lostFloor} — progression préservée.` : '💀 Défaite dans la Tour — retour à l\'Étage 1 !');
+              setMessage(_wasReplay ? `💀 Défaite en replay — ta progression dans la Tour est intacte.` : '💀 Votre Pokémon s\'est évanoui dans la Tour… Vous repartez de l\'Étage 1 !');
             } else if (player._gymBattle) {
               player._gymBattle = null;
               showScreen('game'); updateHUD();
